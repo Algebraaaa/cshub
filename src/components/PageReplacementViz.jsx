@@ -1,5 +1,3 @@
-import React from 'react'
-
 export default function PageReplacementViz({ stepData, steps }) {
   if (!stepData) return null
   const { pages, frames, currentIndex, fault, capacity, faults } = stepData

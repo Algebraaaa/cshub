@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import NQueensViz from '../NQueensViz'
 import StepController, { useStepController } from '../StepController'
 import { Toolbar } from './shared'

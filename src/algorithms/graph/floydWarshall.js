@@ -41,6 +41,8 @@ export function floydWarshall(graph) {
 
   steps.push(snap({
     phase: 'init',
+    cppLine: 2,
+    pythonLine: 2,
     description: `初始化距离矩阵：直接边的权重，自身距离为 0，无边则为 ∞`,
   }))
 
@@ -48,6 +50,7 @@ export function floydWarshall(graph) {
     steps.push(snap({
       phase: 'iterate',
       k,
+      cppLine: 3, pythonLine: 3,
       description: `以 ${nodeIds[k]} 为中间节点，尝试松弛所有 (i, j) 对`,
     }))
 
@@ -63,6 +66,7 @@ export function floydWarshall(graph) {
           phase: 'iterate',
           k, i, j,
           relaxed: improved,
+          cppLine: 6, pythonLine: 6,
           description: improved
             ? `dist[${nodeIds[i]}][${nodeIds[j]}]：${dist[i][j] === INF ? '∞' : dist[i][j]} → ${newDist}（经 ${nodeIds[k]}）`
             : `dist[${nodeIds[i]}][${nodeIds[j]}]：${dist[i][j]} ≤ ${newDist}，无需更新`,
@@ -75,6 +79,7 @@ export function floydWarshall(graph) {
 
   steps.push(snap({
     phase: 'done',
+    cppLine: 13, pythonLine: 9,
     description: '全源最短路径计算完成',
   }))
 

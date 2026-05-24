@@ -1,9 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useProgress } from '../../contexts/ProgressContext'
+import { saveWrongForSlug } from '../profile/WrongAnswers'
 
-export default function Quiz({ questions }) {
+export default function Quiz({ questions, slug }) {
+  const { recordQuiz } = useProgress()
   const [answers, setAnswers] = useState({})   // index → chosen option index
   const [revealed, setRevealed] = useState({}) // index → bool
   const [allDone, setAllDone] = useState(false)
+
+  // Persist score + wrong question indices once when the whole quiz is done.
+  useEffect(() => {
+    if (!allDone || !slug || !questions) return
+    const correct = questions.filter((q, i) => answers[i] === q.answer).length
+    recordQuiz(slug, correct, questions.length)
+    const wrongIndices = questions
+      .map((q, i) => (answers[i] !== q.answer ? i : -1))
+      .filter(i => i !== -1)
+    saveWrongForSlug(slug, wrongIndices)
+  }, [allDone, slug, questions, answers, recordQuiz])
 
   if (!questions || questions.length === 0) return null
 
@@ -29,15 +43,32 @@ export default function Quiz({ questions }) {
     ? questions.filter((q, i) => answers[i] === q.answer).length
     : null
 
+  const doneCount = Object.keys(revealed).length
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* 进度条 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 4, borderRadius: 99, background: 'var(--surface-2)' }}>
+          <div style={{
+            height: '100%', borderRadius: 99,
+            background: 'linear-gradient(90deg, var(--accent), #ec4899)',
+            width: `${(doneCount / questions.length) * 100}%`,
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+          {doneCount} / {questions.length}
+        </span>
+      </div>
+
       {questions.map((q, qi) => {
         const chosen = answers[qi]
         const isRevealed = revealed[qi]
         const correct = q.answer
 
         return (
-          <div key={qi} style={{
+          <div key={qi} role="group" aria-labelledby={`quiz-q-${qi}`} style={{
             padding: '18px 20px',
             background: 'var(--bg-elev)',
             border: `1px solid ${isRevealed
@@ -46,12 +77,12 @@ export default function Quiz({ questions }) {
             borderRadius: 10,
             transition: 'border-color 0.2s',
           }}>
-            <div style={{
+            <div id={`quiz-q-${qi}`} style={{
               fontSize: 13, fontWeight: 600, marginBottom: 14,
               color: 'var(--text-primary)', lineHeight: 1.5,
               display: 'flex', gap: 10,
             }}>
-              <span style={{
+              <span aria-hidden="true" style={{
                 flexShrink: 0, width: 22, height: 22,
                 background: 'var(--accent-soft)', color: 'var(--accent-light)',
                 borderRadius: 5, display: 'flex', alignItems: 'center',
@@ -59,10 +90,10 @@ export default function Quiz({ questions }) {
               }}>
                 {qi + 1}
               </span>
-              <span>{q.q}</span>
+              <span><span style={srOnly}>第 {qi + 1} 题：</span>{q.q}</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            <div role="radiogroup" aria-labelledby={`quiz-q-${qi}`} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
               {q.options.map((opt, oi) => {
                 let bg = 'var(--surface)'
                 let border = 'var(--border)'
@@ -86,6 +117,9 @@ export default function Quiz({ questions }) {
                 return (
                   <button key={oi} onClick={() => handlePick(qi, oi)}
                     disabled={isRevealed}
+                    role="radio"
+                    aria-checked={oi === chosen}
+                    aria-label={`选项 ${String.fromCharCode(65 + oi)}：${opt}${isRevealed && oi === correct ? '（正确答案）' : ''}${isRevealed && oi === chosen && chosen !== correct ? '（你的选择，错误）' : ''}`}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '9px 12px',
@@ -130,12 +164,23 @@ export default function Quiz({ questions }) {
                 确认答案
               </button>
             ) : (
-              <div style={{
-                fontSize: 12.5, fontWeight: 500,
-                color: chosen === correct ? 'var(--green)' : 'var(--red)',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                {chosen === correct ? '✓ 回答正确！' : `✗ 正确答案是：${q.options[correct]}`}
+              <div role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{
+                  fontSize: 12.5, fontWeight: 500,
+                  color: chosen === correct ? 'var(--green)' : 'var(--red)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  {chosen === correct ? '✓ 回答正确！' : `✗ 正确答案是：${q.options[correct]}`}
+                </div>
+                {chosen !== correct && q.explanation && (
+                  <div style={{
+                    fontSize: 12, color: 'var(--text-secondary)',
+                    background: 'var(--surface)', border: '1px solid var(--border)',
+                    borderRadius: 6, padding: '8px 10px', lineHeight: 1.6,
+                  }}>
+                    💡 {q.explanation}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -143,7 +188,7 @@ export default function Quiz({ questions }) {
       })}
 
       {allDone && (
-        <div style={{
+        <div role="status" aria-live="polite" style={{
           padding: '16px 20px',
           background: score === questions.length ? 'var(--green-soft)' : 'var(--accent-soft)',
           border: `1px solid ${score === questions.length ? 'var(--green)' : 'var(--accent-border)'}`,
@@ -173,4 +218,13 @@ export default function Quiz({ questions }) {
       )}
     </div>
   )
+}
+
+const srOnly = {
+  position: 'absolute',
+  width: 1, height: 1, padding: 0,
+  margin: -1, overflow: 'hidden',
+  clip: 'rect(0,0,0,0)',
+  whiteSpace: 'nowrap',
+  border: 0,
 }

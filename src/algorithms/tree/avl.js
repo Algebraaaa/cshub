@@ -58,10 +58,10 @@ function collect(node, positions) {
   return result
 }
 
-function snapshot(root, highlight, description) {
+function snapshot(root, highlight, description, cppLine, pythonLine) {
   const positions = layout(root, 400, 40, 160)
   const { nodes, edges } = collect(root, positions)
-  return { nodes, edges, highlight, description }
+  return { nodes, edges, highlight, description, cppLine, pythonLine }
 }
 
 export function avlInsertSequence(values) {
@@ -72,14 +72,14 @@ export function avlInsertSequence(values) {
   function insert(node, val) {
     if (!node) {
       const nn = newNode(val)
-      steps.push(snapshot(root, nn.id, `创建节点 ${val}`))
+      steps.push(snapshot(root, nn.id, `创建节点 ${val}`, 16, 14))
       return nn
     }
     if (val < node.value) {
-      steps.push(snapshot(root, node.id, `${val} < ${node.value}，向左`))
+      steps.push(snapshot(root, node.id, `${val} < ${node.value}，向左`, 17, 15))
       node.left = insert(node.left, val)
     } else {
-      steps.push(snapshot(root, node.id, `${val} >= ${node.value}，向右`))
+      steps.push(snapshot(root, node.id, `${val} >= ${node.value}，向右`, 18, 16))
       node.right = insert(node.right, val)
     }
 
@@ -88,34 +88,34 @@ export function avlInsertSequence(values) {
 
     // Left Left
     if (bf > 1 && val < node.left.value) {
-      steps.push(snapshot(root, node.id, `不平衡（LL），对 ${node.value} 右旋`))
+      steps.push(snapshot(root, node.id, `不平衡（LL），对 ${node.value} 右旋`, 21, 19))
       const res = rotateRight(node)
-      steps.push(snapshot(res, res.id, `右旋完成`))
+      steps.push(snapshot(res, res.id, `右旋完成`, 21, 19))
       return res
     }
     // Right Right
     if (bf < -1 && val >= node.right.value) {
-      steps.push(snapshot(root, node.id, `不平衡（RR），对 ${node.value} 左旋`))
+      steps.push(snapshot(root, node.id, `不平衡（RR），对 ${node.value} 左旋`, 23, 21))
       const res = rotateLeft(node)
-      steps.push(snapshot(res, res.id, `左旋完成`))
+      steps.push(snapshot(res, res.id, `左旋完成`, 23, 21))
       return res
     }
     // Left Right
     if (bf > 1 && val >= node.left.value) {
-      steps.push(snapshot(root, node.left.id, `不平衡（LR），先对 ${node.left.value} 左旋`))
+      steps.push(snapshot(root, node.left.id, `不平衡（LR），先对 ${node.left.value} 左旋`, 22, 20))
       node.left = rotateLeft(node.left)
-      steps.push(snapshot(root, node.id, `左旋完成，接着对 ${node.value} 右旋`))
+      steps.push(snapshot(root, node.id, `左旋完成，接着对 ${node.value} 右旋`, 22, 20))
       const res = rotateRight(node)
-      steps.push(snapshot(res, res.id, `右旋完成`))
+      steps.push(snapshot(res, res.id, `右旋完成`, 22, 20))
       return res
     }
     // Right Left
     if (bf < -1 && val < node.right.value) {
-      steps.push(snapshot(root, node.right.id, `不平衡（RL），先对 ${node.right.value} 右旋`))
+      steps.push(snapshot(root, node.right.id, `不平衡（RL），先对 ${node.right.value} 右旋`, 24, 22))
       node.right = rotateRight(node.right)
-      steps.push(snapshot(root, node.id, `右旋完成，接着对 ${node.value} 左旋`))
+      steps.push(snapshot(root, node.id, `右旋完成，接着对 ${node.value} 左旋`, 24, 22))
       const res = rotateLeft(node)
-      steps.push(snapshot(res, res.id, `左旋完成`))
+      steps.push(snapshot(res, res.id, `左旋完成`, 24, 22))
       return res
     }
 

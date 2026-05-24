@@ -16,6 +16,60 @@
 // }
 export function mergeSort(input) {
   const n = input.length
+  
+  // 边界情况：空数组或单元素
+  if (n <= 1) {
+    const elements = n === 0 ? [] : input.map((v, i) => ({ id: i, value: v }))
+    const arr = [...elements]
+    const steps = []
+
+    if (n === 0) {
+      steps.push({
+        arr: arr.map(e => ({ id: e.id, value: e.value })),
+        elementLevel: {},
+        elementPos: {},
+        leafDepths: [],
+        maxDepth: 0,
+        tree: [],
+        level: null,
+        leftRange: null,
+        rightRange: null,
+        iPos: null,
+        jPos: null,
+        kPos: null,
+        comparingIds: null,
+        chosenId: null,
+        chosenSide: null,
+        phase: 'done',
+        cppLine: 1,
+        pythonLine: 1,
+        description: '空数组，无需排序',
+      })
+    } else {
+      steps.push({
+        arr: arr.map(e => ({ id: e.id, value: e.value })),
+        elementLevel: { [elements[0].id]: 0 },
+        elementPos: { [elements[0].id]: 0 },
+        leafDepths: [0],
+        maxDepth: 0,
+        tree: [{ left: 0, right: 0, level: 0 }],
+        level: 0,
+        leftRange: null,
+        rightRange: null,
+        iPos: null,
+        jPos: null,
+        kPos: null,
+        comparingIds: null,
+        chosenId: null,
+        chosenSide: null,
+        phase: 'done',
+        cppLine: 1,
+        pythonLine: 1,
+        description: '单元素数组，已排序',
+      })
+    }
+    return steps
+  }
   const elements = input.map((v, i) => ({ id: i, value: v }))
   const arr = [...elements]
   const steps = []
@@ -56,6 +110,8 @@ export function mergeSort(input) {
     level: 0, leftRange: null, rightRange: null,
     ...NULL_PTRS,
     phase: 'split-enter',
+    cppLine: 13,
+    pythonLine: 4,
     description: `归并排序：${n} 个元素，从根开始自顶向下划分`,
   }))
 
@@ -69,6 +125,8 @@ export function mergeSort(input) {
       leftRange: [left, mid], rightRange: [mid + 1, right],
       ...NULL_PTRS,
       phase: 'split-enter',
+      cppLine: 2,
+      pythonLine: 2,
       description: `划分 [${left}, ${right}]，mid=${mid} → 左 [${left}, ${mid}]，右 [${mid + 1}, ${right}]`,
     }))
 
@@ -123,6 +181,8 @@ export function mergeSort(input) {
         comparingIds: [L[i].id, R[j].id],
         chosenId: null, chosenSide: null,
         phase: 'compare',
+        cppLine: 6,
+        pythonLine: 13,
         description: `比较 ${L[i].value} 与 ${R[j].value}`,
       }))
       let chosen, side
@@ -137,6 +197,8 @@ export function mergeSort(input) {
         level,
         leftRange: [left, mid], rightRange: [mid + 1, right],
         iPos: left + i, jPos: mid + 1 + j, kPos: k + 1,
+        cppLine: 6,
+        pythonLine: 14,
         comparingIds: null, chosenId: chosen.id, chosenSide: side,
         phase: 'place',
         description: `${chosen.value} 上升到位置 ${k}`,

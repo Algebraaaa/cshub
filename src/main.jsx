@@ -1,16 +1,16 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { ProgressProvider } from './contexts/ProgressContext'
+
+const AppProviders = lazy(() => import('./AppProviders.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ThemeProvider>
-      <ProgressProvider>
+    <Suspense fallback={null}>
+      <AppProviders>
         <App />
-      </ProgressProvider>
-    </ThemeProvider>
+      </AppProviders>
+    </Suspense>
   </StrictMode>,
 )

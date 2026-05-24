@@ -46,7 +46,10 @@ export function sstf(requests, initialHead) {
       targetTrack: targetTrack,
       moveDistance: minDistance,
       path: [...path],
-      totalSteps
+      totalSteps,
+      cppLine: 16,
+      pythonLine: 8,
+      description: `选择最近磁道 ${targetTrack}：寻道距离 ${minDistance}，当前总寻道 ${totalSeek}`
     });
   }
 

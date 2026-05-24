@@ -15,6 +15,8 @@ export function kmp({ text, pattern }) {
     pattern,
     lps: [...lps],
     status: 'building_lps',
+    cppLine: 4,
+    pythonLine: 4,
     description: 'Start computing the LPS (Longest Prefix Suffix) array.',
     lpsI: 0,
     lpsLen: 0
@@ -26,6 +28,7 @@ export function kmp({ text, pattern }) {
       pattern,
       lps: [...lps],
       status: 'building_lps',
+      cppLine: 6, pythonLine: 7,
       description: `Compare pattern[${i}] ('${pattern[i]}') with pattern[${len}] ('${pattern[len]}')`,
       lpsI: i,
       lpsLen: len
@@ -39,6 +42,7 @@ export function kmp({ text, pattern }) {
         pattern,
         lps: [...lps],
         status: 'building_lps_match',
+        cppLine: 7, pythonLine: 9,
         description: `Match! lps[${i}] becomes ${len}. Move to next character.`,
         lpsI: i,
         lpsLen: len
@@ -51,6 +55,7 @@ export function kmp({ text, pattern }) {
           pattern,
           lps: [...lps],
           status: 'building_lps_mismatch',
+          cppLine: 10, pythonLine: 13,
           description: `Mismatch! Update length to lps[${len - 1}] = ${lps[len - 1]}.`,
           lpsI: i,
           lpsLen: len
@@ -63,6 +68,7 @@ export function kmp({ text, pattern }) {
           pattern,
           lps: [...lps],
           status: 'building_lps_mismatch',
+          cppLine: 12, pythonLine: 15,
           description: `Mismatch and length is 0. Set lps[${i}] to 0. Move to next character.`,
           lpsI: i,
           lpsLen: 0
@@ -77,6 +83,7 @@ export function kmp({ text, pattern }) {
     pattern,
     lps: [...lps],
     status: 'lps_complete',
+    cppLine: 16, pythonLine: 17,
     description: `LPS array computed: [${lps.join(', ')}]`,
     lpsI: -1,
     lpsLen: -1
@@ -95,6 +102,7 @@ export function kmp({ text, pattern }) {
       patternIdx: j,
       shift: i - j,
       status: 'comparing',
+      cppLine: 26, pythonLine: 27,
       description: `Compare text[${i}] ('${text[i]}') with pattern[${j}] ('${pattern[j]}')`
     })
 
@@ -110,6 +118,7 @@ export function kmp({ text, pattern }) {
           patternIdx: j - 1,
           shift: i - j,
           status: 'match',
+          cppLine: 28, pythonLine: 31,
           description: `Pattern found at shift ${i - j}!`
         })
         // j = lps[j - 1] // Continue searching for next matches
@@ -121,6 +130,7 @@ export function kmp({ text, pattern }) {
           patternIdx: j - 1,
           shift: i - j,
           status: 'shifting',
+          cppLine: 30, pythonLine: 34,
           description: `Shift pattern using lps[${j - 1}]: j becomes ${lps[j - 1]}`
         })
         j = lps[j - 1]
@@ -134,6 +144,7 @@ export function kmp({ text, pattern }) {
         patternIdx: j,
         shift: i - j,
         status: 'mismatch',
+        cppLine: 29, pythonLine: 32,
         description: `Mismatch at text[${i}] and pattern[${j}].`
       })
       if (j !== 0) {
@@ -145,6 +156,7 @@ export function kmp({ text, pattern }) {
           patternIdx: j,
           shift: i - j,
           status: 'shifting',
+          cppLine: 30, pythonLine: 34,
           description: `Shift pattern using lps[${j - 1}]: j becomes ${lps[j - 1]}`
         })
         j = lps[j - 1]
@@ -157,6 +169,7 @@ export function kmp({ text, pattern }) {
           patternIdx: j,
           shift: i - j,
           status: 'shifting',
+          cppLine: 31, pythonLine: 36,
           description: `j is 0, just move to next text character (i++).`
         })
         i++
@@ -172,8 +185,9 @@ export function kmp({ text, pattern }) {
     patternIdx: -1,
     shift: -1,
     status: 'complete',
+    cppLine: 34, pythonLine: 37,
     description: 'KMP matching complete.'
   })
 
-  return steps
+  return steps;
 }

@@ -34,10 +34,10 @@ function collect(node, positions) {
   return result
 }
 
-function snapshot(root, highlight, description) {
+function snapshot(root, highlight, description, cppLine, pythonLine) {
   const positions = layout(root, 400, 40, 160)
   const { nodes, edges } = collect(root, positions)
-  return { nodes, edges, highlight, description }
+  return { nodes, edges, highlight, description, cppLine, pythonLine }
 }
 
 function rotateRight(y) {
@@ -66,24 +66,24 @@ export function treapInsertSequence(values, priorities) {
   function insert(node, val, prio) {
     if (!node) {
       const nn = newNode(val, prio)
-      steps.push(snapshot(root, nn.id, `创建节点 ${val} (prio=${prio})`))
+      steps.push(snapshot(root, nn.id, `创建节点 ${val} (prio=${prio})`, 7, 9))
       return nn
     }
     if (val < node.value) {
-      steps.push(snapshot(root, node.id, `${val} < ${node.value}，向左`))
+      steps.push(snapshot(root, node.id, `${val} < ${node.value}，向左`, 8, 10))
       node.left = insert(node.left, val, prio)
       if (node.left.priority < node.priority) {
-        steps.push(snapshot(root, node.left.id, `父堆序破坏，右旋 ${node.value}`))
+        steps.push(snapshot(root, node.left.id, `父堆序破坏，右旋 ${node.value}`, 10, 12))
         node = rotateRight(node)
-        steps.push(snapshot(node, node.id, `右旋完成`))
+        steps.push(snapshot(node, node.id, `右旋完成`, 10, 12))
       }
     } else {
-      steps.push(snapshot(root, node.id, `${val} >= ${node.value}，向右`))
+      steps.push(snapshot(root, node.id, `${val} >= ${node.value}，向右`, 12, 14))
       node.right = insert(node.right, val, prio)
       if (node.right.priority < node.priority) {
-        steps.push(snapshot(root, node.right.id, `父堆序破坏，左旋 ${node.value}`))
+        steps.push(snapshot(root, node.right.id, `父堆序破坏，左旋 ${node.value}`, 13, 15))
         node = rotateLeft(node)
-        steps.push(snapshot(node, node.id, `左旋完成`))
+        steps.push(snapshot(node, node.id, `左旋完成`, 13, 15))
       }
     }
     return node

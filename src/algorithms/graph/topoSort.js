@@ -38,6 +38,8 @@ export function topoSort(graph) {
 
   steps.push(snap({
     description: `Kahn 算法：找到所有入度为 0 的节点入队：[${queue.join(', ')}]`,
+    cppLine: 8,
+    pythonLine: 9
   }))
 
   while (queue.length > 0) {
@@ -47,6 +49,8 @@ export function topoSort(graph) {
 
     steps.push(snap({
       current: u,
+      cppLine: 13,
+      pythonLine: 13,
       description: `出队 ${u}，加入拓扑序列：[${topoOrder.join(' → ')}]`,
     }))
 
@@ -64,6 +68,8 @@ export function topoSort(graph) {
       steps.push(snap({
         current: u,
         relaxedEdges: relaxed,
+        cppLine: 15,
+        pythonLine: 15,
         description: `移除 ${u} 的出边，邻居 [${relaxed.join(', ')}] 入度各 -1${queue.length ? `，新入队：[${queue.join(', ')}]` : ''}`,
       }))
     }
@@ -71,6 +77,8 @@ export function topoSort(graph) {
 
   const hasCycle = topoOrder.length < nodeIds.length
   steps.push(snap({
+    cppLine: hasCycle ? 18 : 19,
+    pythonLine: hasCycle ? 20 : 21,
     description: hasCycle
       ? `检测到环！只处理了 ${topoOrder.length}/${nodeIds.length} 个节点`
       : `拓扑排序完成：${topoOrder.join(' → ')}`,

@@ -6,7 +6,7 @@ import { createContext, useContext, useRef, useEffect, useSyncExternalStore } fr
 const StoreContext = createContext(null)
 
 function createStore() {
-  let data = { step: 0, current: null, total: 0 }
+  let data = { step: 0, current: null, total: 0, steps: [] }
   const subs = new Set()
   return {
     getSnapshot: () => data,
@@ -33,8 +33,10 @@ export function useStepPublish(step, steps) {
     const current = steps[step] ?? null
     const total = steps.length
     const prev = store.getSnapshot()
-    if (prev.step !== step || prev.total !== total || prev.current !== current) {
-      store.set({ step, current, total })
+    // Update steps reference when the steps array itself changes (different algo or input)
+    const stepsChanged = prev.steps !== steps
+    if (prev.step !== step || prev.total !== total || prev.current !== current || stepsChanged) {
+      store.set({ step, current, total, steps })
     }
   }, [step, steps, store])
 }
@@ -44,6 +46,6 @@ export function useStepData() {
   const store = useContext(StoreContext)
   return useSyncExternalStore(
     store ? store.subscribe : () => () => {},
-    store ? store.getSnapshot : () => ({ step: 0, current: null, total: 0 }),
+    store ? store.getSnapshot : () => ({ step: 0, current: null, total: 0, steps: [] }),
   )
 }

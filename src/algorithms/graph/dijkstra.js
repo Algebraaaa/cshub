@@ -19,6 +19,8 @@ export function dijkstra(graph, startId) {
     visited: [],
     current: null,
     highlightEdges: [],
+    cppLine: 5,
+    pythonLine: 5,
     description: `初始化，起点 ${startId} 距离=0，其余=∞`,
   })
 
@@ -39,6 +41,8 @@ export function dijkstra(graph, startId) {
       visited: [...visited],
       current: u,
       highlightEdges: [],
+      cppLine: 14,
+      pythonLine: 9,
       description: `选择距离最小的未访问节点 ${u}（距离=${dist[u]}）`,
     })
 
@@ -48,6 +52,8 @@ export function dijkstra(graph, startId) {
       steps.push({
         dist: { ...dist },
         visited: [...visited],
+        cppLine: 18,
+        pythonLine: 13,
         current: u,
         highlightEdges: [[u, v]],
         description: `松弛边 ${u}→${v}：${dist[u]}+${weight}=${newDist} vs 当前=${dist[v]}`,
@@ -58,6 +64,8 @@ export function dijkstra(graph, startId) {
         steps.push({
           dist: { ...dist },
           visited: [...visited],
+          cppLine: 19,
+          pythonLine: 14,
           current: u,
           highlightEdges: [[u, v]],
           description: `更新 dist[${v}] = ${newDist}`,
@@ -68,6 +76,8 @@ export function dijkstra(graph, startId) {
   steps.push({
     dist: { ...dist },
     visited: [...visited],
+    cppLine: 24,
+    pythonLine: 16,
     current: null,
     highlightEdges: [],
     description: 'Dijkstra 完成',

@@ -1,13 +1,8 @@
-import { useState, useMemo } from 'react'
 import SortingViz from '../SortingViz'
 import MergeSortViz from '../MergeSortViz'
 import QuickSortViz from '../QuickSortViz'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar, ToolbarBtn, TextInput, Legend } from './shared'
-
-function randomArray(n = 14) {
-  return Array.from({ length: n }, () => Math.floor(Math.random() * 90) + 10)
-}
+import PlaygroundShell from './PlaygroundShell'
+import { randomArray, ArrayTextInput } from './inputs/ArrayInput'
 
 const VIZ_FOR = {
   mergesort: MergeSortViz,
@@ -36,64 +31,48 @@ const DEFAULT_LEGEND = [
   { color: 'var(--yellow)', label: '比较中' },
   { color: 'var(--red)', label: '交换' },
   { color: 'var(--green)', label: '已排序' },
-  { color: 'var(--accent-light)', label: 'Pivot' },
-  { color: 'var(--blue)', label: '归并区间' },
 ]
 
 export default function SortingPlayground({ algoFn, algoSlug }) {
-  const [arr, setArr] = useState(() => randomArray(algoSlug === 'mergesort' || algoSlug === 'quicksort' ? 10 : 14))
-  const [text, setText] = useState('')
-
-  const steps = useMemo(() => algoFn(arr), [algoFn, arr])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-  const max = Math.max(...arr)
-
+  const startSize = (algoSlug === 'mergesort' || algoSlug === 'quicksort') ? 10 : 14
   const VizComponent = VIZ_FOR[algoSlug] || SortingViz
   const legend = LEGEND_FOR[algoSlug] || DEFAULT_LEGEND
 
-  function applyCustom() {
-    const parsed = text.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0)
-    if (parsed.length >= 2) { setArr(parsed); ctrl.reset() }
-  }
+  const presets = [
+    { id: 'random',  label: '🎲 随机数组',  state: () => ({ arr: randomArray(14) }) },
+    { id: 'short8',  label: '短数组 (8)',   state: () => ({ arr: randomArray(8) }) },
+    { id: 'sorted',  label: '已排序',       state: (s) => ({ arr: [...s.arr].sort((a, b) => a - b) }) },
+    { id: 'reverse', label: '逆序',         state: (s) => ({ arr: [...s.arr].sort((a, b) => b - a) }) },
+  ]
 
   return (
-    <div>
-      <Toolbar>
-        <ToolbarBtn onClick={() => { setArr(randomArray()); ctrl.reset() }}>
-          🎲 随机数组
-        </ToolbarBtn>
-        <ToolbarBtn onClick={() => { setArr(randomArray(8)); ctrl.reset() }}>
-          短数组 (8)
-        </ToolbarBtn>
-        <ToolbarBtn onClick={() => { setArr([...arr].sort((a,b)=>a-b)); ctrl.reset() }}>
-          已排序
-        </ToolbarBtn>
-        <ToolbarBtn onClick={() => { setArr([...arr].sort((a,b)=>b-a)); ctrl.reset() }}>
-          逆序
-        </ToolbarBtn>
-        <div style={{ flex: 1 }} />
-        <TextInput value={text} onChange={setText} placeholder="自定义：5 3 8 1 9 2"
-          onSubmit={applyCustom} submitLabel="应用" />
-      </Toolbar>
-
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 10,
-        marginBottom: 16,
-        padding: '24px 12px',
-        overflowX: 'auto',
-      }}>
-        <VizComponent stepData={current} maxVal={max} />
-      </div>
-
-      <Legend items={legend} />
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      initialState={{ arr: randomArray(startSize), text: '' }}
+      presets={presets}
+      derivePayload={s => s.arr}
+      computeSteps={arr => algoFn(arr)}
+      extraToolbar={({ state, setState, ctrl }) => (
+        <ArrayTextInput state={state} setState={setState} ctrl={ctrl}
+          placeholder="自定义：5 3 8 1 9 2" />
+      )}
+      renderViz={({ current, state }) => (
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px',
+          marginBottom: 16,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '24px 12px',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+          }}>
+            <VizComponent stepData={current} maxVal={Math.max(...state.arr)} />
+          </div>
+        </div>
+      )}
+      legend={legend}
+    />
   )
 }

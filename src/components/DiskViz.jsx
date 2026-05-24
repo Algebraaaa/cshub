@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export default function DiskViz({ state, maxTrack = 200 }) {
   const containerRef = useRef(null);

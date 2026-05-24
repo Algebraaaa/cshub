@@ -20,7 +20,7 @@ export default function TreeViz({ stepData }) {
 
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', minHeight: 200 }}>
-      {edges.map((e, i) => {
+      {edges.map((e) => {
         const a = nodeMap[e.from], b = nodeMap[e.to]
         if (!a || !b) return null
         return <line key={`${e.from}-${e.to}`}

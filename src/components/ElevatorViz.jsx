@@ -1,8 +1,12 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export default function ElevatorViz({ state, maxTrack = 200 }) {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const currentHead = state?.currentHead ?? 0;
+  const [displayedFloor, setDisplayedFloor] = useState(currentHead);
+  const prevHeadRef = useRef(currentHead);
+  const rafRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -17,15 +21,6 @@ export default function ElevatorViz({ state, maxTrack = 200 }) {
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
-
-  if (!state) return null;
-
-  const { currentHead, queue, completed, totalSeek, targetTrack, path, totalSteps, moveDistance } = state;
-  const { width } = size;
-
-  const [displayedFloor, setDisplayedFloor] = useState(currentHead);
-  const prevHeadRef = useRef(currentHead);
-  const rafRef = useRef(null);
 
   useEffect(() => {
     if (currentHead !== prevHeadRef.current) {
@@ -57,6 +52,11 @@ export default function ElevatorViz({ state, maxTrack = 200 }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [currentHead]);
+
+  if (!state) return null;
+
+  const { queue, completed, totalSeek, targetTrack, path, totalSteps, moveDistance } = state;
+  const { width } = size;
 
   // Let's use a nice vertical layout.
   // We'll have two columns: Left for Building Shaft, Right for Time-Space Trace.
@@ -156,7 +156,7 @@ export default function ElevatorViz({ state, maxTrack = 200 }) {
               const allPoints = Array.from(new Set([...queue, ...completed]));
               allPoints.sort((a, b) => a - b);
               
-              return queue.map((req, i) => {
+              return queue.map((req) => {
                 const rank = allPoints.indexOf(req);
                 const xOffset = rank % 2 === 0 ? 0 : 25;
                 const textY = rank % 2 === 0 ? 4 : 4;

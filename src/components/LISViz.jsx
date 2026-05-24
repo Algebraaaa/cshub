@@ -2,8 +2,7 @@ const NODE = 40
 
 export default function LISViz({ stepData }) {
   if (!stepData) return null
-  const { arr, dp, prev, i: curI, j: curJ, improved, lisPath, phase } = stepData
-  const n = arr.length
+  const { arr, dp, i: curI, j: curJ, improved, lisPath, phase } = stepData
   const maxDP = Math.max(...dp, 1)
 
   function nodeColor(idx) {

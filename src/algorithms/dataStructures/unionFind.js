@@ -6,8 +6,8 @@ export function unionFind(n, ops) {
   const size = Array.from({ length: n }, () => 1)
   const steps = []
 
-  function snapshot(active, pathNodes, action, pseudoLine, desc) {
-    steps.push({ parent: [...parent], size: [...size], active, pathNodes, action, pseudoLine, description: desc })
+  function snapshot(active, pathNodes, action, cppLine, pythonLine, desc) {
+    steps.push({ parent: [...parent], size: [...size], active, pathNodes, action, cppLine, pythonLine, description: desc })
   }
 
   function findRoot(x) {
@@ -19,7 +19,7 @@ export function unionFind(n, ops) {
     return { root: curr, path }
   }
 
-  snapshot([], [], 'init', 2, `初始化 ${n} 个独立集合，parent[i] = i，每个节点自成一组。`)
+  snapshot([], [], 'init', 5, 3, `初始化 ${n} 个独立集合，parent[i] = i，每个节点自成一组。`)
 
   for (const op of ops) {
     if (op.type === 'union') {
@@ -29,7 +29,7 @@ export function unionFind(n, ops) {
       const allPath = [...new Set([...pa, ...pb])]
 
       if (ra === rb) {
-        snapshot([a, b], allPath, 'same', 11,
+        snapshot([a, b], allPath, 'same', 14, 13,
           `Union(${a}, ${b})：两者已在同一集合（根 ${ra}），跳过。`)
         continue
       }
@@ -40,12 +40,12 @@ export function unionFind(n, ops) {
         parent[rb] = ra; size[ra] += size[rb]
       }
       const newRoot = size[ra] >= size[rb] ? ra : rb
-      snapshot([a, b], allPath, 'union', 13,
+      snapshot([a, b], allPath, 'union', 16, 17,
         `Union(${a}, ${b})：按大小合并，新集合根 ${newRoot}，大小 ${size[newRoot]}。`)
     } else if (op.type === 'find') {
       const { x } = op
       const { root, path } = findRoot(x)
-      snapshot([x], path, 'find', 6,
+      snapshot([x], path, 'find', 9, 8,
         `Find(${x})：路径压缩，路径 [${path.join('→')}] 上所有节点直接指向根 ${root}。`)
     }
   }

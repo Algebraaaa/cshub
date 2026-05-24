@@ -3,14 +3,55 @@ export function naivePatternMatching({ text, pattern }) {
   const n = text.length
   const m = pattern.length
 
+  // 边界情况：空模式、空文本或模式长于文本
   if (m === 0) {
+    steps.push({
+      text,
+      pattern,
+      textIdx: null,
+      patternIdx: null,
+      shift: null,
+      status: 'done',
+      cppLine: 3,
+      pythonLine: 4,
+      description: '空模式，无需匹配',
+    })
+    return steps
+  }
+
+  if (n === 0) {
+    steps.push({
+      text,
+      pattern,
+      textIdx: null,
+      patternIdx: null,
+      shift: null,
+      status: 'done',
+      cppLine: 5,
+      pythonLine: 7,
+      description: '空文本，无法匹配',
+    })
+    return steps
+  }
+
+  if (m > n) {
+    steps.push({
+      text,
+      pattern,
+      textIdx: null,
+      patternIdx: null,
+      shift: null,
+      status: 'done',
+      cppLine: 5,
+      pythonLine: 7,
+      description: `模式长度 (${m}) > 文本长度 (${n})，无法匹配`,
+    })
     return steps
   }
 
   for (let s = 0; s <= n - m; s++) {
     let match = true
-    let j = 0
-    for (j = 0; j < m; j++) {
+    for (let j = 0; j < m; j++) {
       steps.push({
         text,
         pattern,
@@ -18,6 +59,8 @@ export function naivePatternMatching({ text, pattern }) {
         patternIdx: j,
         shift: s,
         status: 'comparing',
+        cppLine: 8,
+        pythonLine: 10,
         description: `Compare text[${s + j}] ('${text[s + j]}') with pattern[${j}] ('${pattern[j]}')`
       })
 

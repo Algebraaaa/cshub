@@ -12,8 +12,17 @@ const SPEED_PRESETS = [
 export function useStepController(steps) {
   const [step, setStep] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(1000)
+  const [speed, setSpeedState] = useState(() => {
+    try { const s = parseInt(localStorage.getItem('algoviz-speed'), 10); return (!isNaN(s) && s > 0) ? s : 1000 } catch { return 1000 }
+  })
   const timerRef = useRef(null)
+
+  function setSpeed(ms) {
+    setSpeedState(ms)
+    try { localStorage.setItem('algoviz-speed', String(ms)) } catch {
+      // Storage may be unavailable in private browsing or embedded contexts.
+    }
+  }
 
   // Publish step to StepContext so pseudocode section can read it
   useStepPublish(step, steps)
@@ -57,6 +66,20 @@ export default function StepController({
   const scrubberRef = useRef(null)
   const isDragging = useRef(false)
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e) {
+      // Don't fire if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.code === 'Space') { e.preventDefault(); playing ? stop() : play() }
+      else if (e.code === 'ArrowLeft') { e.preventDefault(); prev() }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); goNext() }
+      else if (e.code === 'KeyR') { e.preventDefault(); reset() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [playing, play, stop, prev, goNext, reset])
+
   function posToStep(clientX) {
     const rect = scrubberRef.current.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
@@ -82,8 +105,6 @@ export default function StepController({
   }
 
   const progress = total > 1 ? step / (total - 1) : 0
-  const activePreset = SPEED_PRESETS.find(p => p.ms === speed)
-
   return (
     <div style={{
       background: 'var(--glass-bg)',

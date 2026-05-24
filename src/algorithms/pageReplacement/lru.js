@@ -10,6 +10,8 @@ export function lru(pages, capacity = 3) {
     fault: false,
     capacity,
     recentlyUsed: [],
+    cppLine: 2,
+    pythonLine: 2,
     description: '初始化：内存帧为空',
     faults
   })
@@ -47,6 +49,8 @@ export function lru(pages, capacity = 3) {
       replaced,
       capacity,
       recentlyUsed: [...recentlyUsed],
+      cppLine: fault ? (replaced !== null ? 10 : 18) : 16,
+      pythonLine: fault ? (replaced !== null ? 10 : 13) : 12,
       description: `访问页面 ${page}: ${fault ? (replaced !== null ? `缺页退出，淘汰最久未使用的页面 ${replaced}` : '缺页，存入空闲帧') : '缓存命中，更新最近使用记录'}`,
       faults
     })
@@ -59,6 +63,8 @@ export function lru(pages, capacity = 3) {
     fault: false,
     capacity,
     recentlyUsed: [...recentlyUsed],
+    cppLine: 21,
+    pythonLine: 15,
     description: `遍历完成，总缺页次数: ${faults}`,
     faults
   })

@@ -6,16 +6,22 @@ export function lcs(s1, s2) {
   const dir = Array.from({ length: m + 1 }, () => Array(n + 1).fill(null))
   const steps = []
 
-  steps.push({
-    dp: dp.map(r => [...r]),
-    s1, s2,
-    highlight: null,
-    arrows: [],
-    matchLine: null,
-    backtrack: [],
-    result: '',
-    description: '初始化 dp 表，dp[i][j] = s1 前 i 个字符与 s2 前 j 个字符的 LCS 长度',
-  })
+  // 边界情况：空字符串或单字符
+  if (m === 0 || n === 0) {
+    steps.push({
+      dp: dp.map(r => [...r]),
+      s1, s2,
+      highlight: null,
+      arrows: [],
+      matchLine: null,
+      backtrack: [],
+      result: '',
+      cppLine: 1,
+      pythonLine: 1,
+      description: m === 0 || n === 0 ? '其中一个字符串为空，LCS 长度为 0' : 'LCS 计算',
+    })
+    return steps
+  }
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -30,6 +36,8 @@ export function lcs(s1, s2) {
           matchLine: [i - 1, j - 1],
           backtrack: [],
           result: '',
+          cppLine: 7,
+          pythonLine: 7,
           description: `s1[${i - 1}]='${s1[i - 1]}' == s2[${j - 1}]='${s2[j - 1]}'，dp[${i}][${j}]=dp[${i - 1}][${j - 1}]+1=${dp[i][j]}`,
         })
       } else {
@@ -49,6 +57,8 @@ export function lcs(s1, s2) {
             { from: [i, j - 1], to: [i, j] },
           ],
           matchLine: null,
+          cppLine: 9,
+          pythonLine: 9,
           backtrack: [],
           result: '',
           description: `'${s1[i - 1]}' != '${s2[j - 1]}'，取 max(dp[${i - 1}][${j}]=${dp[i - 1][j]}, dp[${i}][${j - 1}]=${dp[i][j - 1]})=${dp[i][j]}`,
@@ -77,6 +87,8 @@ export function lcs(s1, s2) {
       highlight: null,
       arrows: [],
       matchLine: null,
+      cppLine: 16,
+      pythonLine: 14,
       backtrack: [...path],
       result: lcsChars.join(''),
       description: `回溯：构建 LCS = "${lcsChars.join('')}"`,
@@ -89,6 +101,8 @@ export function lcs(s1, s2) {
     highlight: [m, n],
     arrows: [],
     matchLine: null,
+    cppLine: 26,
+    pythonLine: 23,
     backtrack: path,
     result: lcsChars.join(''),
     description: `完成！LCS = "${lcsChars.join('')}"，长度 = ${dp[m][n]}`,

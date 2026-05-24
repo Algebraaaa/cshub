@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-
-const CPP_KEYWORDS = /\b(int|void|bool|char|double|float|long|short|unsigned|signed|auto|const|static|struct|class|public|private|protected|virtual|inline|return|if|else|for|while|do|switch|case|break|continue|default|namespace|using|template|typename|true|false|nullptr|NULL|this|new|delete|throw|try|catch|friend|operator|sizeof|typedef|enum|extern|mutable|explicit|constexpr|noexcept|override|final|union|goto)\b/g
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { escapeHtml } from '../../utils/safeHtml'
 const CPP_TYPES = /\b(vector|string|pair|map|unordered_map|set|unordered_set|queue|stack|priority_queue|deque|list|array|tuple|shared_ptr|unique_ptr|weak_ptr|size_t|INT_MAX|INT_MIN|greater|less)\b/g
 
 const PY_KEYWORDS = /\b(def|class|if|elif|else|for|while|return|break|continue|pass|import|from|as|in|is|not|and|or|lambda|with|try|except|finally|raise|yield|async|await|True|False|None|self|cls|global|nonlocal|del|assert)\b/g
@@ -8,9 +7,7 @@ const PY_BUILTINS = /\b(print|len|range|enumerate|zip|map|filter|sorted|reversed
 
 const PS_KEYWORDS = /\b(procedure|function|if|then|else|for|while|do|return|repeat|until|to|from|down|inclusive|begin|end|swap|copy|insert|extractMin|enqueue|dequeue|pop|push|or|and|not)\b/g
 
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
+const CPP_KEYWORDS = /\b(int|void|bool|char|double|float|long|short|unsigned|signed|auto|const|static|struct|class|public|private|protected|virtual|inline|return|if|else|for|while|do|switch|case|break|continue|default|namespace|using|template|typename|true|false|nullptr|NULL|this|new|delete|throw|try|catch|friend|operator|sizeof|typedef|enum|extern|mutable|explicit|constexpr|noexcept|override|final|union|goto)\b/g
 
 // Tokenize so we don't double-process inside strings/comments
 function tokenize(code, rules) {
@@ -106,20 +103,48 @@ function highlightPseudo(code) {
   return renderTokens(tokenize(code, adjusted))
 }
 
+const JAVA_KEYWORDS = /\b(public|private|protected|static|final|abstract|class|interface|extends|implements|new|return|if|else|for|while|do|switch|case|break|continue|default|import|package|void|int|long|double|float|boolean|char|byte|short|null|true|false|this|super|throw|throws|try|catch|finally|instanceof|enum|synchronized|volatile|transient|native|strictfp|assert)\b/g
+const JAVA_TYPES = /\b(String|Integer|Long|Double|Boolean|List|ArrayList|LinkedList|Map|HashMap|TreeMap|Set|HashSet|TreeSet|Queue|Deque|ArrayDeque|PriorityQueue|Stack|Arrays|Collections|Math|System|Object|StringBuilder|Iterator|Comparable|Comparator)\b/g
+
+function highlightJava(code) {
+  const rules = [
+    { type: 'comment', regex: /\/\/[^\n]*/y },
+    { type: 'comment', regex: /\/\*[\s\S]*?\*\//y },
+    { type: 'string',  regex: /"(?:\\.|[^"\\])*"/y },
+    { type: 'string',  regex: /'(?:\\.|[^'\\])*'/y },
+    { type: 'keyword', regex: JAVA_KEYWORDS },
+    { type: 'type',    regex: JAVA_TYPES },
+    { type: 'number',  regex: /\b\d+(?:\.\d+)?[LlFfDd]?\b/y },
+    { type: 'function', regex: /[A-Za-z_]\w*(?=\s*\()/y },
+  ]
+  const adjusted = rules.map(r => ({ ...r, regex: new RegExp(r.regex.source, r.regex.flags.replace(/[gy]/g, '') + 'y') }))
+  return renderTokens(tokenize(code, adjusted))
+}
+
 const HIGHLIGHTERS = {
   cpp: highlightCpp,
   python: highlightPython,
   pseudo: highlightPseudo,
+  java: highlightJava,
   js: highlightCpp, // legacy fallback
 }
 
-export default function CodeBlock({ code, lang = 'cpp', title, highlightLine, noAutoScroll = false }) {
+export default function CodeBlock({ code, lang = 'cpp', title, highlightLine, noAutoScroll = false, fill = false, maxHeight }) {
   const lineRefs = useRef({})
   const [copied, setCopied] = useState(false)
+  // isFirstEffectRef handles the initial mount (incl. Strict Mode's double-invoke).
+  // prevHighlightRef handles the later null→value transition when StepData first loads.
+  // Without these, navigating to a new algo would auto-scroll <main> down to the
+  // highlighted line, dragging the page off the top.
+  const isFirstEffectRef = useRef(true)
+  const prevHighlightRef = useRef(undefined)
+  useLayoutEffect(() => { isFirstEffectRef.current = true }, [])
 
-  // Scroll highlighted line into view (must be before early return — hooks order)
-  // Skip if noAutoScroll is true (e.g., for pseudocode to avoid stealing focus from animation)
   useEffect(() => {
+    const prev = prevHighlightRef.current
+    prevHighlightRef.current = highlightLine
+    if (isFirstEffectRef.current) { isFirstEffectRef.current = false; return }
+    if (prev == null) return  // first non-null highlightLine after mount — not user-driven
     if (!noAutoScroll && highlightLine != null && lineRefs.current[highlightLine]) {
       lineRefs.current[highlightLine].scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
@@ -141,6 +166,10 @@ export default function CodeBlock({ code, lang = 'cpp', title, highlightLine, no
       border: '1px solid var(--code-border)',
       borderRadius: 10,
       overflow: 'hidden',
+      display: fill ? 'flex' : undefined,
+      flexDirection: fill ? 'column' : undefined,
+      height: fill ? '100%' : undefined,
+      minHeight: fill ? 0 : undefined,
     }}>
       <div style={{
         display: 'flex', alignItems: 'center',
@@ -179,6 +208,9 @@ export default function CodeBlock({ code, lang = 'cpp', title, highlightLine, no
         fontSize: 13,
         lineHeight: 1.7,
         overflow: 'auto',
+        flex: fill ? '1 1 auto' : undefined,
+        minHeight: fill ? 0 : undefined,
+        maxHeight,
       }}>
         <code style={{ display: 'block' }}>
           {lines.map((line, i) => {

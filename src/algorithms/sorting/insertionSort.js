@@ -7,11 +7,32 @@ export function insertionSort(input) {
   const n = arr.length
   const sorted = new Set([0])
 
+  // 边界情况：空数组或单元素
+  if (n <= 1) {
+    if (n === 1) {
+      sorted.add(0)
+      steps.push({
+        array: arr,
+        sorted,
+        comparing: [],
+        shifted: [],
+        inserted: [],
+        cppLine: 1,
+        pythonLine: 1,
+        phase: 'done',
+        description: n === 0 ? '空数组，无需排序' : '单元素数组，已排序',
+      })
+    }
+    return steps
+  }
+
   steps.push({
     array: [...arr],
     comparing: [],
     swapped: [],
     sorted: [...sorted],
+    cppLine: 3,
+    pythonLine: 2,
     description: '把第一个元素视为已排序的"手牌"',
   })
 
@@ -23,7 +44,7 @@ export function insertionSort(input) {
       comparing: [i],
       swapped: [],
       sorted: [...sorted],
-      cppLine: 4, pythonLine: 4,
+      cppLine: 4, pythonLine: 3,
       description: `取第 ${i} 个元素 ${key}，准备插入到左侧已排序区`,
     })
 
@@ -33,7 +54,7 @@ export function insertionSort(input) {
         comparing: [j, j + 1],
         swapped: [],
         sorted: [...sorted],
-        cppLine: 6, pythonLine: 6,
+        cppLine: 6, pythonLine: 5,
         description: `比较 arr[${j}]=${arr[j]} 与 key=${key}：更大，需要后移`,
       })
       arr[j + 1] = arr[j]
@@ -42,7 +63,7 @@ export function insertionSort(input) {
         comparing: [],
         swapped: [j + 1],
         sorted: [...sorted],
-        cppLine: 7, pythonLine: 7,
+        cppLine: 7, pythonLine: 6,
         description: `arr[${j}] 后移到位置 ${j + 1}`,
       })
       j--
@@ -54,7 +75,7 @@ export function insertionSort(input) {
       comparing: [],
       swapped: [j + 1],
       sorted: [...sorted],
-      cppLine: 9, pythonLine: 9,
+      cppLine: 10, pythonLine: 8,
       description: `把 ${key} 插入到位置 ${j + 1}，前 ${i + 1} 个元素已有序`,
     })
   }
@@ -64,6 +85,8 @@ export function insertionSort(input) {
     comparing: [],
     swapped: [],
     sorted: [...Array(n).keys()],
+    cppLine: 12,
+    pythonLine: 9,
     description: '排序完成',
   })
   return steps

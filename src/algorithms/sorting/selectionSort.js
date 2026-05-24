@@ -7,6 +7,25 @@ export function selectionSort(input) {
   const n = arr.length
   const sorted = new Set()
 
+  // 边界情况：空数组或单元素
+  if (n <= 1) {
+    if (n === 1) {
+      sorted.add(0)
+      steps.push({
+        array: arr,
+        sorted,
+        comparing: [],
+        minIdx: null,
+        swapped: [],
+        cppLine: 1,
+        pythonLine: 1,
+        phase: 'done',
+        description: n === 0 ? '空数组，无需排序' : '单元素数组，已排序',
+      })
+    }
+    return steps
+  }
+
   for (let i = 0; i < n - 1; i++) {
     let minIdx = i
     steps.push({
@@ -14,6 +33,9 @@ export function selectionSort(input) {
       comparing: [minIdx],
       swapped: [],
       sorted: [...sorted],
+      i,
+      j: null,
+      minIdx,
       cppLine: 4, pythonLine: 4,
       description: `第 ${i + 1} 轮：在 [${i}..${n - 1}] 中寻找最小值，初始假设 arr[${i}]=${arr[i]} 最小`,
     })
@@ -24,8 +46,11 @@ export function selectionSort(input) {
         comparing: [minIdx, j],
         swapped: [],
         sorted: [...sorted],
+        i,
+        j,
+        minIdx,
         cppLine: 6, pythonLine: 6,
-        description: `比较 arr[${j}]=${arr[j]} 与当前最小 arr[${minIdx}]=${arr[minIdx]}`,
+        description: `比较 arr[${j}]=${arr[j]} 与当前最小 arr[${minIdx}]=${arr[minIdx]}${arr[j] === arr[minIdx] ? ' （相等）' : ''}`,
       })
       if (arr[j] < arr[minIdx]) {
         minIdx = j
@@ -34,7 +59,10 @@ export function selectionSort(input) {
           comparing: [minIdx],
           swapped: [],
           sorted: [...sorted],
-          cppLine: 7, pythonLine: 7,
+          i,
+          j,
+          minIdx,
+          cppLine: 6, pythonLine: 7,
           description: `更新最小值索引为 ${minIdx}（值 ${arr[minIdx]}）`,
         })
       }
@@ -47,7 +75,10 @@ export function selectionSort(input) {
         comparing: [],
         swapped: [i, minIdx],
         sorted: [...sorted],
-        cppLine: 9, pythonLine: 9,
+        i,
+        j: null,
+        minIdx,
+        cppLine: 8, pythonLine: 9,
         description: `交换 arr[${i}] 与 arr[${minIdx}]，最小值就位`,
       })
     } else {
@@ -56,6 +87,11 @@ export function selectionSort(input) {
         comparing: [],
         swapped: [],
         sorted: [...sorted],
+        i,
+        j: null,
+        minIdx,
+        cppLine: 8,
+        pythonLine: 8,
         description: `arr[${i}] 已是最小，无需交换`,
       })
     }
@@ -68,6 +104,8 @@ export function selectionSort(input) {
     comparing: [],
     swapped: [],
     sorted: [...Array(n).keys()],
+    cppLine: 9,
+    pythonLine: 10,
     description: '排序完成',
   })
   return steps

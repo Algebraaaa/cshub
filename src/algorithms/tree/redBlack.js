@@ -18,7 +18,7 @@ export function rbInsertSequence(values) {
   const tree = { root: null, nextId: 0 }
   const steps = []
 
-  function snap(highlight, description) {
+  function snap(highlight, description, cppLine = null, pythonLine = null) {
     const positions = layout(tree.root)
     const nodes = []
     const edges = []
@@ -28,7 +28,10 @@ export function rbInsertSequence(values) {
       if (n.left) edges.push({ from: n.id, to: n.left.id })
       if (n.right) edges.push({ from: n.id, to: n.right.id })
     })
-    steps.push({ nodes, edges, highlight: highlight ?? null, description })
+    const step = { nodes, edges, highlight: highlight ?? null, description }
+    if (cppLine !== null) step.cppLine = cppLine
+    if (pythonLine !== null) step.pythonLine = pythonLine
+    steps.push(step)
   }
 
   for (const v of values) {
@@ -64,28 +67,28 @@ function fixup(tree, z, snap) {
 
     if (z.parent === grandparent.left) {
       const uncle = grandparent.right
-      if (uncle && uncle.color === RED) {
-        // case 1
-        z.parent.color = BLACK
-        uncle.color = BLACK
-        grandparent.color = RED
-        snap(grandparent.id, `Case 1: 叔叔 ${uncle.value} 是红色，父叔变黑、祖父变红`)
-        z = grandparent
-      } else {
-        if (z === z.parent.right) {
-          // case 2
-          z = z.parent
-          snap(z.id, `Case 2: z 是父的右孩子，对父 ${z.value} 左旋`)
-          rotateLeft(tree, z)
-          snap(z.id, `左旋完成`)
+        if (uncle && uncle.color === RED) {
+          // case 1
+          z.parent.color = BLACK
+          uncle.color = BLACK
+          grandparent.color = RED
+          snap(grandparent.id, `Case 1: 叔叔 ${uncle.value} 是红色，父叔变黑、祖父变红`, 29, 32)
+          z = grandparent
+        } else {
+          if (z === z.parent.right) {
+            // case 2
+            z = z.parent
+            snap(z.id, `Case 2: z 是父的右孩子，对父 ${z.value} 左旋`, 36, 39)
+            rotateLeft(tree, z)
+            snap(z.id, `左旋完成`, 36, 39)
+          }
+          // case 3
+          z.parent.color = BLACK
+          grandparent.color = RED
+          snap(grandparent.id, `Case 3: 父变黑、祖父 ${grandparent.value} 变红，对祖父右旋`, 40, 42)
+          rotateRight(tree, grandparent)
+          snap(z.parent ? z.parent.id : null, `右旋完成`, 40, 42)
         }
-        // case 3
-        z.parent.color = BLACK
-        grandparent.color = RED
-        snap(grandparent.id, `Case 3: 父变黑、祖父 ${grandparent.value} 变红，对祖父右旋`)
-        rotateRight(tree, grandparent)
-        snap(z.parent ? z.parent.id : null, `右旋完成`)
-      }
     } else {
       // mirror
       const uncle = grandparent.left

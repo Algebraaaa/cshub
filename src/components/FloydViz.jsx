@@ -1,8 +1,6 @@
 export default function FloydViz({ stepData }) {
   if (!stepData) return null
   const { dist, nodes, k, i, j, relaxed, phase } = stepData
-  const n = nodes.length
-
   const fmt = (v) => (v === Infinity ? '∞' : v)
 
   function cellStyle(r, c) {

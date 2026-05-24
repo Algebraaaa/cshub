@@ -23,7 +23,7 @@ export default function RBTreeViz({ stepData }) {
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`}
       style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', minHeight: 240 }}>
-      {edges.map((e, i) => {
+      {edges.map((e) => {
         const a = nodeMap[e.from]
         const b = nodeMap[e.to]
         if (!a || !b) return null

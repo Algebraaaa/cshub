@@ -2,7 +2,7 @@ const NODE = 36
 
 export default function CountingSortViz({ stepData }) {
   if (!stepData) return null
-  const { input, counts, prefix, output, phase, activeInputIdx, activeCountVal, activeOutputIdx } = stepData
+  const { input, counts, output, phase, activeInputIdx, activeCountVal, activeOutputIdx } = stepData
   const maxCount = Math.max(...counts, 1)
 
   return (

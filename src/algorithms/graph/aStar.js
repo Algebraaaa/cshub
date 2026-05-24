@@ -21,7 +21,7 @@ export function aStar(grid, startPos, endPos) {
 
   function key(r, c) { return `${r},${c}` }
 
-  function snapshot(current, desc) {
+  function snapshot(current, desc, cppLine, pythonLine) {
     steps.push({
       grid: grid.map(r => [...r]),
       g: g.map(r => [...r]),
@@ -32,11 +32,13 @@ export function aStar(grid, startPos, endPos) {
       start: [sr, sc],
       end: [er, ec],
       path: null,
+      cppLine,
+      pythonLine,
       description: desc,
     })
   }
 
-  snapshot(null, `A* 搜索开始：起点 (${sr},${sc})，终点 (${er},${ec})。h(n) 使用曼哈顿距离，f(n)=g(n)+h(n)。`)
+  snapshot(null, `A* 搜索开始：起点 (${sr},${sc})，终点 (${er},${ec})。h(n) 使用曼哈顿距离，f(n)=g(n)+h(n)。`, 11, 9)
 
   const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]
 
@@ -48,7 +50,7 @@ export function aStar(grid, startPos, endPos) {
     const cur = open.get(bestKey)
     open.delete(bestKey)
 
-    snapshot(cur, `从 open 集取出 f 值最小节点 (${cur.r},${cur.c})：g=${g[cur.r][cur.c]}，h=${heuristic([cur.r,cur.c],[er,ec])}，f=${f[cur.r][cur.c].toFixed(1)}。`)
+    snapshot(cur, `从 open 集取出 f 值最小节点 (${cur.r},${cur.c})：g=${g[cur.r][cur.c]}，h=${heuristic([cur.r,cur.c],[er,ec])}，f=${f[cur.r][cur.c].toFixed(1)}。`, 14, 12)
 
     if (cur.r === er && cur.c === ec) {
       const path = []
@@ -61,6 +63,8 @@ export function aStar(grid, startPos, endPos) {
       }
       const last = steps[steps.length - 1]
       last.path = path
+      last.cppLine = 15
+      last.pythonLine = 13
       last.description = `到达终点！最短路径长度 ${g[er][ec]}，路径共 ${path.length} 个节点。`
       return steps
     }
@@ -79,13 +83,15 @@ export function aStar(grid, startPos, endPos) {
         g[nr][nc] = newG
         f[nr][nc] = newG + heuristic([nr, nc], [er, ec])
         open.set(key(nr, nc), { r: nr, c: nc })
-        snapshot(cur, `更新邻居 (${nr},${nc})：新 g=${newG}，h=${heuristic([nr,nc],[er,ec])}，f=${f[nr][nc]}，加入 open 集。`)
+        snapshot(cur, `更新邻居 (${nr},${nc})：新 g=${newG}，h=${heuristic([nr,nc],[er,ec])}，f=${f[nr][nc]}，加入 open 集。`, 29, 30)
       }
     }
   }
 
   steps.push({
     ...steps[steps.length - 1],
+    cppLine: 33,
+    pythonLine: 31,
     description: `open 集为空，无法到达终点 (${er},${ec})。`,
   })
   return steps

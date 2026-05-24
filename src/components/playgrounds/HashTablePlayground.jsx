@@ -47,7 +47,7 @@ function actionColors(action) {
   return { bg: 'var(--surface-2)', fg: 'var(--text-primary)' }
 }
 
-export default function HashTablePlayground({ algoFn, algoSlug }) {
+export default function HashTablePlayground({ algoFn }) {
   const [preset, setPreset] = useState('basic')
   const [customOps, setCustomOps] = useState(null)
   const [inputText, setInputText] = useState('')

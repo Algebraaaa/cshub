@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
 import FloydViz from '../FloydViz'
 import GraphViz from '../GraphViz'
-import StepController, { useStepController } from '../StepController'
+import PlaygroundShell from './PlaygroundShell'
 
 const FLOYD_GRAPH = {
   nodes: [
@@ -24,54 +23,35 @@ const FLOYD_GRAPH = {
   ],
 }
 
-export default function FloydPlayground({ algoFn }) {
-  const steps = useMemo(() => algoFn(FLOYD_GRAPH), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+const PRESETS = [{ id: 'default', label: '默认图（5 节点 9 边）', graph: FLOYD_GRAPH }]
 
-  // Build visited/active sets for GraphViz coloring
+export default function FloydPlayground({ algoFn }) {
+  return (
+    <PlaygroundShell
+      presets={PRESETS}
+      computeSteps={(p) => algoFn(p.graph)}
+      renderViz={({ current }) => <FloydPanel current={current} graph={FLOYD_GRAPH} />}
+    />
+  )
+}
+
+function FloydPanel({ current, graph }) {
   const graphStep = current ? {
-    visited: current.phase === 'done' ? FLOYD_GRAPH.nodes.map(n => n.id) : (current.k != null ? [FLOYD_GRAPH.nodes[current.k]?.id] : []),
-    current: current.i != null ? FLOYD_GRAPH.nodes[current.i]?.id : null,
+    visited: current.phase === 'done' ? graph.nodes.map(n => n.id) : (current.k != null ? [graph.nodes[current.k]?.id] : []),
+    current: current.i != null ? graph.nodes[current.i]?.id : null,
     dist: current.dist ? buildDistObj(current.nodes, current.dist) : null,
   } : null
 
   return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        {/* Graph view */}
-        <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 10,
-          padding: '16px 12px',
-          overflow: 'hidden',
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 8 }}>
-            图结构
-          </div>
-          <GraphViz graph={FLOYD_GRAPH} stepData={graphStep} />
-        </div>
-
-        {/* Matrix view */}
-        <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 10,
-          padding: '16px 12px',
-          overflow: 'auto',
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: 8 }}>
-            距离矩阵 dist[i][j]
-          </div>
-          <FloydViz stepData={current} />
-        </div>
+    <div className="mb-4 grid grid-cols-2 gap-4">
+      <div className="overflow-hidden rounded-glass-md border border-border-soft bg-surface px-3 py-4">
+        <div className="section-eyebrow mb-2">图结构</div>
+        <GraphViz graph={graph} stepData={graphStep} />
       </div>
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
+      <div className="overflow-auto rounded-glass-md border border-border-soft bg-surface px-3 py-4">
+        <div className="section-eyebrow mb-2">距离矩阵 dist[i][j]</div>
+        <FloydViz stepData={current} />
+      </div>
     </div>
   )
 }

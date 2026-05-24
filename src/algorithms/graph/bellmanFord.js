@@ -23,6 +23,8 @@ export function bellmanFord(graph, startId) {
     current: startId,
     highlightEdges: [],
     round: 0,
+    cppLine: 6,
+    pythonLine: 4,
     description: `初始化：dist[${startId}]=0，其余=∞。将进行 V-1=${graph.nodes.length - 1} 轮松弛`,
   })
 
@@ -35,6 +37,7 @@ export function bellmanFord(graph, startId) {
       current: null,
       highlightEdges: [],
       round: i,
+      cppLine: 8, pythonLine: 6,
       description: `第 ${i} 轮：依次尝试松弛所有 ${directedEdges.length} 条有向边`,
     })
 
@@ -47,6 +50,7 @@ export function bellmanFord(graph, startId) {
         current: e.to,
         highlightEdges: [[e.from, e.to]],
         round: i,
+        cppLine: 11, pythonLine: 9,
         description: `松弛 ${e.from}→${e.to}：dist[${e.from}]+${e.weight}=${newDist} vs dist[${e.to}]=${dist[e.to] === Infinity ? '∞' : dist[e.to]}`,
       })
       if (newDist < dist[e.to]) {
@@ -59,6 +63,7 @@ export function bellmanFord(graph, startId) {
           current: e.to,
           highlightEdges: [[e.from, e.to]],
           round: i,
+          cppLine: 12, pythonLine: 10,
           description: `更新 dist[${e.to}] = ${newDist}`,
         })
       }
@@ -71,6 +76,7 @@ export function bellmanFord(graph, startId) {
         current: null,
         highlightEdges: [],
         round: i,
+        cppLine: 16, pythonLine: 12,
         description: `第 ${i} 轮无更新，提前收敛`,
       })
       break
@@ -92,6 +98,7 @@ export function bellmanFord(graph, startId) {
     current: null,
     highlightEdges: [],
     round: V,
+    cppLine: 25, pythonLine: 19,
     description: hasNegativeCycle
       ? '检测到负权环！此图存在权重总和为负的环路'
       : 'Bellman-Ford 完成，未检测到负环',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import StepController, { useStepController } from '../StepController'
 import ElevatorViz from '../ElevatorViz'
 

@@ -135,7 +135,7 @@ export default function LinkedListPlayground({ algoFn }) {
           })}
 
           {/* Nodes */}
-          {nodes.map((n, i) => {
+          {nodes.map((n) => {
             const p = posMap[n.id]
             const ac = actionColor(n.id)
             const isNull = n.nextId === null

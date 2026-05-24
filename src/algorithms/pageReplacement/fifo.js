@@ -43,6 +43,8 @@ export function fifo(pages, capacity = 3) {
       replaced,
       capacity,
       queue: [...queue],
+      cppLine: fault ? (replaced !== null ? 10 : 14) : 7,
+      pythonLine: fault ? (replaced !== null ? 10 : 12) : 7,
       description: `访问页面 ${page}: ${fault ? (replaced !== null ? `缺页退出，淘汰页面 ${replaced}` : '缺页，存入空闲帧') : '缓存命中'}`,
       faults
     })

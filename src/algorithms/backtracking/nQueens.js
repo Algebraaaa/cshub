@@ -22,7 +22,9 @@ export function nQueens({ n = 8 }) {
         col: -1,
         status: 'solved',
         solutionCount,
-        n
+        n,
+        cppLine: 5,
+        pythonLine: 4
       })
       return
     }
@@ -34,17 +36,21 @@ export function nQueens({ n = 8 }) {
         col,
         status: 'trying',
         solutionCount,
-        n
+        n,
+        cppLine: 8,
+        pythonLine: 6
       })
 
       if (isValid(row, col)) {
         steps.push({
-          queens: [...queens, col], // temporarily show it there to highlight green
+          queens: [...queens, col],
           row,
           col,
           status: 'valid',
           solutionCount,
-          n
+          n,
+          cppLine: 10,
+          pythonLine: 8
         })
         
         queens.push(col)
@@ -57,7 +63,9 @@ export function nQueens({ n = 8 }) {
           col,
           status: 'backtrack',
           solutionCount,
-          n
+          n,
+          cppLine: 12,
+          pythonLine: 10
         })
       } else {
         steps.push({
@@ -66,7 +74,9 @@ export function nQueens({ n = 8 }) {
           col,
           status: 'invalid',
           solutionCount,
-          n
+          n,
+          cppLine: 9,
+          pythonLine: 7
         })
       }
     }

@@ -36,7 +36,10 @@ export function fcfs(requests, initialHead) {
       targetTrack: track,
       moveDistance,
       path: [...path],
-      totalSteps
+      totalSteps,
+      cppLine: 5,
+      pythonLine: 5,
+      description: `访问磁道 ${track}：寻道距离 ${moveDistance}，当前总寻道 ${totalSeek}`
     });
   }
 

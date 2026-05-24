@@ -61,7 +61,10 @@ export function scan(requests, initialHead, maxTrack = 200, direction = 'up') {
       targetTrack: target,
       moveDistance,
       path: [...path],
-      totalSteps
+      totalSteps,
+      cppLine: 29,
+      pythonLine: 21,
+      description: `磁头向 ${direction === 'up' ? '高' : '低'} 磁道移动：到达磁道 ${target}，寻道距离 ${moveDistance}`
     });
   }
 

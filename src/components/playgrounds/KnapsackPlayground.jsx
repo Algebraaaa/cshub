@@ -1,63 +1,66 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar, ToolbarBtn, TextInput } from './shared'
+import PlaygroundShell from './PlaygroundShell'
+import { StringField } from './inputs/NumberInput'
 
-const DEFAULT_ITEMS = [
-  { weight: 2, value: 6 },
-  { weight: 2, value: 10 },
-  { weight: 3, value: 12 },
+const EX1_ITEMS = [{ weight: 2, value: 6 }, { weight: 2, value: 10 }, { weight: 3, value: 12 }]
+const EX2_ITEMS = [{ weight: 1, value: 1 }, { weight: 3, value: 4 }, { weight: 4, value: 5 }, { weight: 5, value: 7 }]
+
+const itemsToText = (items) => items.map(i => `${i.weight},${i.value}`).join(' ')
+
+const PRESETS = [
+  {
+    id: 'ex1', label: '示例 1',
+    state: { items: EX1_ITEMS, capacity: 5, itemText: itemsToText(EX1_ITEMS), capText: '5' },
+  },
+  {
+    id: 'ex2', label: '示例 2',
+    state: { items: EX2_ITEMS, capacity: 7, itemText: itemsToText(EX2_ITEMS), capText: '7' },
+  },
 ]
-const DEFAULT_CAP = 5
+
+const INITIAL = { items: EX1_ITEMS, capacity: 5, itemText: itemsToText(EX1_ITEMS), capText: '5' }
+
+const thStyle = { padding: '6px 10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', textAlign: 'center', minWidth: 38, fontWeight: 600 }
+const tdStyle = { padding: '6px 10px', border: '1px solid var(--border)', textAlign: 'center', minWidth: 38 }
 
 export default function KnapsackPlayground({ algoFn }) {
-  const [items, setItems] = useState(DEFAULT_ITEMS)
-  const [capacity, setCapacity] = useState(DEFAULT_CAP)
-  const [itemText, setItemText] = useState(DEFAULT_ITEMS.map(i => `${i.weight},${i.value}`).join(' '))
-  const [capText, setCapText] = useState(String(DEFAULT_CAP))
+  return (
+    <PlaygroundShell
+      initialState={INITIAL}
+      presets={PRESETS}
+      derivePayload={s => ({ items: s.items, capacity: s.capacity })}
+      computeSteps={p => algoFn(p.items, p.capacity)}
+      extraToolbar={({ state, setState, ctrl }) => {
+        function apply() {
+          const parsed = state.itemText.trim().split(/\s+/).map(s => {
+            const [w, v] = s.split(',').map(Number)
+            return { weight: w, value: v }
+          }).filter(i => !isNaN(i.weight) && !isNaN(i.value))
+          const cap = parseInt(state.capText, 10)
+          if (parsed.length && cap > 0 && cap <= 20) {
+            setState({ ...state, items: parsed, capacity: cap })
+            ctrl.reset()
+          }
+        }
+        return (
+          <>
+            <StringField state={state} setState={setState} textField="itemText"
+              label="物品 (重量,价值)：" width={220} placeholder="2,6 2,10 3,12" onApply={apply} />
+            <StringField state={state} setState={setState} textField="capText"
+              label="容量：" width={60} onApply={apply} submitLabel="应用" />
+          </>
+        )
+      }}
+      renderViz={({ current, state }) => <KnapsackPanel current={current} items={state.items} capacity={state.capacity} />}
+    />
+  )
+}
 
-  const steps = useMemo(() => algoFn(items, capacity), [items, capacity, algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-
-  function apply() {
-    const parsed = itemText.trim().split(/\s+/).map(s => {
-      const [w, v] = s.split(',').map(Number)
-      return { weight: w, value: v }
-    }).filter(i => !isNaN(i.weight) && !isNaN(i.value))
-    const cap = parseInt(capText)
-    if (parsed.length && cap > 0 && cap <= 20) {
-      setItems(parsed); setCapacity(cap); ctrl.reset()
-    }
-  }
-
+function KnapsackPanel({ current, items, capacity }) {
   const { dp, highlight } = current || {}
 
   return (
-    <div>
-      <Toolbar>
-        <ToolbarBtn onClick={() => {
-          setItems(DEFAULT_ITEMS); setCapacity(DEFAULT_CAP)
-          setItemText('2,6 2,10 3,12'); setCapText('5'); ctrl.reset()
-        }}>示例 1</ToolbarBtn>
-        <ToolbarBtn onClick={() => {
-          const it = [{weight:1,value:1},{weight:3,value:4},{weight:4,value:5},{weight:5,value:7}]
-          setItems(it); setCapacity(7)
-          setItemText(it.map(i => `${i.weight},${i.value}`).join(' ')); setCapText('7'); ctrl.reset()
-        }}>示例 2</ToolbarBtn>
-        <div style={{ flex: 1 }} />
-      </Toolbar>
-
-      <Toolbar>
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>物品 (重量,价值)：</span>
-        <TextInput value={itemText} onChange={setItemText} placeholder="2,6 2,10 3,12"
-          onSubmit={apply} width={220} />
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>容量：</span>
-        <TextInput value={capText} onChange={setCapText} onSubmit={apply} width={60} submitLabel="应用" />
-      </Toolbar>
-
-      <div style={{
-        display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap',
-      }}>
+    <>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {items.map((item, i) => (
           <div key={i} style={{
             padding: '8px 12px', borderRadius: 6,
@@ -113,14 +116,6 @@ export default function KnapsackPlayground({ algoFn }) {
           </table>
         </div>
       )}
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
-    </div>
+    </>
   )
 }
-
-const thStyle = { padding: '6px 10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-secondary)', textAlign: 'center', minWidth: 38, fontWeight: 600 }
-const tdStyle = { padding: '6px 10px', border: '1px solid var(--border)', textAlign: 'center', minWidth: 38 }

@@ -10,7 +10,7 @@ export default function MergeSortViz({ stepData }) {
   const {
     arr, elementLevel, elementPos,
     leftRange, rightRange, level: activeLevel,
-    iPos, jPos, kPos,
+    kPos,
     comparingIds, chosenId, chosenSide,
     tree, maxDepth,
     phase,

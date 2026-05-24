@@ -17,34 +17,6 @@ const PRESETS = {
 
 const NODE_R = 18
 
-function collectNodes(root, nodes = [], edges = [], parentId = null, depth = 0, offset = { x: 0 }) {
-  const id = root.id
-  nodes.push({ id, char: root.char, isEnd: root.isEnd, depth, x: 0, y: depth * 72 + 40 })
-
-  const childKeys = Object.keys(root.children)
-  if (childKeys.length === 0) {
-    nodes[nodes.length - 1].x = offset.x
-    offset.x += 52
-  } else {
-    const start = offset.x
-    for (const k of childKeys) {
-      if (parentId !== null) {}
-      collectNodes(root.children[k], nodes, edges, id, depth + 1, offset)
-    }
-    const end = offset.x
-    nodes[nodes.length - childKeys.length - 1 - (nodes.findIndex(n => n.id === id))].x = (start + end) / 2
-    // fix x of current node
-    const me = nodes.find(n => n.id === id)
-    me.x = (start + end - 52) / 2
-    if (parentId !== null) edges.push({ from: parentId, to: id })
-  }
-  if (parentId !== null) {
-    if (!edges.find(e => e.from === parentId && e.to === id))
-      edges.push({ from: parentId, to: id })
-  }
-  return { nodes, edges }
-}
-
 function layoutTrie(root) {
   const nodes = []
   const edges = []
