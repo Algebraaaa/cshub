@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { AI_PLAYGROUND_LOADERS } from './aiPlaygroundRegistry'
+import { AIPlaygroundTelemetryProvider } from './AIPlaygroundTelemetryContext'
 
 const AI_PLAYGROUND_COMPONENTS = Object.fromEntries(
   Object.entries(AI_PLAYGROUND_LOADERS).map(([viz, loader]) => [viz, lazy(loader)])
@@ -9,7 +10,7 @@ function PlaygroundFallback() {
   return <div style={{ minHeight: 260 }} aria-busy="true" />
 }
 
-export default function AIPlaygroundFor({ viz }) {
+export default function AIPlaygroundFor({ viz, onSnapshotChange }) {
   const Playground = AI_PLAYGROUND_COMPONENTS[viz]
 
   if (!Playground) {
@@ -22,7 +23,9 @@ export default function AIPlaygroundFor({ viz }) {
 
   return (
     <Suspense fallback={<PlaygroundFallback />}>
-      <Playground />
+      <AIPlaygroundTelemetryProvider onSnapshotChange={onSnapshotChange}>
+        <Playground />
+      </AIPlaygroundTelemetryProvider>
     </Suspense>
   )
 }

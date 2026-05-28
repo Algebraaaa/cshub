@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import StepController, { useStepController } from '../StepController'
 import { Toolbar, ToolbarBtn, Legend } from './shared'
 import { useIsPhone } from '../../hooks/useMediaQuery'
+import { useAIPlaygroundTelemetry } from '../ai-playgrounds/AIPlaygroundTelemetryContext'
 
 // ─────────────────────────────────────────────────────────────
 // PlaygroundShell · 模板方法（Template Method）
@@ -63,6 +64,19 @@ export default function PlaygroundShell({
   const steps = useMemo(() => computeSteps(payload), [computeSteps, payload])
   const ctrl = useStepController(steps)
   const current = steps[ctrl.step]
+  const reportAIPlaygroundStep = useAIPlaygroundTelemetry()
+
+  useEffect(() => {
+    if (!reportAIPlaygroundStep || !current) return
+    reportAIPlaygroundStep({
+      current,
+      currentStep: ctrl.step,
+      total: steps.length,
+      presetId,
+      state,
+      payload,
+    })
+  }, [reportAIPlaygroundStep, current, ctrl.step, steps.length, presetId, state, payload])
 
   const selectPreset = useCallback((p) => {
     setPresetId(p.id)

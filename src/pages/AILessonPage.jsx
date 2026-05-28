@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AI_CURRICULUM, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
@@ -8,11 +8,11 @@ import ChapterNav from '../features/music/components/ChapterNav'
 
 const AIPlaygroundFor = lazy(() => import('../components/ai-playgrounds/AIPlaygroundFor'))
 
-function AIExercise({ exercise }) {
+function AIExercise({ exercise, onSnapshotChange }) {
   if (!exercise || exercise.type !== 'playground') return null
   return (
     <Suspense fallback={<div className="h-64 bg-surface rounded-lg animate-pulse" />}>
-      <AIPlaygroundFor viz={exercise.viz} />
+      <AIPlaygroundFor viz={exercise.viz} onSnapshotChange={onSnapshotChange} />
     </Suspense>
   )
 }
@@ -20,11 +20,35 @@ function AIExercise({ exercise }) {
 export default function AILessonPage() {
   const { lessonId } = useParams()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [playgroundSnapshot, setPlaygroundSnapshot] = useState(null)
+  const snapshotKeyRef = useRef('')
   const lesson = AI_LESSON_MAP[lessonId]
   const { isCompleted, markComplete, progress } = useCourseProgress(
     AI_CURRICULUM.id,
     AI_TOTAL_LESSONS
   )
+
+  useEffect(() => {
+    snapshotKeyRef.current = ''
+    setPlaygroundSnapshot(null)
+  }, [lessonId])
+
+  const handlePlaygroundSnapshot = useCallback((snapshot) => {
+    const current = snapshot?.current || {}
+    const key = JSON.stringify({
+      lessonId,
+      presetId: snapshot?.presetId,
+      currentStep: snapshot?.currentStep,
+      total: snapshot?.total,
+      state: snapshot?.state,
+      loss: typeof current.loss === 'number' ? Number(current.loss.toFixed(6)) : current.loss,
+      x: typeof current.x === 'number' ? Number(current.x.toFixed(6)) : current.x,
+      y: typeof current.y === 'number' ? Number(current.y.toFixed(6)) : current.y,
+    })
+    if (snapshotKeyRef.current === key) return
+    snapshotKeyRef.current = key
+    setPlaygroundSnapshot(snapshot)
+  }, [lessonId])
 
   if (!lesson) {
     return (
@@ -82,7 +106,7 @@ export default function AILessonPage() {
       </div>
 
       {/* Main */}
-      <main className="flex-1 px-6 py-8 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-8 sm:px-5 2xl:px-6">
         <Link
           to="/ai-course"
           className="lg:hidden flex items-center gap-1 text-fg-muted hover:text-fg text-sm mb-6 transition-colors"
@@ -94,7 +118,10 @@ export default function AILessonPage() {
           lesson={lesson}
           completed={isCompleted(lessonId)}
           onComplete={() => markComplete(lessonId)}
-          exerciseSlot={lesson.exercise ? <AIExercise exercise={lesson.exercise} /> : null}
+          playgroundSnapshot={playgroundSnapshot}
+          exerciseSlot={lesson.exercise ? (
+            <AIExercise exercise={lesson.exercise} onSnapshotChange={handlePlaygroundSnapshot} />
+          ) : null}
         />
 
         <ChapterNav

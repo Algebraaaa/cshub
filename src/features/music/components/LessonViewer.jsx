@@ -7,7 +7,6 @@ import CodeBlock from '../../../components/learning/CodeBlock'
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath]
 const REHYPE_PLUGINS = [rehypeKatex]
-const RICH_EXERCISE_LESSON_ID = 'optim-gd-variants'
 
 const LANGS = [
   { key: 'cpp', label: 'C++', ext: 'cpp' },
@@ -35,23 +34,17 @@ const VARIANT_LEARNING_RATES = {
   mini: 0.0015,
 }
 
-const CODE_HIGHLIGHT_LINES = {
-  cpp: { bgd: 25, sgd: 18, mini: 21 },
-  python: { bgd: 11, sgd: 5, mini: 8 },
-}
-
-export default function LessonViewer({ lesson, completed, onComplete, exerciseSlot }) {
+export default function LessonViewer({ lesson, completed, onComplete, exerciseSlot, playgroundSnapshot }) {
   const [lang, setLang] = useState('cpp')
   const [activeTab, setActiveTab] = useState('why')
   const [quizChoice, setQuizChoice] = useState(null)
   const [quizRevealed, setQuizRevealed] = useState(false)
   const [note, setNote] = useState('')
-  const [codeFocus, setCodeFocus] = useState('bgd')
   if (!lesson) return null
 
-  const isRichExercise = lesson.id === RICH_EXERCISE_LESSON_ID && !!lesson.code && !!exerciseSlot
+  const isRichExercise = !!lesson.code && !!exerciseSlot
   const articleClass = isRichExercise
-    ? 'w-full max-w-[1700px] mx-auto pb-16'
+    ? 'w-full max-w-[1700px] min-w-0 mx-auto pb-16'
     : 'max-w-2xl mx-auto pb-16'
   const currentLang = LANGS.find(item => item.key === lang) || LANGS[0]
 
@@ -79,8 +72,7 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
             lang={lang}
             currentLang={currentLang}
             onLangChange={setLang}
-            codeFocus={codeFocus}
-            onCodeFocusChange={setCodeFocus}
+            playgroundSnapshot={playgroundSnapshot}
           />
         ) : (
           <section className="mb-8 p-4 rounded-xl bg-surface border border-border-soft">
@@ -142,38 +134,33 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
   )
 }
 
-function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, codeFocus, onCodeFocusChange }) {
-  const highlightLine = CODE_HIGHLIGHT_LINES[lang]?.[codeFocus] ?? null
-
-  function handleVisualClickCapture(event) {
-    const button = event.target.closest?.('button')
-    const label = button?.textContent?.trim().toLowerCase()
-    if (!label) return
-    if (label.includes('mini')) onCodeFocusChange('mini')
-    else if (label.includes('sgd')) onCodeFocusChange('sgd')
-    else if (label.includes('bgd')) onCodeFocusChange('bgd')
-  }
+function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, playgroundSnapshot }) {
+  const codeFocus = getCodeFocus(lesson, playgroundSnapshot)
+  const highlightLine = getHighlightLine(lesson, lang, codeFocus, playgroundSnapshot)
+  const snapshot = buildVariableSnapshot(lesson, playgroundSnapshot, codeFocus)
+  const stepLabel = playgroundSnapshot?.currentStep != null
+    ? `step ${playgroundSnapshot.currentStep + 1}`
+    : '当前预设'
 
   return (
-    <section
-      data-ai-rich-exercise="optim-gd-variants"
-      className="mb-8 rounded-xl bg-surface border border-border-soft p-4 lg:p-5 min-h-[660px]"
-    >
+      <section
+        data-ai-rich-exercise={lesson.id}
+        className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5 min-h-[660px]"
+      >
       <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">
         互动练习
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(560px,0.58fr)_minmax(420px,0.42fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(460px,0.42fr)] gap-4 xl:min-h-[600px]">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:min-h-[600px] xl:grid-cols-[minmax(0,0.6fr)_minmax(340px,0.4fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(440px,0.42fr)]">
         <div
           data-ai-rich-visual
-          onClickCapture={handleVisualClickCapture}
-          className="min-h-[560px] rounded-lg border border-border-soft bg-[#0b0d10] p-4"
+          className="min-w-0 min-h-[560px] rounded-lg border border-border-soft bg-[#0b0d10] p-3 lg:p-4"
         >
           {exerciseSlot}
         </div>
 
-        <aside data-ai-rich-code className="min-h-[560px] rounded-lg border border-border-soft bg-[var(--bg-elev)] p-3 flex flex-col gap-3 overflow-hidden">
-          <VariableSnapshot snapshot={lesson.variablesSnapshot} codeFocus={codeFocus} />
+        <aside data-ai-rich-code className="min-w-0 min-h-[560px] rounded-lg border border-border-soft bg-[var(--bg-elev)] p-3 flex flex-col gap-3 overflow-hidden">
+          <VariableSnapshot snapshot={snapshot} />
 
           <div className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center gap-2 mb-2">
@@ -203,14 +190,15 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, c
               <CodeBlock
                 code={lesson.code?.[lang] || ''}
                 lang={lang}
-                title={`gd_variants.${currentLang.ext}`}
+                title={`${lesson.id}.${currentLang.ext}`}
                 highlightLine={highlightLine}
                 noAutoScroll
                 fill
               />
             </div>
             <div className="mt-2 text-[11px] leading-5 text-fg-faint">
-              当前高亮：{VARIANT_LABELS[codeFocus]} 相关更新逻辑。点击左侧 BGD / SGD / Mini-batch 按钮会同步切换高亮。
+              当前高亮：{lesson.codeFocusLabels?.[codeFocus] ?? VARIANT_LABELS[codeFocus] ?? codeFocus}，{stepLabel} 对应代码行。
+              动画步进、播放和左侧预设切换会同步更新变量与代码。
             </div>
           </div>
         </aside>
@@ -219,13 +207,8 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, c
   )
 }
 
-function VariableSnapshot({ snapshot = {}, codeFocus }) {
-  const rows = [
-    ['variant', VARIANT_LABELS[codeFocus] ?? snapshot.variant ?? '-'],
-    ['learningRate', VARIANT_LEARNING_RATES[codeFocus] ?? snapshot.learningRate ?? '-'],
-    ['position', snapshot.position ?? '-'],
-    ['loss', snapshot.loss ?? '-'],
-  ]
+function VariableSnapshot({ snapshot = {} }) {
+  const rows = Object.entries(snapshot)
 
   return (
     <section className="flex-shrink-0">
@@ -242,6 +225,68 @@ function VariableSnapshot({ snapshot = {}, codeFocus }) {
       </div>
     </section>
   )
+}
+
+function getCodeFocus(lesson, playgroundSnapshot) {
+  const explicit = playgroundSnapshot?.current?.codeFocus
+    ?? playgroundSnapshot?.current?.variant
+    ?? playgroundSnapshot?.state?.variant
+    ?? playgroundSnapshot?.presetId
+  return explicit || lesson.defaultCodeFocus || 'default'
+}
+
+function getHighlightLine(lesson, lang, codeFocus, playgroundSnapshot) {
+  const stepLineSet = lesson.codeStepHighlightLines?.[lang]
+  const stepLines = Array.isArray(stepLineSet)
+    ? stepLineSet
+    : stepLineSet?.[codeFocus] ?? stepLineSet?.default
+
+  if (stepLines?.length && playgroundSnapshot?.currentStep != null) {
+    const index = playgroundSnapshot.currentStep % stepLines.length
+    return stepLines[index]
+  }
+
+  return lesson.codeHighlightLines?.[lang]?.[codeFocus]
+    ?? lesson.codeHighlightLines?.[lang]?.default
+    ?? null
+}
+
+function buildVariableSnapshot(lesson, playgroundSnapshot, codeFocus) {
+  const base = { ...(lesson.variablesSnapshot || {}) }
+  const current = playgroundSnapshot?.current || {}
+  const state = playgroundSnapshot?.state || {}
+  const label = lesson.codeFocusLabels?.[codeFocus] ?? VARIANT_LABELS[codeFocus] ?? codeFocus
+
+  if (codeFocus && codeFocus !== 'default') base.variant = label
+  if (state.lr != null) base.learningRate = formatNumber(state.lr, 5)
+  if (state.learningRate != null) base.learningRate = formatNumber(state.learningRate, 5)
+  if (current.x != null && current.y != null) base.position = `(${formatNumber(current.x, 2)}, ${formatNumber(current.y, 2)})`
+  if (current.loss != null) base.loss = formatNumber(current.loss, 4)
+  if (current.fx != null) base.loss = formatNumber(current.fx, 4)
+  if (current.mse != null) base.mse = formatNumber(current.mse, 4)
+  if (current.accuracy != null) base.accuracy = `${Math.round(current.accuracy * 100)}%`
+  if (current.probability != null) base.probability = formatNumber(current.probability, 3)
+  if (current.prediction != null) base.prediction = current.prediction
+  if (current.k != null) base.k = current.k
+  if (current.radius != null) base.radius = formatNumber(current.radius, 3)
+  if (current.inertia != null) base.inertia = formatNumber(current.inertia, 3)
+  if (current.centroidShift != null) base.centroidShift = formatNumber(current.centroidShift, 3)
+  if (current.phase != null) base.phase = current.phase
+  if (current.impurity != null) base.impurity = formatNumber(current.impurity, 3)
+  if (current.margin != null) base.margin = formatNumber(current.margin, 3)
+  if (current.hingeLoss != null) base.hingeLoss = formatNumber(current.hingeLoss, 3)
+  if (current.supportVectors != null) base.supportVectors = current.supportVectors
+  if (current.w != null) base.weight = formatNumber(current.w, 3)
+  if (current.b != null) base.bias = formatNumber(current.b, 3)
+  if (playgroundSnapshot?.currentStep != null && playgroundSnapshot?.total != null) {
+    base.step = `${playgroundSnapshot.currentStep + 1} / ${playgroundSnapshot.total}`
+  }
+  return base
+}
+
+function formatNumber(value, digits = 3) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return value
+  return Number(value.toFixed(digits)).toString()
 }
 
 function LessonDetailTabs({

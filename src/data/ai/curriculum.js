@@ -804,6 +804,854 @@ $$L = -\\sum \\log P(x_t | x_{<t})$$
   ],
 }
 
+const OPTIMIZATION_ENRICHMENTS = {
+  'optim-gd-variants': {
+    defaultCodeFocus: 'bgd',
+    codeFocusLabels: { bgd: 'BGD', sgd: 'SGD', mini: 'Mini-batch' },
+    codeHighlightLines: {
+      cpp: { bgd: 25, sgd: 17, mini: 20 },
+      python: { bgd: 11, sgd: 5, mini: 8 },
+    },
+    codeStepHighlightLines: {
+      cpp: {
+        bgd: [15, 25, 26, 27],
+        sgd: [15, 17, 18, 19, 25, 26, 27],
+        mini: [15, 20, 21, 22, 25, 26, 27],
+      },
+      python: {
+        bgd: [2, 11, 12, 13],
+        sgd: [2, 4, 5, 6, 11, 12, 13],
+        mini: [2, 7, 8, 9, 11, 12, 13],
+      },
+    },
+  },
+  'optim-momentum': {
+    defaultCodeFocus: 'mom09',
+    codeFocusLabels: { 'no-mom': '无动量', mom09: 'β=0.9', mom05: 'β=0.5' },
+    codeHighlightLines: {
+      cpp: { 'no-mom': 8, mom09: 7, mom05: 7, default: 7 },
+      python: { 'no-mom': 5, mom09: 4, mom05: 4, default: 4 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [7, 8, 9, 10] },
+      python: { default: [2, 3, 4, 5] },
+    },
+    variablesSnapshot: { method: 'Momentum', beta: '0.9', learningRate: '0.02', velocity: '0.00', loss: '-' },
+    code: {
+      cpp: `struct State {
+    double x;
+    double velocity;
+};
+
+State momentum_step(State s, double lr, double beta) {
+    double g = grad(s.x);
+    s.velocity = beta * s.velocity + g;
+    s.x = s.x - lr * s.velocity;
+    return s;
+}`,
+      python: `def momentum_step(x, velocity, lr, beta):
+    g = grad(x)
+    velocity = beta * velocity + g
+    x = x - lr * velocity
+    return x, velocity`,
+    },
+    pseudocode: `procedure MOMENTUM(theta, velocity, learningRate, beta)
+    gradient <- grad(loss, theta)
+    velocity <- beta * velocity + gradient
+    theta <- theta - learningRate * velocity
+    return theta, velocity`,
+    bigO: { time: '每步计算一次梯度并更新一次速度，演示为 O(T)。', space: '除轨迹外只保存 velocity，在线更新为 O(1)。', note: 'T 是迭代步数。' },
+    compare: [
+      { method: '无动量', data: '当前梯度', strength: '简单直接', tradeoff: '狭长谷底容易震荡' },
+      { method: 'Momentum', data: '梯度 + 历史速度', strength: '一致方向加速', tradeoff: 'β 过大可能冲过头' },
+    ],
+    quiz: [{ q: 'Momentum 为什么能减少震荡？', options: ['历史速度会抵消来回变化的梯度分量', '它完全不计算梯度', '它把学习率固定为 0', '它只适用于分类问题'], answer: 0, explanation: '震荡方向的梯度符号经常反转，动量累计后会部分抵消；稳定方向则被持续累积。' }],
+  },
+  'optim-rmsprop': {
+    defaultCodeFocus: 'rms09',
+    codeFocusLabels: { rms09: 'β=0.9', rms099: 'β=0.99', fixed: '固定 lr' },
+    codeHighlightLines: {
+      cpp: { rms09: 8, rms099: 8, fixed: 9, default: 8 },
+      python: { rms09: 3, rms099: 3, fixed: 4, default: 3 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [7, 8, 9, 10] },
+      python: { default: [2, 3, 4, 5] },
+    },
+    variablesSnapshot: { method: 'RMSProp', beta: '0.9', cache: '0.00', learningRate: '0.1' },
+    code: {
+      cpp: `struct State {
+    double x;
+    double cache;
+};
+
+State rmsprop_step(State s, double lr, double beta, double eps) {
+    double g = grad(s.x);
+    s.cache = beta * s.cache + (1 - beta) * g * g;
+    s.x = s.x - lr * g / (sqrt(s.cache) + eps);
+    return s;
+}`,
+      python: `def rmsprop_step(x, cache, lr, beta, eps=1e-8):
+    g = grad(x)
+    cache = beta * cache + (1 - beta) * g * g
+    x = x - lr * g / ((cache ** 0.5) + eps)
+    return x, cache`,
+    },
+    pseudocode: `procedure RMSPROP(theta, cache, learningRate, beta)
+    gradient <- grad(loss, theta)
+    cache <- beta * cache + (1 - beta) * gradient^2
+    theta <- theta - learningRate * gradient / (sqrt(cache) + epsilon)
+    return theta, cache`,
+    bigO: { time: '每步一次梯度和一次逐元素缩放，O(Td)。', space: '需要为每个参数保存二阶滑动平均，O(d)。', note: 'd 是参数维度。' },
+    compare: [
+      { method: '固定 lr', data: '当前梯度', strength: '开销小', tradeoff: '各方向同一步长' },
+      { method: 'RMSProp', data: '梯度平方滑动平均', strength: '自动缩小陡峭方向步长', tradeoff: '需要 β 和 ε' },
+    ],
+    quiz: [{ q: 'RMSProp 中 cache 变大意味着什么？', options: ['该方向历史梯度较大，实际步长会变小', '学习率会变成无穷大', '梯度被直接置零', '模型已经过拟合'], answer: 0, explanation: '更新分母包含 sqrt(cache)，cache 越大，该方向的实际更新越小。' }],
+  },
+  'optim-adam': {
+    defaultCodeFocus: 'adam',
+    codeFocusLabels: { adam: 'Adam', 'adam-fast': '大 lr', 'adam-slow': '小 lr' },
+    codeHighlightLines: {
+      cpp: { adam: 10, 'adam-fast': 13, 'adam-slow': 13, default: 13 },
+      python: { adam: 7, 'adam-fast': 8, 'adam-slow': 8, default: 8 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [7, 8, 9, 10, 11, 12, 13, 14] },
+      python: { default: [2, 3, 4, 5, 6, 7, 8, 9] },
+    },
+    variablesSnapshot: { method: 'Adam', learningRate: '0.1', beta1: '0.9', beta2: '0.999' },
+    code: {
+      cpp: `struct AdamState {
+    double x, m, v;
+    int t;
+};
+
+AdamState adam_step(AdamState s, double lr, double b1, double b2, double eps) {
+    double g = grad(s.x);
+    s.t += 1;
+    s.m = b1 * s.m + (1 - b1) * g;
+    s.v = b2 * s.v + (1 - b2) * g * g;
+    double mhat = s.m / (1 - pow(b1, s.t));
+    double vhat = s.v / (1 - pow(b2, s.t));
+    s.x = s.x - lr * mhat / (sqrt(vhat) + eps);
+    return s;
+}`,
+      python: `def adam_step(x, m, v, t, lr, beta1, beta2, eps=1e-8):
+    g = grad(x)
+    t += 1
+    m = beta1 * m + (1 - beta1) * g
+    v = beta2 * v + (1 - beta2) * g * g
+    m_hat = m / (1 - beta1 ** t)
+    v_hat = v / (1 - beta2 ** t)
+    x = x - lr * m_hat / ((v_hat ** 0.5) + eps)
+    return x, m, v, t`,
+    },
+    pseudocode: `procedure ADAM(theta, m, v, t)
+    g <- grad(loss, theta)
+    m <- beta1 * m + (1 - beta1) * g
+    v <- beta2 * v + (1 - beta2) * g^2
+    mHat <- m / (1 - beta1^t)
+    vHat <- v / (1 - beta2^t)
+    theta <- theta - learningRate * mHat / (sqrt(vHat) + epsilon)
+    return theta, m, v`,
+    bigO: { time: '每步 O(d)，总计 O(Td)。', space: '每个参数保存 m 和 v，O(d)。', note: 'Adam 计算略多，但通常减少调参成本。' },
+    compare: [
+      { method: 'Momentum', data: '一阶矩', strength: '方向加速', tradeoff: '没有自适应缩放' },
+      { method: 'RMSProp', data: '二阶矩', strength: '自适应步长', tradeoff: '缺少动量偏差修正' },
+      { method: 'Adam', data: '一阶矩 + 二阶矩', strength: '训练深度模型常用', tradeoff: '状态量更多' },
+    ],
+    quiz: [{ q: 'Adam 为什么要做偏差修正？', options: ['m 和 v 初始为 0，早期估计会偏小', '为了删除梯度', '为了让学习率恒为 1', '为了避免使用平方根'], answer: 0, explanation: 'm、v 从 0 开始会在训练早期低估真实矩，除以 1-β^t 可以减轻这个偏差。' }],
+  },
+  'optim-lr-compare': {
+    defaultCodeFocus: 'lr1',
+    codeFocusLabels: { lr01: 'lr=0.01', lr1: 'lr=0.1', lr5: 'lr=0.5', lr105: 'lr=1.05' },
+    codeHighlightLines: {
+      cpp: { lr01: 3, lr1: 3, lr5: 3, lr105: 3, default: 3 },
+      python: { lr01: 4, lr1: 4, lr5: 4, lr105: 4, default: 4 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [2, 3, 4] },
+      python: { default: [2, 3, 4] },
+    },
+    variablesSnapshot: { method: 'Learning Rate', learningRate: '-', position: '-', loss: '-' },
+    code: {
+      cpp: `double gd_update(double x, double lr) {
+    double g = grad(x);
+    double next = x - lr * g;
+    return next;
+}`,
+      python: `def gd_update(x, lr):
+    g = grad(x)
+    next_x = x - lr * g
+    return next_x`,
+    },
+    pseudocode: `procedure GD_WITH_LEARNING_RATE(theta, learningRate)
+    gradient <- grad(loss, theta)
+    theta <- theta - learningRate * gradient
+    return theta`,
+    bigO: { time: '单条轨迹 O(T)，同时比较 k 个学习率为 O(kT)。', space: '保存 k 条轨迹为 O(kT)。', note: '学习率只改变轨迹，不改变单步渐近复杂度。' },
+    compare: [
+      { method: '小学习率', data: '小步长', strength: '稳定', tradeoff: '收敛慢' },
+      { method: '合适学习率', data: '中等步长', strength: '快且稳定', tradeoff: '需要调参' },
+      { method: '过大学习率', data: '大步长', strength: '初期移动快', tradeoff: '震荡或发散' },
+    ],
+    quiz: [{ q: '学习率过大时最常见的现象是什么？', options: ['在最优点附近震荡甚至发散', '损失必然单调下降', '梯度不再存在', '模型无法计算预测'], answer: 0, explanation: '过大的步长会跨过低谷，在两侧来回跳动，极端时直接发散。' }],
+  },
+  'optim-newton': {
+    defaultCodeFocus: 'newton',
+    codeFocusLabels: { newton: 'Newton', gd: 'Gradient Descent' },
+    codeHighlightLines: {
+      cpp: { newton: 4, gd: 9, default: 4 },
+      python: { newton: 4, gd: 8, default: 4 },
+    },
+    codeStepHighlightLines: {
+      cpp: { newton: [2, 3, 4], gd: [8, 9] },
+      python: { newton: [2, 3, 4], gd: [7, 8] },
+    },
+    variablesSnapshot: { method: 'Newton', position: '-', loss: '-', hessian: '-' },
+    code: {
+      cpp: `double newton_step(double x) {
+    double g = grad(x);
+    double h = hessian(x);
+    return x - g / h;
+}
+
+double gradient_step(double x, double lr) {
+    double g = grad(x);
+    return x - lr * g;
+}`,
+      python: `def newton_step(x):
+    g = grad(x)
+    h = hessian(x)
+    return x - g / h
+
+def gradient_step(x, lr):
+    g = grad(x)
+    return x - lr * g`,
+    },
+    pseudocode: `procedure NEWTON(theta)
+    gradient <- grad(loss, theta)
+    hessian <- secondDerivative(loss, theta)
+    theta <- theta - inverse(hessian) * gradient
+    return theta`,
+    bigO: { time: '一维演示每步 O(1)；高维精确牛顿法求解 Hessian 线性系统通常为 O(d^3)。', space: '高维 Hessian 存储为 O(d^2)。', note: '拟牛顿法用近似矩阵降低成本。' },
+    compare: [
+      { method: '梯度下降', data: '一阶导', strength: '便宜通用', tradeoff: '可能需要很多步' },
+      { method: '牛顿法', data: '一阶导 + 二阶导', strength: '局部收敛很快', tradeoff: 'Hessian 昂贵且可能不稳定' },
+    ],
+    quiz: [{ q: '牛顿法为什么常比梯度下降步数少？', options: ['它利用二阶曲率估计低谷形状', '它完全随机搜索', '它不需要损失函数', '它只更新偏置'], answer: 0, explanation: 'Hessian 给出局部曲率，牛顿步等价于在局部二次近似上直接跳到最小点。' }],
+  },
+  'optim-conjugate-gradient': {
+    defaultCodeFocus: 'cg',
+    codeFocusLabels: { cg: 'Conjugate Gradient', sd: 'Steepest Descent' },
+    codeHighlightLines: {
+      cpp: { cg: 11, sd: 2, default: 11 },
+      python: { cg: 10, sd: 2, default: 10 },
+    },
+    codeStepHighlightLines: {
+      cpp: { cg: [6, 7, 8, 9, 10, 11], sd: [2] },
+      python: { cg: [5, 6, 7, 8, 9, 10], sd: [2] },
+    },
+    variablesSnapshot: { method: 'CG', residual: '-', direction: '-', loss: '-' },
+    code: {
+      cpp: `Vector steepest_direction(Vector r) {
+    return r;
+}
+
+Vector conjugate_gradient_step(Vector x, Vector r, Vector p, Matrix A) {
+    double alpha = dot(r, r) / dot(p, A * p);
+    Vector xNext = x + alpha * p;
+    Vector rNext = r - alpha * (A * p);
+    double beta = dot(rNext, rNext) / dot(r, r);
+    Vector pNext = rNext + beta * p;
+    return xNext;
+}`,
+      python: `def steepest_direction(r):
+    return r
+
+def conjugate_gradient_step(x, r, p, A):
+    alpha = dot(r, r) / dot(p, A @ p)
+    x_next = x + alpha * p
+    r_next = r - alpha * (A @ p)
+    beta = dot(r_next, r_next) / dot(r, r)
+    p_next = r_next + beta * p
+    return x_next, r_next, p_next`,
+    },
+    pseudocode: `procedure CONJUGATE_GRADIENT(A, b)
+    r <- b - A*x
+    p <- r
+    repeat
+        alpha <- (r^T r) / (p^T A p)
+        x <- x + alpha * p
+        rNew <- r - alpha * A p
+        beta <- (rNew^T rNew) / (r^T r)
+        p <- rNew + beta * p
+        r <- rNew
+    until residual is small`,
+    bigO: { time: '每步主要是矩阵向量乘法，稠密矩阵 O(d^2)，稀疏矩阵约 O(nnz)。', space: '保存 x、r、p 等向量 O(d)。', note: '理想精确算术下 d 步内收敛。' },
+    compare: [
+      { method: '最速下降', data: '残差方向', strength: '简单', tradeoff: '方向会反复纠正' },
+      { method: '共轭梯度', data: 'A-共轭方向', strength: '避免重复搜索', tradeoff: '要求问题接近二次型/正定线性系统' },
+    ],
+    quiz: [{ q: '共轭梯度法的 p 方向为什么特殊？', options: ['不同方向关于 A 共轭，避免重复优化同一方向', '它总是随机选取', '它必须等于 0', '它只用于图像分类'], answer: 0, explanation: 'A-共轭方向让二次函数在已搜索方向上的最优性不被后续步骤破坏。' }],
+  },
+  'optim-line-search': {
+    defaultCodeFocus: 'golden',
+    codeFocusLabels: { golden: 'Golden Section', backtrack: 'Backtracking' },
+    codeHighlightLines: {
+      cpp: { golden: 9, backtrack: 16, default: 9 },
+      python: { golden: 10, backtrack: 16, default: 10 },
+    },
+    codeStepHighlightLines: {
+      cpp: { golden: [3, 4, 6, 8, 9, 11], backtrack: [15, 16, 18] },
+      python: { golden: [3, 4, 6, 10, 11, 12], backtrack: [15, 16, 17] },
+    },
+    variablesSnapshot: { method: 'Line Search', alpha: '-', interval: '-', loss: '-' },
+    code: {
+      cpp: `double golden_section(double a, double b) {
+    const double rho = 0.6180339887;
+    double c = b - rho * (b - a);
+    double d = a + rho * (b - a);
+    while (b - a > 1e-6) {
+        if (phi(c) < phi(d)) b = d;
+        else a = c;
+        c = b - rho * (b - a);
+        d = a + rho * (b - a);
+    }
+    return (a + b) / 2;
+}
+
+double backtracking(double alpha, Vector theta, Vector direction) {
+    while (f(theta + alpha * direction) > armijo_bound(theta, direction, alpha)) {
+        alpha *= 0.5;
+    }
+    return alpha;
+}`,
+      python: `def golden_section(a, b):
+    rho = 0.6180339887
+    c = b - rho * (b - a)
+    d = a + rho * (b - a)
+    while b - a > 1e-6:
+        if phi(c) < phi(d):
+            b = d
+        else:
+            a = c
+        c = b - rho * (b - a)
+        d = a + rho * (b - a)
+    return (a + b) / 2
+
+def backtracking(alpha, theta, direction):
+    while f(theta + alpha * direction) > armijo_bound(theta, direction, alpha):
+        alpha *= 0.5
+    return alpha`,
+    },
+    pseudocode: `procedure BACKTRACKING(theta, direction, alpha)
+    while Armijo condition is not satisfied do
+        alpha <- rho * alpha
+    end while
+    return alpha`,
+    bigO: { time: '黄金分割搜索迭代次数为 O(log((b-a)/ε))；回溯与收缩次数有关。', space: '只保存少量标量，O(1)。', note: '线搜索减少手动选学习率的风险。' },
+    compare: [
+      { method: '黄金分割', data: '函数值比较', strength: '无需梯度', tradeoff: '适合一维精确搜索' },
+      { method: '回溯线搜索', data: 'Armijo 条件', strength: '实现简单，常用于下降方向', tradeoff: '依赖初始步长和收缩率' },
+    ],
+    quiz: [{ q: '回溯线搜索不断缩小 alpha 是为了什么？', options: ['直到当前步能带来足够下降', '让梯度变成 0', '增加模型参数数量', '删除搜索方向'], answer: 0, explanation: 'Armijo 条件要求步长带来足够的函数下降，不满足时就缩小 alpha。' }],
+  },
+  'optim-ga': {
+    defaultCodeFocus: 'default',
+    codeFocusLabels: { default: '默认参数', large: '大种群', 'high-mut': '高变异率' },
+    codeHighlightLines: {
+      cpp: { default: 6, large: 2, 'high-mut': 5 },
+      python: { default: 6, large: 2, 'high-mut': 5 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [2, 3, 4, 5, 6] },
+      python: { default: [2, 3, 4, 5, 6] },
+    },
+    variablesSnapshot: { method: 'GA', population: '30', mutationRate: '0.05', bestFitness: '-' },
+    code: {
+      cpp: `Population ga_generation(Population pop, double crossRate, double mutRate) {
+    vector<double> fitness = evaluate(pop);
+    Population parents = selection(pop, fitness);
+    Population children = crossover(parents, crossRate);
+    mutate(children, mutRate);
+    return elitism(pop, children, fitness);
+}`,
+      python: `def ga_generation(population, cross_rate, mutation_rate):
+    fitness = evaluate(population)
+    parents = selection(population, fitness)
+    children = crossover(parents, cross_rate)
+    children = mutate(children, mutation_rate)
+    return elitism(population, children, fitness)`,
+    },
+    pseudocode: `procedure GENETIC_ALGORITHM(population)
+    evaluate fitness
+    parents <- select(population)
+    children <- crossover(parents)
+    children <- mutate(children)
+    population <- keep best individuals
+    return population`,
+    bigO: { time: '每代评估 P 个个体，T 代约 O(TP * cost(fitness))。', space: '保存种群和子代，O(Pd)。', note: 'P 是种群大小，d 是个体维度。' },
+    compare: [
+      { method: '小种群', data: '少量个体', strength: '快', tradeoff: '多样性不足' },
+      { method: '大种群', data: '更多个体', strength: '探索更广', tradeoff: '评估成本高' },
+      { method: '高变异', data: '更强随机扰动', strength: '不易早熟', tradeoff: '收敛更慢' },
+    ],
+    quiz: [{ q: '遗传算法中变异的主要作用是什么？', options: ['引入新基因，维持搜索多样性', '保证每代完全相同', '替代适应度函数', '让学习率衰减'], answer: 0, explanation: '变异提供随机探索，避免种群过早集中到局部最优附近。' }],
+  },
+  'optim-pso': {
+    defaultCodeFocus: 'default',
+    codeFocusLabels: { default: '标准 PSO', inertia: '高惯性', social: '社会导向' },
+    codeHighlightLines: {
+      cpp: { default: 4, inertia: 4, social: 6 },
+      python: { default: 4, inertia: 5, social: 7 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [2, 3, 4, 5, 6, 7, 8] },
+      python: { default: [2, 3, 4, 5, 6, 7, 9, 10] },
+    },
+    variablesSnapshot: { method: 'PSO', inertia: '0.7', c1: '1.5', c2: '1.5', bestFitness: '-' },
+    code: {
+      cpp: `Particle pso_step(Particle p, Point globalBest, double w, double c1, double c2) {
+    double r1 = random01();
+    double r2 = random01();
+    p.velocity = w * p.velocity
+        + c1 * r1 * (p.personalBest - p.position)
+        + c2 * r2 * (globalBest - p.position);
+    p.position = p.position + p.velocity;
+    return p;
+}`,
+      python: `def pso_step(particle, global_best, w, c1, c2):
+    r1 = random01()
+    r2 = random01()
+    particle.velocity = (
+        w * particle.velocity
+        + c1 * r1 * (particle.personal_best - particle.position)
+        + c2 * r2 * (global_best - particle.position)
+    )
+    particle.position = particle.position + particle.velocity
+    return particle`,
+    },
+    pseudocode: `procedure PSO_STEP(particle, globalBest)
+    velocity <- w*velocity + c1*r1*(personalBest-position) + c2*r2*(globalBest-position)
+    position <- position + velocity
+    update personalBest and globalBest`,
+    bigO: { time: '每轮更新 P 个粒子并评估适应度，O(TP * cost(fitness))。', space: '保存粒子位置、速度和历史最优，O(Pd)。', note: 'P 是粒子数。' },
+    compare: [
+      { method: '高惯性', data: '较大 w', strength: '探索范围大', tradeoff: '可能越过最优区' },
+      { method: '社会导向', data: '较大 c2', strength: '快速追随群体最优', tradeoff: '可能过早收敛' },
+    ],
+    quiz: [{ q: 'PSO 中 c2 项代表什么？', options: ['飞向全局最优的社会学习项', '损失函数的二阶导', '变异概率', '梯度噪声'], answer: 0, explanation: 'c2*r2*(globalBest-position) 让粒子向群体发现的最好位置靠近。' }],
+  },
+  'optim-sa': {
+    defaultCodeFocus: 'slow',
+    codeFocusLabels: { slow: '慢降温', fast: '快降温', hot: '高温' },
+    codeHighlightLines: {
+      cpp: { slow: 7, fast: 7, hot: 4 },
+      python: { slow: 6, fast: 6, hot: 4 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [2, 3, 4, 5, 7, 8] },
+      python: { default: [2, 3, 4, 5, 6, 7] },
+    },
+    variablesSnapshot: { method: 'SA', temperature: '-', alpha: '-', loss: '-' },
+    code: {
+      cpp: `State anneal_step(State current, double temperature, double alpha) {
+    State candidate = neighbor(current);
+    double delta = energy(candidate) - energy(current);
+    if (delta < 0 || random01() < exp(-delta / temperature)) {
+        current = candidate;
+    }
+    temperature *= alpha;
+    return current;
+}`,
+      python: `def anneal_step(current, temperature, alpha):
+    candidate = neighbor(current)
+    delta = energy(candidate) - energy(current)
+    if delta < 0 or random01() < exp(-delta / temperature):
+        current = candidate
+    temperature *= alpha
+    return current, temperature`,
+    },
+    pseudocode: `procedure SIMULATED_ANNEALING(state, temperature)
+    candidate <- random neighbor(state)
+    delta <- energy(candidate) - energy(state)
+    if delta < 0 or random() < exp(-delta / temperature)
+        state <- candidate
+    temperature <- alpha * temperature
+    return state, temperature`,
+    bigO: { time: '每轮生成一个邻域解并评估，O(T * cost(energy))。', space: '保存当前解、候选解和最优解，O(d)。', note: '降温慢通常质量更好但计算更久。' },
+    compare: [
+      { method: '慢降温', data: 'alpha 接近 1', strength: '探索充分', tradeoff: '计算更慢' },
+      { method: '快降温', data: 'alpha 较小', strength: '快速收敛', tradeoff: '更易陷入局部最优' },
+      { method: '高温', data: '初始 T 大', strength: '更敢接受差解', tradeoff: '早期波动更大' },
+    ],
+    quiz: [{ q: '模拟退火为什么有时会接受更差解？', options: ['为了跳出局部最优，接受概率由温度控制', '因为它没有目标函数', '因为所有差解都必须接受', '因为温度越低越随机'], answer: 0, explanation: 'Metropolis 准则让高温阶段保留探索能力，随着温度下降逐渐转向收敛。' }],
+  },
+}
+
+for (const lesson of AI_CURRICULUM.chapters.find(ch => ch.id === 'optim')?.lessons || []) {
+  if (OPTIMIZATION_ENRICHMENTS[lesson.id]) {
+    Object.assign(lesson, OPTIMIZATION_ENRICHMENTS[lesson.id])
+  }
+}
+
+const ML_ENRICHMENTS = {
+  'ml-linear-regression': {
+    defaultCodeFocus: 'standard',
+    codeFocusLabels: { standard: '标准训练', slow: '小学习率', biased: '高截距初始' },
+    codeHighlightLines: {
+      cpp: { standard: 15, slow: 15, biased: 16, default: 15 },
+      python: { standard: 11, slow: 11, biased: 12, default: 11 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [8, 9, 10, 11, 13, 14, 15, 16, 17] },
+      python: { default: [5, 6, 7, 8, 9, 10, 11, 12, 13] },
+    },
+    variablesSnapshot: { method: 'Linear Regression', weight: '-', bias: '-', mse: '-' },
+    code: {
+      cpp: `struct LinearModel {
+    double w, b;
+};
+
+LinearModel train_step(LinearModel m, vector<Point> data, double lr) {
+    double gradW = 0, gradB = 0;
+    for (auto p : data) {
+        double pred = m.w * p.x + m.b;
+        double err = pred - p.y;
+        gradW += err * p.x;
+        gradB += err;
+    }
+    gradW = 2.0 * gradW / data.size();
+    gradB = 2.0 * gradB / data.size();
+    m.w -= lr * gradW;
+    m.b -= lr * gradB;
+    return m;
+}`,
+      python: `def train_step(w, b, data, lr):
+    grad_w = 0.0
+    grad_b = 0.0
+    for x, y in data:
+        pred = w * x + b
+        err = pred - y
+        grad_w += err * x
+        grad_b += err
+    grad_w = 2 * grad_w / len(data)
+    grad_b = 2 * grad_b / len(data)
+    w -= lr * grad_w
+    b -= lr * grad_b
+    return w, b`,
+    },
+    pseudocode: `procedure LINEAR_REGRESSION_STEP(model, data, learningRate)
+    gradW <- 0
+    gradB <- 0
+    for each sample (x, y) in data do
+        pred <- w*x + b
+        error <- pred - y
+        gradW <- gradW + error*x
+        gradB <- gradB + error
+    end for
+    w <- w - learningRate * 2*gradW/N
+    b <- b - learningRate * 2*gradB/N`,
+    bigO: { time: '每轮扫描 N 个样本、d 个特征为 O(Nd)，T 轮为 O(TNd)。', space: '参数向量 O(d)，演示中的轨迹另计 O(T)。', note: '单变量演示中 d=1。' },
+    compare: [
+      { method: '解析解', data: '矩阵整体求解', strength: '一步得到最优', tradeoff: '高维矩阵求逆昂贵' },
+      { method: '梯度下降', data: '批量样本梯度', strength: '适合大数据和流式训练', tradeoff: '需要学习率和迭代次数' },
+    ],
+    quiz: [{ q: '线性回归最小化的常见目标是什么？', options: ['均方误差 MSE', '交叉熵', '信息增益', '最大间隔'], answer: 0, explanation: '线性回归通常最小化预测值和真实值之间的平方误差平均值。' }],
+  },
+  'ml-logistic-regression': {
+    defaultCodeFocus: 'standard',
+    codeFocusLabels: { standard: '标准训练', regularized: 'L2 正则', fast: '大步长' },
+    codeHighlightLines: {
+      cpp: { standard: 14, regularized: 14, fast: 14, default: 14 },
+      python: { standard: 11, regularized: 11, fast: 11, default: 11 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [8, 9, 10, 11, 12, 13, 14, 15, 16] },
+      python: { default: [5, 6, 7, 8, 9, 10, 11, 12, 13] },
+    },
+    variablesSnapshot: { method: 'Logistic Regression', probability: '-', accuracy: '-', loss: '-' },
+    code: {
+      cpp: `double sigmoid(double z) {
+    return 1.0 / (1.0 + exp(-z));
+}
+
+LogisticModel train_step(LogisticModel m, vector<Sample> data, double lr, double lambda) {
+    double gw1 = 0, gw2 = 0, gb = 0;
+    for (auto s : data) {
+        double z = m.w1 * s.x1 + m.w2 * s.x2 + m.b;
+        double p = sigmoid(z);
+        double err = p - s.label;
+        gw1 += err * s.x1;
+        gw2 += err * s.x2;
+        gb += err;
+    }
+    m.w1 -= lr * (gw1 / data.size() + lambda * m.w1);
+    m.w2 -= lr * (gw2 / data.size() + lambda * m.w2);
+    m.b -= lr * gb / data.size();
+    return m;
+}`,
+      python: `def sigmoid(z):
+    return 1 / (1 + exp(-z))
+
+def train_step(w1, w2, b, data, lr, l2):
+    gw1 = gw2 = gb = 0.0
+    for x1, x2, y in data:
+        p = sigmoid(w1 * x1 + w2 * x2 + b)
+        err = p - y
+        gw1 += err * x1
+        gw2 += err * x2
+        gb += err
+    w1 -= lr * (gw1 / len(data) + l2 * w1)
+    w2 -= lr * (gw2 / len(data) + l2 * w2)
+    b -= lr * gb / len(data)
+    return w1, w2, b`,
+    },
+    pseudocode: `procedure LOGISTIC_REGRESSION_STEP(model, data)
+    for each sample do
+        probability <- sigmoid(w dot x + b)
+        error <- probability - label
+        accumulate gradient
+    end for
+    update weights with gradient and optional L2 penalty`,
+    bigO: { time: '每轮 O(Nd)，T 轮 O(TNd)。预测单样本 O(d)。', space: '参数 O(d)，不需要保存训练历史。', note: '二分类使用 sigmoid，多分类常用 softmax。' },
+    compare: [
+      { method: '线性回归', data: '连续输出', strength: '适合数值预测', tradeoff: '输出不受 0-1 限制' },
+      { method: '逻辑回归', data: '概率输出', strength: '适合线性可分分类', tradeoff: '边界仍是线性的' },
+    ],
+    quiz: [{ q: '逻辑回归为什么输出可以解释为概率？', options: ['使用 sigmoid 把线性分数压到 0 到 1', '直接返回输入特征', '使用欧氏距离投票', '使用树的叶子节点'], answer: 0, explanation: 'sigmoid(z)=1/(1+e^-z) 会把任意实数映射到 0 到 1。' }],
+  },
+  'ml-gradient-descent': {
+    defaultCodeFocus: 'quad',
+    codeFocusLabels: { quad: '二次函数', cubic: '三次函数', slow: '慢学习率', fast: '快学习率' },
+    codeHighlightLines: {
+      cpp: { quad: 4, cubic: 4, slow: 4, fast: 4, default: 4 },
+      python: { quad: 3, cubic: 3, slow: 3, fast: 3, default: 3 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [2, 3, 4, 5] },
+      python: { default: [2, 3, 4] },
+    },
+    variablesSnapshot: { method: 'Gradient Descent', learningRate: '-', position: '-', loss: '-' },
+    code: {
+      cpp: `double gd_step(double x, double lr) {
+    double y = loss(x);
+    double g = grad(x);
+    double next = x - lr * g;
+    return next;
+}`,
+      python: `def gd_step(x, lr):
+    y = loss(x)
+    g = grad(x)
+    return x - lr * g`,
+    },
+    pseudocode: `procedure GRADIENT_DESCENT(x, learningRate)
+    repeat
+        y <- loss(x)
+        g <- grad(loss, x)
+        x <- x - learningRate * g
+    until convergence`,
+    bigO: { time: '每步一次梯度，T 步为 O(T * cost(grad))。', space: '在线更新 O(1)，若保存轨迹为 O(T)。', note: '学习率影响轨迹，不改变单步复杂度。' },
+    compare: [
+      { method: '小学习率', data: '小步移动', strength: '稳定', tradeoff: '收敛慢' },
+      { method: '大学习率', data: '大步移动', strength: '可能很快', tradeoff: '易震荡或发散' },
+    ],
+    quiz: [{ q: '梯度下降中负梯度方向代表什么？', options: ['局部最快下降方向', '局部最快上升方向', '随机方向', '分类边界'], answer: 0, explanation: '梯度指向函数上升最快方向，所以负梯度是局部下降最快方向。' }],
+  },
+  'ml-knn': {
+    defaultCodeFocus: 'k3',
+    codeFocusLabels: { k3: 'k=3', k5: 'k=5', k7: 'k=7' },
+    codeHighlightLines: {
+      cpp: { k3: 7, k5: 7, k7: 7, default: 7 },
+      python: { k3: 7, k5: 7, k7: 7, default: 7 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [3, 4, 5, 7, 8, 9] },
+      python: { default: [3, 4, 5, 7, 8, 9] },
+    },
+    variablesSnapshot: { method: 'KNN', k: '3', radius: '-', prediction: '-' },
+    code: {
+      cpp: `int predict_knn(Point query, vector<Sample> train, int k) {
+    vector<pair<double, int>> distances;
+    for (auto s : train) {
+        distances.push_back({euclidean(query, s.point), s.label});
+    }
+    sort(distances.begin(), distances.end());
+    int vote = 0;
+    for (int i = 0; i < k; ++i) {
+        vote += distances[i].second == 1 ? 1 : -1;
+    }
+    return vote >= 0 ? 1 : 0;
+}`,
+      python: `def predict_knn(query, train, k):
+    distances = []
+    for x, y, label in train:
+        d = euclidean(query, (x, y))
+        distances.append((d, label))
+    distances.sort()
+    vote = 0
+    for _, label in distances[:k]:
+        vote += 1 if label == 1 else -1
+    return 1 if vote >= 0 else 0`,
+    },
+    pseudocode: `procedure KNN_PREDICT(query, train, k)
+    distances <- []
+    for each sample in train do
+        append distance(query, sample)
+    sort distances ascending
+    return majority label among first k`,
+    bigO: { time: '朴素预测需要计算 N 个距离并排序，O(Nd + N log N)；用选择算法可降到 O(Nd + N)。', space: '保存距离 O(N)，训练阶段几乎只是存数据。', note: 'KNN 是惰性学习，主要成本在预测时。' },
+    compare: [
+      { method: '小 k', data: '很近的邻居', strength: '边界灵活', tradeoff: '对噪声敏感' },
+      { method: '大 k', data: '更多邻居投票', strength: '更平滑', tradeoff: '可能欠拟合' },
+    ],
+    quiz: [{ q: 'KNN 为什么常需要特征归一化？', options: ['距离会被尺度大的特征主导', '它不能处理数字', '它不使用训练数据', '它只能做回归'], answer: 0, explanation: '欧氏距离对量纲敏感，尺度大的特征会压过其它特征。' }],
+  },
+  'ml-kmeans': {
+    defaultCodeFocus: 'k2',
+    codeFocusLabels: { k2: 'k=2', k3: 'k=3' },
+    codeHighlightLines: {
+      cpp: { k2: 9, k3: 9, default: 9 },
+      python: { k2: 6, k3: 6, default: 6 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [4, 5, 6, 8, 9, 10] },
+      python: { default: [3, 4, 5, 6, 7] },
+    },
+    variablesSnapshot: { method: 'K-Means', inertia: '-', centroidShift: '-', phase: '-' },
+    code: {
+      cpp: `void kmeans_step(vector<Point> data, vector<Point>& centers) {
+    vector<int> assign(data.size());
+    for (int i = 0; i < data.size(); ++i) {
+        assign[i] = nearest_center(data[i], centers);
+    }
+    for (int c = 0; c < centers.size(); ++c) {
+        vector<Point> cluster = collect(data, assign, c);
+        centers[c] = mean(cluster);
+    }
+}`,
+      python: `def kmeans_step(data, centers):
+    assignments = []
+    for point in data:
+        assignments.append(nearest_center(point, centers))
+    for c in range(len(centers)):
+        cluster = [p for p, a in zip(data, assignments) if a == c]
+        centers[c] = mean(cluster)
+    return centers, assignments`,
+    },
+    pseudocode: `procedure KMEANS(data, k)
+    initialize k centers
+    repeat
+        assign each point to nearest center
+        move each center to mean of assigned points
+    until centers stop moving`,
+    bigO: { time: '每轮为每个样本计算 k 个中心距离，O(Nkd)，T 轮为 O(TNkd)。', space: '保存中心 O(kd) 和分配 O(N)。', note: '结果依赖初始化，常多次随机重启。' },
+    compare: [
+      { method: 'k=2', data: '两个中心', strength: '简单稳定', tradeoff: '无法表达更多簇' },
+      { method: 'k=3', data: '三个中心', strength: '更细分', tradeoff: 'k 过大可能切碎自然簇' },
+    ],
+    quiz: [{ q: 'K-Means 每轮包含哪两个核心步骤？', options: ['分配样本和更新中心', '计算 sigmoid 和反向传播', '构造树和剪枝', '寻找最大间隔'], answer: 0, explanation: 'K-Means 交替进行“最近中心分配”和“按均值移动中心”。' }],
+  },
+  'ml-decision-tree': {
+    defaultCodeFocus: 'gini',
+    codeFocusLabels: { gini: 'Gini', entropy: 'Entropy' },
+    codeHighlightLines: {
+      cpp: { gini: 8, entropy: 8, default: 8 },
+      python: { gini: 5, entropy: 5, default: 5 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [3, 4, 5, 8, 9, 10] },
+      python: { default: [3, 4, 5, 7, 8] },
+    },
+    variablesSnapshot: { method: 'Decision Tree', phase: '-', impurity: '-' },
+    code: {
+      cpp: `Split choose_best_split(vector<Sample> data) {
+    Split best;
+    double bestGain = -1;
+    for (auto split : all_candidate_splits(data)) {
+        auto [left, right] = partition(data, split);
+        double gain = impurity(data) - weighted_impurity(left, right);
+        if (gain > bestGain) {
+            bestGain = gain;
+            best = split;
+        }
+    }
+    return best;
+}`,
+      python: `def choose_best_split(data):
+    best_gain = -1
+    best_split = None
+    for split in all_candidate_splits(data):
+        left, right = partition(data, split)
+        gain = impurity(data) - weighted_impurity(left, right)
+        if gain > best_gain:
+            best_gain = gain
+            best_split = split
+    return best_split`,
+    },
+    pseudocode: `procedure BUILD_TREE(data)
+    if node is pure or too small then return leaf
+    best <- argmax information_gain(split)
+    split data by best
+    build left child and right child recursively`,
+    bigO: { time: '朴素训练每层扫描候选切分，常见实现约 O(Nd log N) 到 O(NdN)。预测为树深度 O(depth)。', space: '树节点 O(number of nodes)。', note: '剪枝和深度限制用于控制过拟合。' },
+    compare: [
+      { method: 'Gini', data: '类别混杂度', strength: '计算简单', tradeoff: '和信息熵结果通常接近' },
+      { method: 'Entropy', data: '信息量', strength: '解释为信息增益', tradeoff: '含 log 计算略重' },
+    ],
+    quiz: [{ q: '决策树选择切分时通常最大化什么？', options: ['不纯度下降或信息增益', '学习率', '欧氏距离', '间隔宽度'], answer: 0, explanation: '好的切分会让子节点更纯，即让 Gini/Entropy 等不纯度下降最多。' }],
+  },
+  'ml-svm': {
+    defaultCodeFocus: 'hard',
+    codeFocusLabels: { hard: '硬间隔', soft: '软间隔' },
+    codeHighlightLines: {
+      cpp: { hard: 7, soft: 8, default: 7 },
+      python: { hard: 5, soft: 6, default: 5 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [3, 4, 5, 6, 7, 8] },
+      python: { default: [3, 4, 5, 6, 7] },
+    },
+    variablesSnapshot: { method: 'SVM', margin: '-', hingeLoss: '-', supportVectors: '-' },
+    code: {
+      cpp: `double svm_objective(Vector w, double b, vector<Sample> data, double C) {
+    double reg = 0.5 * dot(w, w);
+    double penalty = 0;
+    for (auto s : data) {
+        double score = s.y * (dot(w, s.x) + b);
+        penalty += max(0.0, 1.0 - score);
+    }
+    return reg + C * penalty;
+}`,
+      python: `def svm_objective(w, b, data, C):
+    reg = 0.5 * dot(w, w)
+    penalty = 0.0
+    for x, y in data:
+        score = y * (dot(w, x) + b)
+        penalty += max(0.0, 1.0 - score)
+    return reg + C * penalty`,
+    },
+    pseudocode: `procedure TRAIN_LINEAR_SVM(data, C)
+    minimize 1/2 ||w||^2 + C * sum hinge_loss
+    where hinge_loss = max(0, 1 - y*(w dot x + b))
+    support vectors are points near the margin`,
+    bigO: { time: '线性 SVM 的现代优化通常接近 O(TNd)；核 SVM 训练可能到 O(N^2) 或 O(N^3)。', space: '线性模型 O(d)，核方法需要保存支持向量。', note: '支持向量决定最终边界。' },
+    compare: [
+      { method: '硬间隔', data: '不允许错分', strength: '间隔清晰', tradeoff: '要求线性可分且怕噪声' },
+      { method: '软间隔', data: '允许 hinge 惩罚', strength: '更抗噪', tradeoff: '需要调 C' },
+    ],
+    quiz: [{ q: 'SVM 中支持向量是什么？', options: ['离分隔边界最近、决定间隔的样本', '所有训练样本的均值', '随机初始化的中心', '树的叶子节点'], answer: 0, explanation: '支持向量位于间隔边界附近，对最大间隔超平面起决定作用。' }],
+  },
+}
+
+for (const lesson of AI_CURRICULUM.chapters.find(ch => ch.id === 'ml')?.lessons || []) {
+  if (ML_ENRICHMENTS[lesson.id]) {
+    Object.assign(lesson, ML_ENRICHMENTS[lesson.id])
+  }
+}
+
 // 构建扁平查找表
 export const AI_LESSON_MAP = Object.fromEntries(
   AI_CURRICULUM.chapters.flatMap(ch =>
