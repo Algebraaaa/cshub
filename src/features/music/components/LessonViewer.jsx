@@ -64,8 +64,11 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
         )}
       </header>
 
-      {!isRichExercise && lesson.theory && (
-        <MarkdownSection text={lesson.theory} className="prose-lesson mb-8" />
+      {lesson.theory && (
+        <MarkdownSection
+          text={lesson.theory}
+          className={isRichExercise ? 'prose-lesson max-w-2xl mx-auto mb-8' : 'prose-lesson mb-8'}
+        />
       )}
 
       {exerciseSlot && (
