@@ -232,6 +232,10 @@
   position: relative;
   display: flex;
   min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(124, 58, 237, 0.10), transparent 28%),
+    radial-gradient(circle at 82% 12%, rgba(219, 39, 119, 0.06), transparent 30%),
+    var(--bg);
 }
 
 .music-lesson-sidebar-frame {
@@ -283,6 +287,36 @@
 .music-lesson-sidebar-toggle:hover {
   color: var(--text-secondary);
   background: var(--surface-2);
+}
+
+.ai-rich-visual-panel {
+  background:
+    radial-gradient(circle at 22% 12%, rgba(124, 58, 237, 0.08), transparent 32%),
+    rgba(255, 255, 255, 0.58);
+}
+
+.ai-rich-code-panel {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.ai-variable-snapshot-card {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+[data-theme="dark"] .music-lesson-shell {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(155, 109, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 82% 12%, rgba(244, 114, 182, 0.08), transparent 30%),
+    var(--bg);
+}
+
+[data-theme="dark"] .ai-rich-visual-panel,
+[data-theme="dark"] .ai-variable-snapshot-card {
+  background: #0b0d10;
+}
+
+[data-theme="dark"] .ai-rich-code-panel {
+  background: var(--bg-elev);
 }
 
 @media (max-width: 1023px) {

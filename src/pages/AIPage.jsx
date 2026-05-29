@@ -298,13 +298,13 @@ function AIHero({ progress, firstLesson, nextLesson, onScrollDown }) {
         </p>
 
         <div className="ai-hero-progress mt-9 w-full max-w-[680px]" style={{ animationDelay: '0.9s' }}>
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-[#f8cfe9]/70">
+          <div className="ai-hero-progress-meta mb-2 flex items-center justify-between text-xs font-semibold text-[#f8cfe9]/70">
             <span>学习进度</span>
             <span>{progress.count} / {progress.total}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full border border-white/10 bg-black/35 shadow-[inset_0_1px_10px_rgba(0,0,0,0.55)]">
+          <div className="ai-hero-progress-track h-2 overflow-hidden rounded-full border border-white/10 bg-black/35 shadow-[inset_0_1px_10px_rgba(0,0,0,0.55)]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#d946ef] via-[#f472b6] to-[#fb7185] shadow-[0_0_22px_rgba(244,114,182,0.55)] transition-all duration-500"
+              className="ai-hero-progress-bar h-full rounded-full bg-gradient-to-r from-[#d946ef] via-[#f472b6] to-[#fb7185] shadow-[0_0_22px_rgba(244,114,182,0.55)] transition-all duration-500"
               style={{ width: `${progress.pct}%` }}
             />
           </div>
@@ -937,6 +937,176 @@ function HeroStyles() {
         .ai-scan-diagonal {
           opacity: 0.65;
         }
+      }
+
+      [data-theme="light"] .ai-course-chapters-scroll {
+        scrollbar-color: rgba(124, 58, 237, 0.22) transparent;
+        background:
+          radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.10), transparent 28%),
+          radial-gradient(circle at 78% 20%, rgba(219, 39, 119, 0.08), transparent 30%),
+          linear-gradient(180deg, #fbfaff 0%, #f6f3ff 48%, #fff7fb 100%);
+      }
+
+      [data-theme="light"] .ai-course-chapters-scroll::-webkit-scrollbar-thumb {
+        background: rgba(124, 58, 237, 0.22);
+      }
+
+      [data-theme="light"] .ai-course-snap-dots button {
+        border-color: rgba(124, 58, 237, 0.25);
+        background: rgba(255, 255, 255, 0.70);
+        box-shadow: 0 8px 18px rgba(124, 58, 237, 0.08);
+      }
+
+      [data-theme="light"] .ai-course-snap-dots button.is-active {
+        background: linear-gradient(135deg, #7c3aed, #db2777);
+        box-shadow: 0 0 18px rgba(124, 58, 237, 0.24);
+      }
+
+      [data-theme="light"] .ai-course-hero {
+        background:
+          radial-gradient(circle at 50% 34%, rgba(124, 58, 237, 0.12), transparent 36%),
+          radial-gradient(circle at 24% 22%, rgba(219, 39, 119, 0.09), transparent 30%),
+          radial-gradient(circle at 78% 18%, rgba(99, 102, 241, 0.09), transparent 30%),
+          linear-gradient(135deg, #ffffff 0%, #f5f1ff 50%, #fff1f7 100%);
+        color: #0f172a;
+      }
+
+      [data-theme="light"] .ai-course-hero-bg {
+        background:
+          radial-gradient(circle at 50% 44%, rgba(124, 58, 237, 0.08), transparent 20%),
+          radial-gradient(circle at 50% 108%, rgba(219, 39, 119, 0.08), transparent 34%);
+      }
+
+      [data-theme="light"] .ai-course-grid {
+        opacity: 0.32;
+        background-image:
+          linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+      }
+
+      [data-theme="light"] .ai-course-glow {
+        opacity: 0.28;
+        filter: blur(82px) saturate(0.72);
+        mix-blend-mode: multiply;
+      }
+
+      [data-theme="light"] .ai-course-glow-main {
+        background:
+          radial-gradient(circle, rgba(219, 39, 119, 0.12), rgba(124, 58, 237, 0.10) 46%, transparent 72%);
+      }
+
+      [data-theme="light"] .ai-course-glow-side {
+        background: rgba(99, 102, 241, 0.10);
+      }
+
+      [data-theme="light"] .ai-scan {
+        filter: blur(10px) saturate(0.75);
+        mix-blend-mode: multiply;
+      }
+
+      [data-theme="light"] .ai-scan-diagonal {
+        background: linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.08) 34%, rgba(219, 39, 119, 0.18) 50%, rgba(124, 58, 237, 0.08) 66%, transparent 100%);
+      }
+
+      [data-theme="light"] .ai-scan-horizontal {
+        background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.08) 36%, rgba(219, 39, 119, 0.14) 52%, rgba(99, 102, 241, 0.08) 68%, transparent 100%);
+      }
+
+      [data-theme="light"] .ai-formula-wall {
+        color: rgba(76, 29, 149, 0.20);
+        text-shadow:
+          0 0 14px rgba(124, 58, 237, 0.08),
+          0 0 24px rgba(219, 39, 119, 0.05);
+      }
+
+      [data-theme="light"] .ai-formula {
+        opacity: 0.24;
+      }
+
+      [data-theme="light"] .ai-particles {
+        opacity: 0.42;
+        filter: saturate(0.62);
+      }
+
+      [data-theme="light"] .ai-hero-lines {
+        opacity: 0.28;
+      }
+
+      [data-theme="light"] .ai-hero-lines path {
+        stroke: rgba(124, 58, 237, 0.16);
+        filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.08));
+      }
+
+      [data-theme="light"] .ai-hero-kicker {
+        color: rgba(109, 40, 217, 0.72);
+      }
+
+      [data-theme="light"] .ai-hero-title {
+        text-shadow:
+          0 10px 34px rgba(124, 58, 237, 0.12),
+          0 1px 0 rgba(255, 255, 255, 0.85);
+      }
+
+      [data-theme="light"] .ai-hero-title-ai {
+        background: linear-gradient(180deg, #0f172a 0%, #4c1d95 46%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      [data-theme="light"] .ai-hero-title-cn {
+        background: linear-gradient(180deg, #581c87 0%, #7e22ce 46%, #be185d 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      [data-theme="light"] .ai-hero-copy {
+        color: rgba(51, 65, 85, 0.88);
+        text-shadow: none;
+      }
+
+      [data-theme="light"] .ai-hero-progress-meta {
+        color: rgba(71, 85, 105, 0.76);
+      }
+
+      [data-theme="light"] .ai-hero-progress-track {
+        border-color: rgba(124, 58, 237, 0.18);
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow:
+          inset 0 1px 8px rgba(124, 58, 237, 0.10),
+          0 8px 26px rgba(124, 58, 237, 0.10);
+      }
+
+      [data-theme="light"] .ai-hero-progress-bar {
+        box-shadow: 0 0 18px rgba(219, 39, 119, 0.26);
+      }
+
+      [data-theme="light"] .ai-hero-primary {
+        border-color: rgba(255, 255, 255, 0.68);
+        box-shadow:
+          0 14px 34px rgba(124, 58, 237, 0.22),
+          inset 0 1px 0 rgba(255,255,255,0.32);
+      }
+
+      [data-theme="light"] .ai-hero-primary:hover {
+        box-shadow:
+          0 16px 38px rgba(124, 58, 237, 0.28),
+          inset 0 1px 0 rgba(255,255,255,0.36);
+      }
+
+      [data-theme="light"] .ai-hero-secondary {
+        color: #5b21b6;
+        background: rgba(255, 255, 255, 0.68);
+        border-color: rgba(124, 58, 237, 0.22);
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.10), inset 0 1px 0 rgba(255,255,255,0.75);
+      }
+
+      [data-theme="light"] .ai-hero-secondary:hover {
+        border-color: rgba(124, 58, 237, 0.36);
+        box-shadow: 0 12px 32px rgba(124, 58, 237, 0.14), inset 0 1px 0 rgba(255,255,255,0.85);
+      }
+
+      [data-theme="light"] .ai-hero-scroll {
+        color: rgba(109, 40, 217, 0.66);
       }
     `}</style>
   )

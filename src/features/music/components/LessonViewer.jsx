@@ -154,12 +154,12 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, p
       <div className="grid min-w-0 grid-cols-1 gap-4 xl:min-h-[600px] xl:grid-cols-[minmax(0,0.6fr)_minmax(340px,0.4fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(440px,0.42fr)]">
         <div
           data-ai-rich-visual
-          className="min-w-0 min-h-[560px] rounded-lg border border-border-soft bg-[#0b0d10] p-3 lg:p-4"
+          className="ai-rich-visual-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 lg:p-4"
         >
           {exerciseSlot}
         </div>
 
-        <aside data-ai-rich-code className="min-w-0 min-h-[560px] rounded-lg border border-border-soft bg-[var(--bg-elev)] p-3 flex flex-col gap-3 overflow-hidden">
+        <aside data-ai-rich-code className="ai-rich-code-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 flex flex-col gap-3 overflow-hidden">
           <VariableSnapshot snapshot={snapshot} />
 
           <div className="flex-1 min-h-0 flex flex-col">
@@ -217,7 +217,7 @@ function VariableSnapshot({ snapshot = {} }) {
       </div>
       <div className="grid grid-cols-2 gap-2">
         {rows.map(([key, value]) => (
-          <div key={key} className="rounded-md border border-border-soft bg-[#0b0d10] px-3 py-2">
+          <div key={key} className="ai-variable-snapshot-card rounded-md border border-border-soft px-3 py-2">
             <div className="text-[10px] uppercase tracking-wide text-fg-faint font-mono">{key}</div>
             <div className="text-sm text-accent font-mono mt-1 truncate">{value}</div>
           </div>
