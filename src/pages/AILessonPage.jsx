@@ -8,11 +8,11 @@ import ChapterNav from '../features/music/components/ChapterNav'
 
 const AIPlaygroundFor = lazy(() => import('../components/ai-playgrounds/AIPlaygroundFor'))
 
-function AIExercise({ exercise, onSnapshotChange }) {
+function AIExercise({ exercise, lesson, onSnapshotChange }) {
   if (!exercise || exercise.type !== 'playground') return null
   return (
     <Suspense fallback={<div className="h-64 bg-surface rounded-lg animate-pulse" />}>
-      <AIPlaygroundFor viz={exercise.viz} onSnapshotChange={onSnapshotChange} />
+      <AIPlaygroundFor viz={exercise.viz} lesson={lesson} onSnapshotChange={onSnapshotChange} />
     </Suspense>
   )
 }
@@ -119,8 +119,10 @@ export default function AILessonPage() {
           completed={isCompleted(lessonId)}
           onComplete={() => markComplete(lessonId)}
           playgroundSnapshot={playgroundSnapshot}
+          showDetailTabs
+          showIncompleteLessonFallback
           exerciseSlot={lesson.exercise ? (
-            <AIExercise exercise={lesson.exercise} onSnapshotChange={handlePlaygroundSnapshot} />
+            <AIExercise exercise={lesson.exercise} lesson={lesson} onSnapshotChange={handlePlaygroundSnapshot} />
           ) : null}
         />
 

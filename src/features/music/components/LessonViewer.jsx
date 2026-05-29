@@ -34,7 +34,15 @@ const VARIANT_LEARNING_RATES = {
   mini: 0.0015,
 }
 
-export default function LessonViewer({ lesson, completed, onComplete, exerciseSlot, playgroundSnapshot }) {
+export default function LessonViewer({
+  lesson,
+  completed,
+  onComplete,
+  exerciseSlot,
+  playgroundSnapshot,
+  showDetailTabs = false,
+  showIncompleteLessonFallback = false,
+}) {
   const [lang, setLang] = useState('cpp')
   const [activeTab, setActiveTab] = useState('why')
   const [quizChoice, setQuizChoice] = useState(null)
@@ -43,6 +51,8 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
   if (!lesson) return null
 
   const isRichExercise = !!lesson.code && !!exerciseSlot
+  const shouldShowDetailTabs = isRichExercise || showDetailTabs
+  const shouldShowConstructionNotice = showIncompleteLessonFallback && !isRichExercise && isLessonIncomplete(lesson)
   const articleClass = isRichExercise
     ? 'w-full max-w-[1700px] min-w-0 mx-auto pb-16'
     : 'max-w-2xl mx-auto pb-16'
@@ -62,6 +72,10 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
           text={lesson.theory}
           className={isRichExercise ? 'prose-lesson max-w-2xl mx-auto mb-8' : 'prose-lesson mb-8'}
         />
+      )}
+
+      {shouldShowConstructionNotice && (
+        <LessonConstructionNotice lesson={lesson} />
       )}
 
       {exerciseSlot && (
@@ -84,7 +98,7 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
         )
       )}
 
-      {isRichExercise && (
+      {shouldShowDetailTabs && (
         <LessonDetailTabs
           lesson={lesson}
           activeTab={activeTab}
@@ -145,21 +159,21 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, p
   return (
       <section
         data-ai-rich-exercise={lesson.id}
-        className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5 min-h-[660px]"
+        className="mb-6 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5"
       >
       <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">
         互动练习
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 xl:min-h-[600px] xl:grid-cols-[minmax(0,0.6fr)_minmax(340px,0.4fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(440px,0.42fr)]">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,0.6fr)_minmax(340px,0.4fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(440px,0.42fr)]">
         <div
           data-ai-rich-visual
-          className="ai-rich-visual-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 lg:p-4"
+          className="ai-rich-visual-panel min-w-0 self-start rounded-lg border border-border-soft p-3 lg:p-4"
         >
           {exerciseSlot}
         </div>
 
-        <aside data-ai-rich-code className="ai-rich-code-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 flex flex-col gap-3 overflow-hidden">
+        <aside data-ai-rich-code className="ai-rich-code-panel min-w-0 self-start rounded-lg border border-border-soft p-3 flex flex-col gap-3 overflow-hidden xl:sticky xl:top-6 xl:max-h-[65vh]">
           <VariableSnapshot snapshot={snapshot} />
 
           <div className="flex-1 min-h-0 flex flex-col">
@@ -193,7 +207,7 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, p
                 title={`${lesson.id}.${currentLang.ext}`}
                 highlightLine={highlightLine}
                 noAutoScroll
-                fill
+                maxHeight="min(520px, 48vh)"
               />
             </div>
             <div className="mt-2 text-[11px] leading-5 text-fg-faint">
@@ -203,6 +217,37 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, p
           </div>
         </aside>
       </div>
+    </section>
+  )
+}
+
+function isLessonIncomplete(lesson) {
+  return !lesson.theory
+    || !lesson.code
+    || !lesson.pseudocode
+    || !lesson.bigO
+    || !Array.isArray(lesson.compare)
+    || lesson.compare.length === 0
+    || !Array.isArray(lesson.quiz)
+    || lesson.quiz.length === 0
+}
+
+function LessonConstructionNotice({ lesson }) {
+  return (
+    <section className="mb-8 rounded-xl border border-border-soft bg-surface p-5">
+      <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-2">
+        建设中
+      </div>
+      <h2 className="text-lg font-bold text-fg mb-2">{lesson.title}</h2>
+      <p className="text-sm leading-7 text-fg-muted mb-3">
+        本节内容正在建设中。
+      </p>
+      <div className="rounded-lg border border-border-soft bg-[var(--bg)] px-3 py-2 text-xs font-mono text-fg-muted">
+        lesson id: {lesson.id}
+      </div>
+      <p className="mt-3 text-sm leading-7 text-fg-muted">
+        后续会补充：原理、伪代码、复杂度、可视化、测验、笔记。
+      </p>
     </section>
   )
 }
@@ -364,26 +409,28 @@ function LessonTabPanel({
   onNoteChange,
 }) {
   if (activeTab === 'why') {
+    if (!lesson.theory) return <TabPlaceholder lesson={lesson} label="原理" />
     return <MarkdownSection text={lesson.theory} className="prose-lesson" />
   }
 
   if (activeTab === 'pseudocode') {
+    if (!lesson.pseudocode) return <TabPlaceholder lesson={lesson} label="伪代码" />
     return (
       <CodeBlock
         code={lesson.pseudocode}
         lang="pseudo"
-        title="gd_variants.pseudo"
+        title={`${lesson.id}.pseudo`}
         noAutoScroll
       />
     )
   }
 
   if (activeTab === 'bigO') {
-    return <BigOPanel bigO={lesson.bigO} />
+    return <BigOPanel bigO={lesson.bigO} lesson={lesson} />
   }
 
   if (activeTab === 'compare') {
-    return <ComparePanel rows={lesson.compare} />
+    return <ComparePanel rows={lesson.compare} lesson={lesson} />
   }
 
   if (activeTab === 'quiz') {
@@ -394,6 +441,7 @@ function LessonTabPanel({
         revealed={quizRevealed}
         onChoice={onQuizChoice}
         onReveal={onQuizReveal}
+        lesson={lesson}
       />
     )
   }
@@ -419,8 +467,18 @@ function MarkdownSection({ text, className }) {
   )
 }
 
-function BigOPanel({ bigO }) {
-  if (!bigO) return <p className="text-sm text-fg-muted">暂无复杂度数据。</p>
+function TabPlaceholder({ lesson, label }) {
+  return (
+    <div className="rounded-xl border border-border-soft bg-surface p-4 text-sm leading-7 text-fg-muted">
+      <p className="m-0 font-semibold text-fg">{label}内容正在建设中。</p>
+      <p className="m-0 mt-2">lesson id: <span className="font-mono text-accent">{lesson.id}</span></p>
+      <p className="m-0 mt-2">后续会补充：原理、伪代码、复杂度、可视化、测验、笔记。</p>
+    </div>
+  )
+}
+
+function BigOPanel({ bigO, lesson }) {
+  if (!bigO) return <TabPlaceholder lesson={lesson} label="复杂度" />
   return (
     <div className="grid gap-3 md:grid-cols-3">
       {[
@@ -439,8 +497,8 @@ function BigOPanel({ bigO }) {
   )
 }
 
-function ComparePanel({ rows = [] }) {
-  if (rows.length === 0) return <p className="text-sm text-fg-muted">暂无对比数据。</p>
+function ComparePanel({ rows = [], lesson }) {
+  if (rows.length === 0) return <TabPlaceholder lesson={lesson} label="方法对比" />
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
@@ -467,8 +525,8 @@ function ComparePanel({ rows = [] }) {
   )
 }
 
-function QuizPanel({ question, choice, revealed, onChoice, onReveal }) {
-  if (!question) return <p className="text-sm text-fg-muted">暂无测验。</p>
+function QuizPanel({ question, choice, revealed, onChoice, onReveal, lesson }) {
+  if (!question) return <TabPlaceholder lesson={lesson} label="测验" />
   return (
     <div className="max-w-2xl">
       <p className="mb-4 text-sm font-semibold text-fg">{question.q}</p>
