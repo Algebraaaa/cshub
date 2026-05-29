@@ -6,7 +6,7 @@ import { useViewport } from '../hooks/useMediaQuery'
 
 const Sidebar = lazy(() => import('./Sidebar'))
 
-const GUIDE_PATHS = ['/learn', '/github', '/ai', '/finance', '/health', '/interview', '/roadmap', '/toolbox', '/projects', '/setup', '/growth', '/logic', '/books']
+const GUIDE_PATHS = ['/learn', '/github', '/ai', '/ai-course', '/finance', '/health', '/interview', '/roadmap', '/toolbox', '/projects', '/setup', '/growth', '/logic', '/books']
 
 const GUIDE_BACK_PATHS = new Set(['/github', '/ai', '/interview', '/roadmap', '/toolbox', '/projects', '/setup'])
 
@@ -64,7 +64,7 @@ export default function AppLayout() {
   const offsetFloatingBack = shouldOffsetFloatingBack(pathname, isPhone, sidebarCollapsed, isAlgo)
 
   return (
-    <div style={{ height: isHome ? 'auto' : '100vh', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ width: '100%', minWidth: 0, height: isHome ? 'auto' : '100vh', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
       {/* Animated background orbs */}
       <div className="bg-orbs">
         <div className="bg-orb bg-orb-1" />
@@ -126,6 +126,8 @@ export default function AppLayout() {
         )}
         <main ref={mainRef} style={{
           flex: 1,
+          minWidth: 0,
+          width: '100%',
           overflowY: isHome ? 'visible' : (isGuide ? 'hidden' : 'auto'),
           // 当 overflow-y 单独设置为 hidden 时，浏览器会把 overflow-x 从 visible 升级为
           // auto，只要内容有一像素横溢就出现水平滚动条槽（右侧白条）。
@@ -142,6 +144,7 @@ export default function AppLayout() {
               maxWidth: isHome ? 1180 : 'none',
               margin: '0 auto',
               width: '100%',
+              minWidth: 0,
               height: isGuide ? '100%' : 'auto',
               minHeight: isGuide ? 0 : undefined,
               overflow: isGuide ? 'hidden' : undefined,

@@ -119,7 +119,7 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
         )}
 
         {/* iPad Dock 中央：主导航 */}
-        <nav ref={navRef} className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+        <nav ref={navRef} className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flexWrap: 'nowrap', whiteSpace: 'nowrap', minWidth: 0 }}>
           {NAV_ITEMS.map(item => (
             <NavLink key={item.id} id={item.id} to={item.to} active={item.id === activeNavId} icon={item.icon}>{item.label}</NavLink>
           ))}
@@ -149,7 +149,7 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
         </nav>
 
         {/* Dock 右段：搜索 / 主题 / 用户 / GitHub */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div className="topbar-actions" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexShrink: 1 }}>
           <SearchBox onClick={() => setSearchOpen(true)} />
           <IslandDivider />
           <ThemeToggle />
@@ -170,7 +170,7 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
             }}
           >
             <GitHubIcon />
-            <span style={{ whiteSpace: 'nowrap' }}>GitHub</span>
+            <span className="topbar-github-label" style={{ whiteSpace: 'nowrap' }}>GitHub</span>
           </a>
         </div>
       </DynamicIsland>
@@ -358,6 +358,7 @@ function NavLink({ id, to, active, icon, children }) {
     <Link
       to={to}
       data-nav-id={id}
+      title={typeof children === 'string' ? children : undefined}
       style={{
         position: 'relative',
         display: 'inline-flex',
@@ -377,7 +378,7 @@ function NavLink({ id, to, active, icon, children }) {
       onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-secondary)' }}
     >
       {icon && <span style={{ fontSize: 13.5, lineHeight: 1, flexShrink: 0 }} aria-hidden>{icon}</span>}
-      <span style={{ whiteSpace: 'nowrap' }}>{children}</span>
+      <span className="topbar-nav-label" style={{ whiteSpace: 'nowrap' }}>{children}</span>
     </Link>
   )
 }
@@ -493,7 +494,9 @@ const searchBoxStyle = {
   WebkitBackdropFilter: 'var(--glass-blur)',
   border: '1px solid var(--glass-border)',
   boxShadow: 'var(--glass-shine)',
-  width: 280,
+  width: 'clamp(180px, 20vw, 280px)',
+  minWidth: 36,
+  flexShrink: 1,
   fontSize: 12.5,
   textAlign: 'left',
   transition: 'all 0.18s',
@@ -522,6 +525,7 @@ const githubStyle = {
   color: 'var(--topbar-github-fg, #0d1117)',
   fontSize: 13,
   fontWeight: 700,
+  flexShrink: 0,
   transition: 'all 0.18s',
 }
 

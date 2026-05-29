@@ -415,10 +415,16 @@ function HeroStyles() {
     <style>{`
       .ai-course-snap-root {
         position: relative;
-        height: calc(100dvh - 56px);
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
         min-height: 720px;
         overflow: hidden;
         isolation: isolate;
+        background:
+          radial-gradient(circle at 20% 10%, rgba(168, 85, 247, 0.12), transparent 28%),
+          radial-gradient(circle at 78% 20%, rgba(244, 114, 182, 0.08), transparent 30%),
+          linear-gradient(180deg, #080713 0%, #0c0818 48%, #070610 100%);
       }
 
       .ai-course-snap-track {
@@ -909,7 +915,7 @@ function HeroStyles() {
 
       @media (max-width: 767px) {
         .ai-course-snap-root {
-          height: calc(100dvh - 56px);
+          height: 100%;
           min-height: 640px;
         }
         .ai-course-snap-dots {
@@ -945,6 +951,13 @@ function HeroStyles() {
           radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.10), transparent 28%),
           radial-gradient(circle at 78% 20%, rgba(219, 39, 119, 0.08), transparent 30%),
           linear-gradient(180deg, #fbfaff 0%, #f6f3ff 48%, #fff7fb 100%);
+      }
+
+      [data-theme="light"] .ai-course-snap-root {
+        background:
+          radial-gradient(circle at 20% 10%, rgba(124, 58, 237, 0.10), transparent 28%),
+          radial-gradient(circle at 78% 20%, rgba(219, 39, 119, 0.08), transparent 30%),
+          linear-gradient(135deg, #ffffff 0%, #f5f1ff 50%, #fff1f7 100%);
       }
 
       [data-theme="light"] .ai-course-chapters-scroll::-webkit-scrollbar-thumb {
