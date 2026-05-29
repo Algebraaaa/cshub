@@ -6,7 +6,7 @@ import { useViewport } from '../hooks/useMediaQuery'
 
 const Sidebar = lazy(() => import('./Sidebar'))
 
-const GUIDE_PATHS = ['/learn', '/github', '/ai', '/ai-course', '/finance', '/health', '/interview', '/roadmap', '/toolbox', '/projects', '/setup', '/growth', '/logic', '/books']
+const GUIDE_PATHS = ['/learn', '/github', '/ai', '/finance', '/health', '/interview', '/roadmap', '/toolbox', '/projects', '/setup', '/growth', '/logic', '/books']
 
 const GUIDE_BACK_PATHS = new Set(['/github', '/ai', '/interview', '/roadmap', '/toolbox', '/projects', '/setup'])
 
@@ -29,7 +29,8 @@ export default function AppLayout() {
   const { pathname } = useLocation()
   const isHome = pathname === '/'
   const isAlgo = pathname.startsWith('/algo') || pathname.startsWith('/compare')
-  const isGuide = GUIDE_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
+  const isAICourseHome = pathname === '/ai-course'
+  const isGuide = isAICourseHome || GUIDE_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
   const hasGuideSidebar = GUIDE_BACK_PATHS.has(pathname)
   const floatingBackTarget = getFloatingBackTarget(pathname)
   // 三档断点：phone ≤640 / ipad 641-1024 / desktop >1024
