@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import AppLayout from './layout/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -91,6 +92,7 @@ export default function App() {
         </Routes>
       </Suspense>
       </ErrorBoundary>
+      <Analytics />
     </BrowserRouter>
   )
 }
