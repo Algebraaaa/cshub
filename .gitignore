@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Local review/extraction artifacts
+.git_disabled/
+_artifact_reviews/
+回收站bin/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

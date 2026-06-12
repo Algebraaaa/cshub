@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import PlaygroundShell from '../playgrounds/PlaygroundShell'
 import VizCard from '../playgrounds/VizCard'
-import { OptVizCanvas, Axes, PathLine, CurrentDot, toSvgX, toSvgY, contourPaths } from './OptViz2D'
+import { OptVizCanvas, Axes, PathLine, CurrentDot, contourPaths } from './OptViz2D'
 
 const fn = (x, y) => x * x + y * y
 const grad = (x, y) => [2 * x, 2 * y]

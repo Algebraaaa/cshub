@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AI_CURRICULUM, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
 
@@ -45,6 +45,7 @@ const PARTICLES = [
 ]
 
 export default function AIPage() {
+  const [searchParams] = useSearchParams()
   const { progress, isCompleted } = useCourseProgress(AI_CURRICULUM.id, AI_TOTAL_LESSONS)
   const [snapPage, setSnapPage] = useState(0)
   const rootRef = useRef(null)
@@ -57,10 +58,22 @@ export default function AIPage() {
 
   const firstLesson = AI_CURRICULUM.chapters[0].lessons[0]
   const nextLesson = findNextLesson(AI_CURRICULUM, isCompleted)
+  const targetChapter = searchParams.get('chapter')
 
   useEffect(() => {
     pageRef.current = snapPage
   }, [snapPage])
+
+  useEffect(() => {
+    if (!targetChapter) return
+    setSnapPage(1)
+    pageRef.current = 1
+    window.setTimeout(() => {
+      const target = Array.from(chaptersScrollRef.current?.querySelectorAll('[data-ai-chapter]') || [])
+        .find(el => el.dataset.aiChapter === targetChapter)
+      target?.scrollIntoView({ block: 'start' })
+    }, AI_SLIDE_MS)
+  }, [targetChapter])
 
   const goToSnapPage = useCallback((next) => {
     if (lockRef.current) return
@@ -187,7 +200,7 @@ export default function AIPage() {
               {AI_CURRICULUM.chapters.map((chapter, ci) => {
                 const chapterDone = chapter.lessons.filter(l => isCompleted(l.id)).length
                 return (
-                  <section key={chapter.id} className="glass-card p-6">
+                  <section key={chapter.id} data-ai-chapter={chapter.id} className="glass-card p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-0.5">

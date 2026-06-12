@@ -1,8 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import PlaygroundShell from '../playgrounds/PlaygroundShell'
 import VizCard from '../playgrounds/VizCard'
-import { OptVizCanvas, Axes, PathLine, CurrentDot, contourPaths, toSvgX, toSvgY, W, H, PAD } from './OptViz2D'
-import { AI_LEGEND } from '../../styles/aiVizTokens'
+import { OptVizCanvas, Axes, PathLine, CurrentDot, contourPaths } from './OptViz2D'
 
 // Rosenbrock 函数: f(x,y) = (a-x)^2 + b(y-x^2)^2
 const A = 1, B = 100
@@ -16,7 +15,7 @@ const X_RANGE = [-2, 2]
 const Y_RANGE = [-1, 3]
 const LEVELS = [0.5, 2, 5, 10, 20, 50, 100, 200, 400, 800]
 
-function computeSteps(variant, lr, batchSize) {
+function computeSteps(variant, lr) {
   const steps = []
   let x = -1.5, y = 2.0
   const maxSteps = 40

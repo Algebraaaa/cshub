@@ -122,11 +122,29 @@ export const CATEGORIES = {
     "color": "#ef4444",
     "desc": "递归下降、LL/LR 等语法分析与 AST 构建"
   },
-  "compilerCode": {
-    "name": "代码生成",
-    "icon": "⚙️",
+  "itFundamental": {
+    "name": "信息度量",
+    "icon": "📊",
+    "color": "#06b6d4",
+    "desc": "自信息、熵、联合熵、条件熵、互信息、KL 散度"
+  },
+  "itChannel": {
+    "name": "信道模型",
+    "icon": "📡",
     "color": "#8b5cf6",
-    "desc": "AST → 三地址码 → 伪汇编的代码生成过程"
+    "desc": "BSC/BEC 信道、信道容量、噪声与转移概率"
+  },
+  "itMarkov": {
+    "name": "马尔可夫过程",
+    "icon": "🔄",
+    "color": "#ec4899",
+    "desc": "马尔可夫信源/信道、状态转移、平稳分布"
+  },
+  "itCoding": {
+    "name": "编码理论",
+    "icon": "🧬",
+    "color": "#10b981",
+    "desc": "霍夫曼编码、香农-费诺编码、纠错编码"
   }
 }
 
@@ -290,6 +308,57 @@ export const ALGORITHM_LIST = [
     "description": "把算术表达式 token 流解析成抽象语法树，运算优先级通过文法分层自然处理。"
   },
   {
+    "slug": "ll1",
+    "name": "LL(1) 分析表",
+    "nameEn": "LL(1) Parse Table",
+    "category": "compilerSyn",
+    "difficulty": "进阶",
+    "viz": "ll1",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(|G|)",
+    "stable": true,
+    "inPlace": false,
+    "description": "自顶向下的预测分析：先计算 FIRST/FOLLOW 集，构造 LL(1) 分析表，再用栈 + 输入串驱动解析。"
+  },
+  {
+    "slug": "lr0",
+    "name": "LR(0) 归约",
+    "nameEn": "LR(0) Parsing",
+    "category": "compilerSyn",
+    "difficulty": "进阶",
+    "viz": "lr0",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(|states|)",
+    "stable": true,
+    "inPlace": false,
+    "description": "自底向上的移进-归约分析：构造 LR(0) 项集族（自动机），生成 ACTION/GOTO 表，用状态栈驱动解析。"
+  },
+  {
+    "slug": "codeGen",
+    "name": "代码生成",
+    "nameEn": "Code Generation (TAC → ASM)",
+    "category": "compilerCode",
+    "difficulty": "进阶",
+    "viz": "codeGen",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": true,
+    "inPlace": false,
+    "description": "编译器后端：将 AST 翻译为三地址码（TAC），再映射到简单伪汇编指令序列，展示表达式求值顺序与临时变量分配。"
+  },
+  {
     "slug": "unionfind",
     "name": "并查集",
     "nameEn": "Union-Find",
@@ -400,6 +469,38 @@ export const ALGORITHM_LIST = [
     "description": "用 lowbit 跳跃的紧凑数组，支持 O(log n) 的单点更新和前缀和查询。"
   },
   {
+    "slug": "lazyseg",
+    "name": "懒标记线段树",
+    "nameEn": "Lazy Segment Tree",
+    "category": "dataStructures",
+    "difficulty": "进阶",
+    "viz": "lazyseg",
+    "timeComplexity": {
+      "best": "O(log n)",
+      "average": "O(log n)",
+      "worst": "O(log n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": null,
+    "description": "线段树 + lazy 标记，支持 O(log n) 的区间修改与区间查询。"
+  },
+  {
+    "slug": "diffarray",
+    "name": "差分数组",
+    "nameEn": "Difference Array",
+    "category": "dataStructures",
+    "difficulty": "中等",
+    "viz": "diffarray",
+    "timeComplexity": {
+      "best": "O(1)",
+      "average": "O(1)",
+      "worst": "O(1)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": null,
+    "description": "d[i] = a[i] − a[i−1]，区间加 O(1)，前缀和恢复 O(n)。"
+  },
+  {
     "slug": "bplustree",
     "name": "B+ 树",
     "nameEn": "B+ Tree",
@@ -449,6 +550,40 @@ export const ALGORITHM_LIST = [
     "stable": false,
     "inPlace": false,
     "description": "用较小表建哈希表，扫较大表逐行探测——等值联接的现代默认算法。"
+  },
+  {
+    "slug": "mvcc",
+    "name": "MVCC",
+    "nameEn": "Multi-Version Concurrency Control",
+    "category": "dbTxn",
+    "difficulty": "进阶",
+    "viz": "mvcc",
+    "timeComplexity": {
+      "best": "O(1)",
+      "average": "O(v)",
+      "worst": "O(v)"
+    },
+    "spaceComplexity": "O(v·n)",
+    "stable": true,
+    "inPlace": false,
+    "description": "多版本并发控制：每次写操作保留旧版本，读操作依据事务快照选择可见版本，读写互不阻塞。"
+  },
+  {
+    "slug": "queryPlan",
+    "name": "查询计划",
+    "nameEn": "Query Plan (Volcano Model)",
+    "category": "dbQuery",
+    "difficulty": "进阶",
+    "viz": "queryPlan",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n log n)",
+      "worst": "O(n²)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": true,
+    "inPlace": false,
+    "description": "数据库查询执行器将 SQL 翻译成算子树（Volcano 模型），数据从叶子节点向上逐层拉取、过滤、聚合，直到根节点吐出结果。"
   },
   {
     "slug": "knapsack",
@@ -630,6 +765,372 @@ export const ALGORITHM_LIST = [
     "spaceComplexity": "O(b^d)",
     "stable": null,
     "description": "带启发函数的最短路搜索，f(n)=g(n)+h(n)，比 Dijkstra 更快到达目标。"
+  },
+  {
+    "slug": "tarjancp",
+    "name": "Tarjan 割点与桥",
+    "nameEn": "Tarjan Cut Points & Bridges",
+    "category": "graph",
+    "difficulty": "进阶",
+    "viz": "tarjancp",
+    "timeComplexity": {
+      "best": "O(V+E)",
+      "average": "O(V+E)",
+      "worst": "O(V+E)"
+    },
+    "spaceComplexity": "O(V)",
+    "stable": null,
+    "description": "用 dfn/low 数组一次 DFS 找出无向图的所有割点和桥。"
+  },
+  {
+    "slug": "lca",
+    "name": "LCA 最近公共祖先",
+    "nameEn": "Lowest Common Ancestor",
+    "category": "graph",
+    "difficulty": "进阶",
+    "viz": "lca",
+    "timeComplexity": {
+      "best": "O(n log n + Q log n)",
+      "average": "O(n log n + Q log n)",
+      "worst": "O(n log n + Q log n)"
+    },
+    "spaceComplexity": "O(n log n)",
+    "stable": null,
+    "description": "倍增法预处理 O(n log n)，每次查询 O(log n) 找到两节点的最近公共祖先。"
+  },
+  {
+    "slug": "dinic",
+    "name": "Dinic 最大流",
+    "nameEn": "Dinic's Max Flow",
+    "category": "graph",
+    "difficulty": "进阶",
+    "viz": "dinic",
+    "timeComplexity": {
+      "best": "O(V²E)",
+      "average": "O(V²E)",
+      "worst": "O(V²E)"
+    },
+    "spaceComplexity": "O(V+E)",
+    "stable": null,
+    "description": "层次图 + 阻塞流，用 BFS 建层次、DFS 找增广路，求最大流。"
+  },
+  {
+    "slug": "mcmf",
+    "name": "最小费用最大流",
+    "nameEn": "Min Cost Max Flow",
+    "category": "graph",
+    "difficulty": "进阶",
+    "viz": "mcmf",
+    "timeComplexity": {
+      "best": "O(V·E·f)",
+      "average": "O(V·E·f)",
+      "worst": "O(V·E·f)"
+    },
+    "spaceComplexity": "O(V+E)",
+    "stable": null,
+    "description": "SPFA 找最短路增广，同时求最大流和最小费用。"
+  },
+  {
+    "slug": "eulerpath",
+    "name": "欧拉回路",
+    "nameEn": "Euler Circuit (Hierholzer)",
+    "category": "graph",
+    "difficulty": "进阶",
+    "viz": "eulerpath",
+    "timeComplexity": {
+      "best": "O(V+E)",
+      "average": "O(V+E)",
+      "worst": "O(V+E)"
+    },
+    "spaceComplexity": "O(V+E)",
+    "stable": null,
+    "description": "Hierholzer 算法：DFS 走遍所有边，回溯时拼出欧拉回路。"
+  },
+  {
+    "slug": "it-selfinfo",
+    "name": "自信息与信息量",
+    "nameEn": "Self-Information",
+    "category": "itFundamental",
+    "difficulty": "基础",
+    "viz": "itSelfInfo",
+    "timeComplexity": {
+      "best": "O(1)",
+      "average": "O(1)",
+      "worst": "O(1)"
+    },
+    "spaceComplexity": "O(1)",
+    "stable": true,
+    "inPlace": true,
+    "description": "事件发生概率越小，携带的信息量越大。I(x) = -log p(x)。"
+  },
+  {
+    "slug": "it-entropy",
+    "name": "信息熵 Entropy",
+    "nameEn": "Shannon Entropy",
+    "category": "itFundamental",
+    "difficulty": "基础",
+    "viz": "itEntropy",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(1)",
+    "stable": true,
+    "inPlace": true,
+    "description": "离散概率分布的平均不确定性：H(X) = -Σ p(x) log p(x)。"
+  },
+  {
+    "slug": "it-joint-conditional",
+    "name": "联合熵与条件熵",
+    "nameEn": "Joint & Conditional Entropy",
+    "category": "itFundamental",
+    "difficulty": "中等",
+    "viz": "itJointEntropy",
+    "timeComplexity": {
+      "best": "O(mn)",
+      "average": "O(mn)",
+      "worst": "O(mn)"
+    },
+    "spaceComplexity": "O(mn)",
+    "stable": true,
+    "inPlace": true,
+    "description": "基于联合概率表计算 H(X,Y) 与 H(Y|X)。"
+  },
+  {
+    "slug": "it-mutual",
+    "name": "互信息 Mutual Information",
+    "nameEn": "Mutual Information",
+    "category": "itFundamental",
+    "difficulty": "中等",
+    "viz": "itMutualInfo",
+    "timeComplexity": {
+      "best": "O(mn)",
+      "average": "O(mn)",
+      "worst": "O(mn)"
+    },
+    "spaceComplexity": "O(mn)",
+    "stable": true,
+    "inPlace": true,
+    "description": "两个随机变量之间共享的信息量。"
+  },
+  {
+    "slug": "it-kl-crossentropy",
+    "name": "KL 散度与交叉熵",
+    "nameEn": "KL Divergence & Cross Entropy",
+    "category": "itFundamental",
+    "difficulty": "中等",
+    "viz": "itKLDivergence",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": true,
+    "inPlace": true,
+    "description": "两个概率分布之间差异的量化度量。"
+  },
+  {
+    "slug": "it-entropyrate",
+    "name": "熵率 Entropy Rate",
+    "nameEn": "Entropy Rate",
+    "category": "itFundamental",
+    "difficulty": "进阶",
+    "viz": "itEntropyRate",
+    "timeComplexity": {
+      "best": "O(n²)",
+      "average": "O(n²·k)",
+      "worst": "O(n²·k)"
+    },
+    "spaceComplexity": "O(n²)",
+    "stable": true,
+    "inPlace": false,
+    "description": "随机过程单位时间的平均不确定性。"
+  },
+  {
+    "slug": "it-channel",
+    "name": "信道模型 BSC/BEC",
+    "nameEn": "Channel Models (BSC / BEC)",
+    "category": "itChannel",
+    "difficulty": "基础",
+    "viz": "itChannel",
+    "timeComplexity": {
+      "best": "O(1)",
+      "average": "O(1)",
+      "worst": "O(1)"
+    },
+    "spaceComplexity": "O(1)",
+    "stable": true,
+    "inPlace": true,
+    "description": "基础离散无记忆信道的转移概率与噪声演示。"
+  },
+  {
+    "slug": "it-channelcapacity",
+    "name": "信道容量",
+    "nameEn": "Channel Capacity",
+    "category": "itChannel",
+    "difficulty": "进阶",
+    "viz": "itChannelCapacity",
+    "timeComplexity": {
+      "best": "O(mn·k)",
+      "average": "O(mn·k)",
+      "worst": "O(mn·k)"
+    },
+    "spaceComplexity": "O(mn)",
+    "stable": true,
+    "inPlace": false,
+    "description": "信道可可靠传输的最大速率。"
+  },
+  {
+    "slug": "it-markov-source",
+    "name": "马尔可夫信源",
+    "nameEn": "Markov Source",
+    "category": "itMarkov",
+    "difficulty": "中等",
+    "viz": "itMarkovSource",
+    "timeComplexity": {
+      "best": "O(n²·k)",
+      "average": "O(n²·k)",
+      "worst": "O(n²·k)"
+    },
+    "spaceComplexity": "O(n²)",
+    "stable": true,
+    "inPlace": false,
+    "description": "状态图与转移矩阵展示状态跳转、多步转移与平稳分布。"
+  },
+  {
+    "slug": "it-markov-channel",
+    "name": "马尔可夫信道",
+    "nameEn": "Markov Channel",
+    "category": "itMarkov",
+    "difficulty": "进阶",
+    "viz": "itMarkovChannel",
+    "timeComplexity": {
+      "best": "O(n²·k)",
+      "average": "O(n²·k)",
+      "worst": "O(n²·k)"
+    },
+    "spaceComplexity": "O(n²)",
+    "stable": true,
+    "inPlace": false,
+    "description": "信道状态随时间演化下的输入输出过程。"
+  },
+  {
+    "slug": "it-huffman",
+    "name": "霍夫曼编码",
+    "nameEn": "Huffman Coding",
+    "category": "itCoding",
+    "difficulty": "中等",
+    "viz": "itHuffman",
+    "timeComplexity": {
+      "best": "O(n log n)",
+      "average": "O(n log n)",
+      "worst": "O(n log n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": false,
+    "inPlace": false,
+    "description": "最优前缀码：基于频率统计的贪心合并建树。"
+  },
+  {
+    "slug": "it-shannonfano",
+    "name": "香农-费诺编码",
+    "nameEn": "Shannon-Fano Coding",
+    "category": "itCoding",
+    "difficulty": "中等",
+    "viz": "itShannonFano",
+    "timeComplexity": {
+      "best": "O(n log n)",
+      "average": "O(n log n)",
+      "worst": "O(n²)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": false,
+    "inPlace": false,
+    "description": "概率排序后上下半分递归分配码字，次优前缀码。"
+  },
+  {
+    "slug": "it-errorcorrect",
+    "name": "纠错编码基础",
+    "nameEn": "Error Correcting Codes",
+    "category": "itCoding",
+    "difficulty": "中等",
+    "viz": "itErrorCorrect",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": true,
+    "inPlace": true,
+    "description": "奇偶校验与汉明 (7,4) 码的编码、检错与纠错过程。"
+  },
+  {
+    "slug": "it-datacompression",
+    "name": "数据压缩与冗余度",
+    "nameEn": "Data Compression & Redundancy",
+    "category": "itCoding",
+    "difficulty": "基础",
+    "viz": "itDataCompression",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": true,
+    "inPlace": true,
+    "description": "定长/变长编码对比、平均码长、编码效率与冗余度。"
+  },
+  {
+    "slug": "fastpow",
+    "name": "快速幂",
+    "nameEn": "Fast Exponentiation",
+    "category": "math",
+    "difficulty": "基础",
+    "viz": "fastpow",
+    "timeComplexity": {
+      "best": "O(log b)",
+      "average": "O(log b)",
+      "worst": "O(log b)"
+    },
+    "spaceComplexity": "O(1)",
+    "stable": null,
+    "description": "利用指数的二进制分解，将 a^b mod m 的计算从 O(b) 降到 O(log b)。"
+  },
+  {
+    "slug": "sieve",
+    "name": "欧拉筛（线性筛）",
+    "nameEn": "Euler Sieve (Linear Sieve)",
+    "category": "math",
+    "difficulty": "中等",
+    "viz": "sieve",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": null,
+    "description": "每个合数只被其最小质因子筛掉一次，O(n) 线性时间求出所有素数。"
+  },
+  {
+    "slug": "matrixpow",
+    "name": "矩阵快速幂",
+    "nameEn": "Matrix Fast Exponentiation",
+    "category": "math",
+    "difficulty": "进阶",
+    "viz": "matrixpow",
+    "timeComplexity": {
+      "best": "O(k³ log n)",
+      "average": "O(k³ log n)",
+      "worst": "O(k³ log n)"
+    },
+    "spaceComplexity": "O(k²)",
+    "stable": null,
+    "description": "将快速幂推广到矩阵乘法，O(k³ log n) 求解线性递推（如 Fibonacci 第 n 项）。"
   },
   {
     "slug": "tcphandshake",
@@ -1102,6 +1603,38 @@ export const ALGORITHM_LIST = [
     "description": "用滚动哈希快速筛选候选窗口，再逐字符验证。"
   },
   {
+    "slug": "aho",
+    "name": "AC 自动机",
+    "nameEn": "Aho-Corasick Automaton",
+    "category": "string",
+    "difficulty": "进阶",
+    "viz": "aho",
+    "timeComplexity": {
+      "best": "O(n + m + z)",
+      "average": "O(n + m + z)",
+      "worst": "O(n + m + z)"
+    },
+    "spaceComplexity": "O(m·|Σ|)",
+    "stable": null,
+    "description": "在 Trie 上建 fail 指针（类似 KMP 的 next），多模式串一次扫描完成匹配。"
+  },
+  {
+    "slug": "stringhash",
+    "name": "字符串哈希",
+    "nameEn": "String Hashing",
+    "category": "string",
+    "difficulty": "中等",
+    "viz": "stringhash",
+    "timeComplexity": {
+      "best": "O(n)",
+      "average": "O(n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "stable": null,
+    "description": "多项式滚动哈希预处理 O(n)，O(1) 比较任意子串是否相等。"
+  },
+  {
     "slug": "bst",
     "name": "二叉搜索树 BST",
     "nameEn": "Binary Search Tree",
@@ -1136,18 +1669,30 @@ export const ALGORITHM_LIST = [
     "name": "AVL 树",
     "nameEn": "AVL Tree",
     "category": "tree",
-    "difficulty": "中等",
-    "viz": "tree",
-    "description": "AVL 树插入并通过旋转（LL, RR, LR, RL）保持平衡。"
+    "difficulty": "进阶",
+    "viz": "avl",
+    "timeComplexity": {
+      "best": "O(log n)",
+      "average": "O(log n)",
+      "worst": "O(log n)"
+    },
+    "spaceComplexity": "O(n)",
+    "description": "自平衡二叉搜索树，任意节点左右子树高度差不超过1。"
   },
   {
     "slug": "treap",
     "name": "Treap",
     "nameEn": "Treap",
     "category": "tree",
-    "difficulty": "中等",
-    "viz": "tree",
-    "description": "Treap（随机化 BST）插入演示，展示堆优先级影响。"
+    "difficulty": "进阶",
+    "viz": "treap",
+    "timeComplexity": {
+      "best": "O(log n)",
+      "average": "O(log n)",
+      "worst": "O(n)"
+    },
+    "spaceComplexity": "O(n)",
+    "description": "BST（按键值）+ 堆（按随机优先级），期望树高 O(log n)。"
   },
   {
     "slug": "instructioncycle",
@@ -1335,8 +1880,24 @@ export const ALGORITHM_LIST = [
 
 export const ALGORITHMS = Object.fromEntries(ALGORITHM_LIST.map(algo => [algo.slug, algo]))
 
-export function getAlgorithmsByCategory(catKey) {
-  return ALGORITHM_LIST.filter(algo => algo.category === catKey)
+// 信息论分类的条目已迁入 AI 专业课（/ai-course?chapter=it），
+// 不出现在算法库的目录、搜索和个人中心统计里。
+export const AI_COURSE_ALGORITHM_CATEGORIES = new Set([
+  'itFundamental',
+  'itChannel',
+  'itMarkov',
+  'itCoding',
+])
+
+export function isAlgorithmLibraryItem(algo) {
+  return !!algo && !AI_COURSE_ALGORITHM_CATEGORIES.has(algo.category)
+}
+
+export const ALGORITHM_LIBRARY_LIST = ALGORITHM_LIST.filter(isAlgorithmLibraryItem)
+
+export function getAlgorithmsByCategory(catKey, { includeAICourse = false } = {}) {
+  return (includeAICourse ? ALGORITHM_LIST : ALGORITHM_LIBRARY_LIST)
+    .filter(algo => algo.category === catKey)
 }
 
 export function getAlgorithmMeta(slug) {

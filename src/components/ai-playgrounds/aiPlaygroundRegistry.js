@@ -27,44 +27,113 @@ function lookup(name) {
 }
 
 export const AI_VIZ_TO_NAME = {
-  // 最优化
+  // ─── 最优化方法 ───────────────────────────────────────
+  gradientDescent: 'GradientDescent',
+  gradientDescent3D: 'GradientDescent3D',
   gdVariants: 'GDVariants',
   momentum: 'Momentum',
+  nesterov: 'Nesterov',
+  adagrad: 'AdaGrad',
   rmsprop: 'RMSProp',
   adam: 'Adam',
+  bfgs: 'BFGS',
+  coordinateDescent: 'CoordinateDescent',
   lrCompare: 'LRCompare',
+  optimizerCompare: 'OptimizerCompare',
   newtonMethod: 'NewtonMethod',
   conjugateGradient: 'ConjugateGradient',
   lineSearch: 'LineSearch',
   geneticAlgorithm: 'GeneticAlgorithm',
   pso: 'PSO',
   simulatedAnnealing: 'SimulatedAnnealing',
-  // ML
+
+  // ─── 传统机器学习 ─────────────────────────────────────
   linearRegression: 'LinearRegression',
+  ridgeLasso: 'RidgeLasso',
+  ridgeRegression: 'RidgeRegression',
+  lassoRegression: 'LassoRegression',
   logisticRegression: 'LogisticRegression',
-  gradientDescent: 'GradientDescent',
+  naiveBayes: 'NaiveBayes',
   knn: 'KNN',
-  kmeans: 'KMeans',
   decisionTree: 'DecisionTree',
   svm: 'SVM',
-  // DL
+  randomForest: 'RandomForest',
+  adaBoost: 'AdaBoost',
+  gradientBoosting: 'GradientBoosting',
+  kmeans: 'KMeans',
+  hierarchical: 'Hierarchical',
+  hierarchicalClustering: 'HierarchicalClustering',
+  dbscan: 'DBSCAN',
+  pca: 'PCA',
+  gmm: 'GMM',
+  hmm: 'HMM',
+  mleVsMap: 'MLEvsMAP',
+
+  // ─── 最优化 / 运筹优化 ────────────────────────────────
+  linearProgramming: 'LinearProgramming',
+  lpSimplex: 'LPSimplex',
+  simplex: 'Simplex',
+  branchBound: 'BranchBound',
+  branchAndBound: 'BranchAndBound',
+  lagrangeKKT: 'LagrangeKKT',
+  lagrangian: 'Lagrangian',
+  convexOpt: 'ConvexOpt',
+  convexOptimization: 'ConvexOptimization',
+  integerProgramming: 'IntegerProgramming',
+  dpBag: 'DPBag',
+  greedyLocal: 'GreedyLocal',
+
+  // ─── 特征工程 & 模型评估 ──────────────────────────────
+  featureEngineering: 'FeatureEngineering',
+  metrics: 'Metrics',
+  missingValue: 'MissingValue',
+  standardization: 'Standardization',
+  oneHot: 'OneHot',
+  oneHotEncoding: 'OneHotEncoding',
+  featureSelection: 'FeatureSelection',
+  polynomialFeatures: 'PolynomialFeatures',
+  confusionMatrix: 'ConfusionMatrix',
+  rocAuc: 'ROCAUC',
+  rocCurve: 'ROCCurve',
+  regressionMetrics: 'RegressionMetrics',
+  overfitting: 'Overfitting',
+  crossValidation: 'CrossValidation',
+  biasVariance: 'BiasVariance',
+
+  // ─── 深度学习基础 ─────────────────────────────────────
   neuralNetwork: 'NeuralNetwork',
+  forwardPropagation: 'ForwardPropagation',
+  backwardPropagation: 'BackwardPropagation',
+  backpropagation: 'Backpropagation',
+  activation: 'Activation',
+  activationFunctions: 'ActivationFunctions',
+  lossFunctions: 'LossFunctions',
   cnn: 'CNN',
+  cnnConvolution: 'CNNConvolution',
+  pooling: 'Pooling',
   rnn: 'RNN',
-  // NLP
+  rnnLSTM: 'RNNLSTM',
+
+  // ─── 信息论（复用算法库内部可视化实现，入口归 AI 专业课）───────
+  infoTheoryBridge: 'AIInfoTheoryBridge',
+
+  // ─── NLP（真实演算可视化，2026-06 替换掉旧的 AIConcept 概念流图）──
   wordEmbedding: 'WordEmbedding',
   attention: 'Attention',
   transformer: 'Transformer',
-  // CV
+
+  // ─── CV ───────────────────────────────────────────────
   imageClassification: 'ImageClassification',
   objectDetection: 'ObjectDetection',
-  // RL
+
+  // ─── RL ───────────────────────────────────────────────
   qlearning: 'QLearning',
   policyGradient: 'PolicyGradient',
-  // LLM
+
+  // ─── LLM ──────────────────────────────────────────────
   pretraining: 'Pretraining',
   rag: 'RAG',
-  agent: 'Agent',
+  agent: 'AgentLoop',
 }
 
 export const AI_PLAYGROUND_LOADERS = Object.fromEntries(

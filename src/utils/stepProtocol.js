@@ -1,3 +1,43 @@
+// ─────────────────────────────────────────────────────────────
+// 统一高亮协议（2026-06）
+//
+// 算法库与 AI 课 playground 的 step 用同一组字段声明「当前步骤对应的
+// 代码高亮行」，消费方一律通过 getStepCodeLine(step, lang) 解析：
+//
+//   cppLine / pythonLine / javaLine   各语言显式行号（最优先，语义精确）
+//   codeLines: { cpp, python, java }  等价的对象写法
+//   codeLine / line / pseudoLine      不区分语言的兜底（仅算法库旧步骤）
+//
+// 消费方：
+//   - 算法库：components/learning/codeLineInference.js（getDirectLine）
+//   - AI 课：features/music/components/LessonViewer.jsx（snapshot.current 直通，
+//     explicitOnly —— AI 步骤里的 `line` 字段可能另有含义，不做泛化兜底）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 解析步骤声明的代码高亮行。
+ * @param {object} step  算法/playground 的单个 step
+ * @param {string} lang  'cpp' | 'python' | 'java' | 'pseudo'
+ * @param {object} opts  explicitOnly: 只认按语言显式声明的行号，
+ *                       忽略 codeLine/line/pseudoLine 泛化字段
+ * @returns {number|null}
+ */
+export function getStepCodeLine(step, lang, { explicitOnly = false } = {}) {
+  if (!step || typeof step !== 'object') return null
+  const direct = lang === 'cpp' ? step.cppLine
+    : lang === 'python' ? step.pythonLine
+    : lang === 'java' ? step.javaLine
+    : undefined
+  if (Number.isInteger(direct)) return direct
+  const fromMap = step.codeLines?.[lang]
+  if (Number.isInteger(fromMap)) return fromMap
+  if (explicitOnly) return null
+  if (Number.isInteger(step.codeLine)) return step.codeLine
+  if (Number.isInteger(step.line)) return step.line
+  if (Number.isInteger(step.pseudoLine)) return step.pseudoLine
+  return null
+}
+
 export const PRIORITY_STEP_KEYS = [
   'phase', 'level', 'found', 'answer', 'result',
   'i', 'j', 'k',

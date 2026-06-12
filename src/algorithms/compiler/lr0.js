@@ -15,6 +15,24 @@ const PRODUCTIONS = [
 const TERMINALS = ['id', '+', '$']
 const NON_TERMINALS_ALL = ["S'", 'E', 'T']
 
+// 步骤 → 详情页代码行号（data/algorithms/compiler.js 中 lr0.code 的行号）。
+// 改动那份展示代码时需同步这张表。spread 进 steps.push 使用。
+const L = {
+  itemsInit:   { cppLine: 15, pythonLine: 15 },  // I0 = closure({S'→·E})
+  itemsNew:    { cppLine: 23, pythonLine: 22 },  // goto 产生新状态
+  itemsDone:   { cppLine: 27, pythonLine: 23 },  // 项集族构建完成
+  tableIntro:  { cppLine: 29, pythonLine: 25 },
+  tableShift:  { cppLine: 34, pythonLine: 30 },  // ACTION = shift
+  tableGoto:   { cppLine: 40, pythonLine: 35 },  // GOTO 填表
+  tableAccept: { cppLine: 36, pythonLine: 32 },  // S'→E· 接受项
+  tableReduce: { cppLine: 37, pythonLine: 33 },  // ·在末尾 → reduce
+  parseInit:   { cppLine: 44, pythonLine: 38 },
+  parseError:  { cppLine: 47, pythonLine: 41 },
+  parseAccept: { cppLine: 48, pythonLine: 42 },
+  parseShift:  { cppLine: 49, pythonLine: 44 },
+  parseReduce: { cppLine: 53, pythonLine: 48 },
+}
+
 function makeItem(prodIdx, dot) { return `${prodIdx}:${dot}` }
 function parseItem(item) {
   const [p, d] = item.split(':').map(Number)
@@ -83,7 +101,7 @@ export function lr0Steps() {
 
   steps.push({ phase: 'items', items: [stateView(states[0])], transitions: [], table: {},
     stack: [], input: [], action: '', highlight: { stateId: 0 },
-    description: `构建初始项集 I0：closure({S' → · E}) = {${I0items.map(itemLabel).join('; ')}}。` })
+    description: `构建初始项集 I0：closure({S' → · E}) = {${I0items.map(itemLabel).join('; ')}}。`, ...L.itemsInit })
 
   const bfsQueue = [0]
   while (bfsQueue.length) {
@@ -108,7 +126,7 @@ export function lr0Steps() {
         bfsQueue.push(nextId)
         steps.push({ phase: 'items', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: {},
           stack: [], input: [], action: '', highlight: { stateId: nextId },
-          description: `goto(I${sid}, ${sym}) = I${nextId}：${nextItems.map(itemLabel).join(' ; ')}。` })
+          description: `goto(I${sid}, ${sym}) = I${nextId}：${nextItems.map(itemLabel).join(' ; ')}。`, ...L.itemsNew })
       }
       transitions.push({ from: sid, symbol: sym, to: nextId })
     }
@@ -116,7 +134,7 @@ export function lr0Steps() {
 
   steps.push({ phase: 'items', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: {},
     stack: [], input: [], action: '', highlight: null,
-    description: `LR(0) 项集构建完成，共 ${states.length} 个状态（I0–I${states.length - 1}），${transitions.length} 条转移边。` })
+    description: `LR(0) 项集构建完成，共 ${states.length} 个状态（I0–I${states.length - 1}），${transitions.length} 条转移边。`, ...L.itemsDone })
 
   // ── 阶段 2：构建 ACTION/GOTO 表 ──────────────────────────────────────
   const table = {}
@@ -124,19 +142,19 @@ export function lr0Steps() {
 
   steps.push({ phase: 'table', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
     stack: [], input: [], action: '', highlight: null,
-    description: '开始构建 ACTION/GOTO 表。Shift 项填 sN，规约项（·在末尾）填 rN，S\'→E· 填 accept。' })
+    description: '开始构建 ACTION/GOTO 表。Shift 项填 sN，规约项（·在末尾）填 rN，S\'→E· 填 accept。', ...L.tableIntro })
 
-  function fillCell(stateId, sym, val, desc) {
+  function fillCell(stateId, sym, val, desc, lines) {
     table[stateId][sym] = val
     steps.push({ phase: 'table', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
-      stack: [], input: [], action: '', highlight: { stateId, sym }, description: desc })
+      stack: [], input: [], action: '', highlight: { stateId, sym }, description: desc, ...(lines || {}) })
   }
 
   for (const tr of transitions) {
     if (TERMINALS.includes(tr.symbol)) {
-      fillCell(tr.from, tr.symbol, `s${tr.to}`, `goto(I${tr.from}, ${tr.symbol}) = I${tr.to}，ACTION[${tr.from}, ${tr.symbol}] = shift ${tr.to}。`)
+      fillCell(tr.from, tr.symbol, `s${tr.to}`, `goto(I${tr.from}, ${tr.symbol}) = I${tr.to}，ACTION[${tr.from}, ${tr.symbol}] = shift ${tr.to}。`, L.tableShift)
     } else {
-      fillCell(tr.from, tr.symbol, `g${tr.to}`, `goto(I${tr.from}, ${tr.symbol}) = I${tr.to}，GOTO[${tr.from}, ${tr.symbol}] = ${tr.to}。`)
+      fillCell(tr.from, tr.symbol, `g${tr.to}`, `goto(I${tr.from}, ${tr.symbol}) = I${tr.to}，GOTO[${tr.from}, ${tr.symbol}] = ${tr.to}。`, L.tableGoto)
     }
   }
 
@@ -145,11 +163,11 @@ export function lr0Steps() {
       const { prod, dot } = parseItem(item)
       if (dot === prod.rhs.length) {
         if (prod.lhs === "S'") {
-          fillCell(s.id, '$', 'acc', `I${s.id} 含 S' → E ·（接受项），ACTION[${s.id}, $] = accept。`)
+          fillCell(s.id, '$', 'acc', `I${s.id} 含 S' → E ·（接受项），ACTION[${s.id}, $] = accept。`, L.tableAccept)
         } else {
           for (const t of TERMINALS) {
             if (table[s.id][t] === null) {
-              fillCell(s.id, t, `r${prod.idx}`, `I${s.id} 含 ${itemLabel(item)}（· 在末尾），ACTION[${s.id}, ${t}] = reduce by ${prod.lhs} → ${prod.rhs.join(' ')}（产生式 ${prod.idx}）。`)
+              fillCell(s.id, t, `r${prod.idx}`, `I${s.id} 含 ${itemLabel(item)}（· 在末尾），ACTION[${s.id}, ${t}] = reduce by ${prod.lhs} → ${prod.rhs.join(' ')}（产生式 ${prod.idx}）。`, L.tableReduce)
             }
           }
         }
@@ -163,7 +181,7 @@ export function lr0Steps() {
 
   steps.push({ phase: 'parse', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
     stack: stk.map(s => ({ ...s })), input: [...parseInput], action: '初始化', currentState: 0, highlight: null,
-    description: "开始 LR(0) 驱动解析输入 id + id $。初始栈 [{0,$}]。" })
+    description: "开始 LR(0) 驱动解析输入 id + id $。初始栈 [{0,$}]。", ...L.parseInit })
 
   let ip = 0; let iter = 0
   while (iter < 30) {
@@ -175,14 +193,14 @@ export function lr0Steps() {
     if (!act) {
       steps.push({ phase: 'parse', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
         stack: stk.map(s => ({ ...s })), input: parseInput.slice(ip), action: '错误', currentState: curState,
-        highlight: { stateId: curState, sym: curInput }, description: `ACTION[${curState}, ${curInput}] 为空，解析错误。` })
+        highlight: { stateId: curState, sym: curInput }, description: `ACTION[${curState}, ${curInput}] 为空，解析错误。`, ...L.parseError })
       break
     }
 
     if (act === 'acc') {
       steps.push({ phase: 'parse', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
         stack: stk.map(s => ({ ...s })), input: parseInput.slice(ip), action: '接受！', currentState: curState,
-        highlight: { stateId: curState, sym: '$' }, description: `ACTION[${curState}, $] = accept，解析成功！` })
+        highlight: { stateId: curState, sym: '$' }, description: `ACTION[${curState}, $] = accept，解析成功！`, ...L.parseAccept })
       break
     }
 
@@ -191,7 +209,7 @@ export function lr0Steps() {
       stk.push({ state: nextState, symbol: curInput }); ip++
       steps.push({ phase: 'parse', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
         stack: stk.map(s => ({ ...s })), input: parseInput.slice(ip), action: `shift ${nextState}`, currentState: nextState,
-        highlight: { stateId: curState, sym: curInput }, description: `ACTION[${curState}, ${curInput}] = shift ${nextState}，压入 (${nextState}, ${curInput})。` })
+        highlight: { stateId: curState, sym: curInput }, description: `ACTION[${curState}, ${curInput}] = shift ${nextState}，压入 (${nextState}, ${curInput})。`, ...L.parseShift })
     } else if (act.startsWith('r')) {
       const prodIdx = parseInt(act.slice(1))
       const prod = PRODUCTIONS[prodIdx]
@@ -203,7 +221,7 @@ export function lr0Steps() {
       steps.push({ phase: 'parse', items: states.map(stateView), transitions: transitions.map(t => ({ ...t })), table: cloneTable(table),
         stack: stk.map(s => ({ ...s })), input: parseInput.slice(ip), action: `reduce ${prod.lhs} → ${prod.rhs.join(' ')}`,
         currentState: nextState, highlight: { stateId: topState, sym: prod.lhs },
-        description: `ACTION[${curState}, ${curInput}] = reduce by ${prod.lhs}→${prod.rhs.join(' ')}，弹出 ${prod.rhs.length} 项，GOTO[${topState}, ${prod.lhs}] = ${nextState}，压入 (${nextState}, ${prod.lhs})。` })
+        description: `ACTION[${curState}, ${curInput}] = reduce by ${prod.lhs}→${prod.rhs.join(' ')}，弹出 ${prod.rhs.length} 项，GOTO[${topState}, ${prod.lhs}] = ${nextState}，压入 (${nextState}, ${prod.lhs})。`, ...L.parseReduce })
     }
   }
 

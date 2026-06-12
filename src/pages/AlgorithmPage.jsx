@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link, Navigate } from 'react-router-dom'
 import { StepProvider } from '../contexts/StepContext'
-import { ALGORITHMS, ALGORITHM_LIST } from '../data/algorithmMeta'
+import { ALGORITHMS, ALGORITHM_LIBRARY_LIST } from '../data/algorithmMeta'
 import { loadAlgorithmDetail } from '../data/algorithmDetails'
 import { getPathNavigation, findPathsContaining } from '../data/paths'
 import { useAchievements } from '../contexts/AchievementsContext'
@@ -31,11 +31,18 @@ function getDisplayName(algo) {
 
 export default function AlgorithmPage() {
   const { slug } = useParams()
-  const meta = ALGORITHMS[slug]
+  const isInfoTheorySlug = slug?.startsWith('it-')
+  const meta = isInfoTheorySlug ? null : ALGORITHMS[slug]
   const [algo, setAlgo] = useState(null)
   const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
+    if (isInfoTheorySlug) {
+      setAlgo(null)
+      setLoadError(null)
+      return
+    }
+
     if (!meta) {
       setAlgo(null)
       setLoadError(null)
@@ -59,7 +66,11 @@ export default function AlgorithmPage() {
         }
       })
     return () => { cancelled = true }
-  }, [slug, meta])
+  }, [slug, meta, isInfoTheorySlug])
+
+  if (isInfoTheorySlug) {
+    return <Navigate to={`/ai-course/lesson/${slug}`} replace />
+  }
 
   if (!meta) {
     return (
@@ -225,7 +236,7 @@ function RelatedNav({ algo, pathNav }) {
     )
   }
 
-  const sameCategory = ALGORITHM_LIST.filter(a => a.category === algo.category)
+  const sameCategory = ALGORITHM_LIBRARY_LIST.filter(a => a.category === algo.category)
   const idx = sameCategory.findIndex(a => a.slug === algo.slug)
   const prev = idx > 0 ? sameCategory[idx - 1] : null
   const next = idx < sameCategory.length - 1 ? sameCategory[idx + 1] : null

@@ -8,6 +8,7 @@ const CATEGORY_GROUP = {
   backtracking: 'backtracking',
   string: 'string',
   dataStructures: 'dataStructures',
+  math: 'math',
   pageReplacement: 'os',
   diskScheduling: 'os',
   cpuScheduling: 'os',
@@ -21,6 +22,10 @@ const CATEGORY_GROUP = {
   dbQuery: 'db',
   compilerLex: 'compiler',
   compilerSyn: 'compiler',
+  itFundamental: 'it',
+  itChannel: 'it',
+  itMarkov: 'it',
+  itCoding: 'it',
 }
 
 const GROUP_LOADERS = {
@@ -31,6 +36,8 @@ const GROUP_LOADERS = {
   db: () => import('./algorithms/db.js'),
   dp: () => import('./algorithms/dp.js'),
   graph: () => import('./algorithms/graph.js'),
+  it: () => import('./algorithms/it.js'),
+  math: () => import('./algorithms/math.js'),
   network: () => import('./algorithms/network.js'),
   os: () => import('./algorithms/os.js'),
   security: () => import('./algorithms/security.js'),

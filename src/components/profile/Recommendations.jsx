@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ALGORITHM_LIST, ALGORITHMS } from '../../data/algorithmMeta'
+import { ALGORITHM_LIBRARY_LIST, ALGORITHMS } from '../../data/algorithmMeta'
 import { PATH_LIST, getPathProgress } from '../../data/paths'
 
 // ProfilePage 的「下一步推荐」板块 · Tailwind only
@@ -11,7 +11,7 @@ export default function Recommendations({ completed, quizScores }) {
     .filter(({ prog }) => prog.pct < 100)
     .slice(0, 3)
 
-  const weakItems = ALGORITHM_LIST
+  const weakItems = ALGORITHM_LIBRARY_LIST
     .filter(algo => {
       const s = quizScores?.[algo.slug]
       return s && s.total > 0 && s.correct / s.total < 0.8

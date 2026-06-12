@@ -6,6 +6,24 @@ function cloneAst(node, highlightId) {
   return { ...node, highlight: node.id === highlightId, children: (node.children || []).map(c => cloneAst(c, highlightId)) }
 }
 
+// 步骤 → 详情页代码行号（data/algorithms/compiler.js 中 codeGen.code 的行号）。
+// 改动那份展示代码时需同步这张表。
+const LINES = {
+  astVisit: { cpp: 13, python: 1 },  // genCode(root, ...) 入口/递归
+  tacIntro: { cpp: 1,  python: 1 },
+  tacLit:   { cpp: 2,  python: 2 },
+  tacVar:   { cpp: 3,  python: 3 },
+  tacNode:  { cpp: 4,  python: 4 },  // 递归处理子节点
+  tacEmit:  { cpp: 7,  python: 8 },  // 生成一条 TAC
+  asmEmit:  { cpp: 14, python: 8 },  // 输出指令
+  done:     { cpp: 14, python: 9 },
+}
+function nodeLines(node) {
+  if (node?.type === 'Lit') return LINES.tacLit
+  if (node?.type === 'Var') return LINES.tacVar
+  return LINES.tacNode
+}
+
 // arith: a = (b + c) * d - 2
 const astArith = {
   id: 'r', type: 'Assign', op: '=', label: 'a = (b+c)*d-2',
@@ -96,38 +114,39 @@ export function codeGenSteps(exprId) {
   function newTemp() { tempCount++; return `t${tempCount}` }
   function clearActive() { tac.forEach(t => { t.active = false }); asm.forEach(a => { a.active = false }) }
 
-  function snap(phase, nodeId, desc) {
+  function snap(phase, nodeId, desc, lines = null) {
     steps.push({ phase, ast: cloneAst(ast, nodeId), tac: tac.map(t => ({ ...t })), asm: asm.map(a => ({ ...a })),
-      temps: { ...temps }, currentNodeId: nodeId, description: desc })
+      temps: { ...temps }, currentNodeId: nodeId, description: desc,
+      ...(lines ? { cppLine: lines.cpp, pythonLine: lines.python } : {}) })
   }
 
   function addTac(instr, comment, nodeId) {
     clearActive()
     tac.push({ id: `tac${++tacCount}`, instr, active: true, comment })
-    snap('tac', nodeId, `生成三地址码：${instr}${comment ? '  // ' + comment : ''}`)
+    snap('tac', nodeId, `生成三地址码：${instr}${comment ? '  // ' + comment : ''}`, LINES.tacEmit)
   }
 
   function addAsm(instr, comment) {
     clearActive()
     asm.push({ id: `asm${++asmCount}`, instr, active: true, comment })
-    snap('asm', null, `生成伪汇编：${instr}${comment ? '  ; ' + comment : ''}`)
+    snap('asm', null, `生成伪汇编：${instr}${comment ? '  ; ' + comment : ''}`, LINES.asmEmit)
   }
 
   // ── AST 阶段 ──────────────────────────────────────────────────────────
-  snap('ast', null, `开始代码生成，输入 AST 类型：${ast.type}，标签：${ast.label}。`)
+  snap('ast', null, `开始代码生成，输入 AST 类型：${ast.type}，标签：${ast.label}。`, LINES.astVisit)
   function visitAst(node) {
     if (!node) return
-    snap('ast', node.id, `访问 AST 节点 ${node.type}（${node.label}）`)
+    snap('ast', node.id, `访问 AST 节点 ${node.type}（${node.label}）`, LINES.astVisit)
     for (const c of (node.children || [])) visitAst(c)
   }
   visitAst(ast)
 
   // ── TAC 阶段 ──────────────────────────────────────────────────────────
-  snap('tac', null, '开始遍历 AST，生成三地址码（Three-Address Code）。')
+  snap('tac', null, '开始遍历 AST，生成三地址码（Three-Address Code）。', LINES.tacIntro)
 
   function genTac(node) {
     if (!node) return null
-    snap('tac', node.id, `处理节点：${node.type}（${node.label}）`)
+    snap('tac', node.id, `处理节点：${node.type}（${node.label}）`, nodeLines(node))
     if (node.type === 'Lit' || node.type === 'Var') return node.label
     if (node.type === 'BinOp') {
       if (node.op === 'neg') {
@@ -175,7 +194,7 @@ export function codeGenSteps(exprId) {
   genTac(ast)
 
   // ── ASM 阶段 ──────────────────────────────────────────────────────────
-  snap('asm', null, '开始将三地址码映射为伪汇编（LOAD/STORE/ADD/SUB/MUL/NEG/CMP/JEQ/JMP/LABEL）。')
+  snap('asm', null, '开始将三地址码映射为伪汇编（LOAD/STORE/ADD/SUB/MUL/NEG/CMP/JEQ/JMP/LABEL）。', LINES.asmEmit)
 
   const opMap = { '+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV', '>': 'CMP', '<': 'CMP', '>=': 'CMP', '<=': 'CMP', '==': 'CMP' }
 
@@ -222,7 +241,8 @@ export function codeGenSteps(exprId) {
   clearActive()
   steps.push({ phase: 'asm', ast: cloneAst(ast, null), tac: tac.map(t => ({ ...t })), asm: asm.map(a => ({ ...a })),
     temps: { ...temps }, currentNodeId: null,
-    description: `代码生成完成。共 ${tac.length} 条三地址码，${asm.length} 条伪汇编指令。` })
+    description: `代码生成完成。共 ${tac.length} 条三地址码，${asm.length} 条伪汇编指令。`,
+    cppLine: LINES.done.cpp, pythonLine: LINES.done.python })
 
   return steps
 }

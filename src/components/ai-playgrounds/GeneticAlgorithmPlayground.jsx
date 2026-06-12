@@ -5,7 +5,6 @@ import { OptVizCanvas, Axes, PopulationDots, contourPaths } from './OptViz2D'
 
 // 适应度函数（求最大值）
 const fn = (x, y) => {
-  const r = Math.sqrt(x * x + y * y)
   return 3 * (1 - x) ** 2 * Math.exp(-x * x - (y + 1) ** 2)
     - 10 * (x / 5 - x ** 3 - y ** 5) * Math.exp(-x * x - y * y)
     - 1 / 3 * Math.exp(-Math.pow(x + 1, 2) - y * y)

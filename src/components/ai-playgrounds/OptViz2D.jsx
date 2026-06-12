@@ -93,7 +93,7 @@ export function PopulationDots({ points, xRange, yRange, color = '#8b5cf6', r = 
 }
 
 // 坐标轴
-export function Axes({ xRange, yRange, xLabel = 'x', yLabel = 'y' }) {
+export function Axes({ xLabel = 'x', yLabel = 'y' }) {
   return (
     <>
       <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD}

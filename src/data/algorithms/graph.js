@@ -6,6 +6,11 @@ import { dfs } from '../../algorithms/graph/dfs'
 import { dijkstra } from '../../algorithms/graph/dijkstra'
 import { floydWarshall } from '../../algorithms/graph/floydWarshall'
 import { topoSort } from '../../algorithms/graph/topoSort'
+import { tarjanCutpoint } from '../../algorithms/graph/tarjanCutpoint'
+import { lca } from '../../algorithms/graph/lca'
+import { dinic } from '../../algorithms/graph/dinic'
+import { mcmf } from '../../algorithms/graph/mcmf'
+import { eulerPath } from '../../algorithms/graph/eulerPath'
 
 export const GRAPH_ALGORITHMS = {
   bfs: {
@@ -599,6 +604,608 @@ def a_star(grid, start, goal):
     ],
   },
 
+  tarjancp: {
+    slug: 'tarjancp',
+    name: 'Tarjan 割点与桥',
+    nameEn: 'Tarjan Cut Points & Bridges',
+    category: 'graph',
+    difficulty: '进阶',
+    fn: tarjanCutpoint,
+    viz: 'tarjancp',
+    timeComplexity: { best: 'O(V+E)', average: 'O(V+E)', worst: 'O(V+E)' },
+    spaceComplexity: 'O(V)',
+    stable: null,
+    description: '用 dfn/low 数组一次 DFS 找出无向图的所有割点和桥。',
+    intuition: `**割点（Articulation Point）** 和 **桥（Bridge）** 是无向图中衡量连通性的关键概念。
+
+- **割点**：删除该节点（及其关联边）后，图的连通分量数增加。
+- **桥**：删除该边后，图的连通分量数增加。
+
+Tarjan 算法通过一次 DFS 同时求出所有割点和桥，核心是维护两个数组：
+- **dfn[u]**：节点 u 的 DFS 序（时间戳）
+- **low[u]**：从 u 出发，通过**回边**能到达的最小 dfn 值
+
+**桥的判定条件：** 对于树边 (u, v)，若 low[v] > dfn[u]，则 (u, v) 是桥。
+意思是：从 v 的子树出发，不经过 (u,v) 就无法到达 u 或其祖先。
+
+**割点的判定条件：**
+- 非根节点 u：存在子节点 v 使得 low[v] >= dfn[u]
+- 根节点：有 ≥ 2 个子树
+
+这是竞赛（CCPC/ICPC）图论的高频考点，也是网络可靠性分析的基础。`,
+    pseudocode: `procedure Tarjan(u, parent):
+    dfn[u] ← low[u] ← ++timestamp
+    children ← 0
+    for each neighbor v of u:
+        if v = parent: continue
+        if v is visited:
+            low[u] ← min(low[u], dfn[v])   // 回边
+        else:
+            children++
+            Tarjan(v, u)
+            low[u] ← min(low[u], low[v])
+            if low[v] > dfn[u]:
+                (u, v) is a bridge          // 桥
+            if parent ≠ -1 and low[v] ≥ dfn[u]:
+                u is a cut point            // 割点（非根）
+    if parent = -1 and children > 1:
+        u is a cut point                    // 割点（根）`,
+    code: {
+      cpp: `int dfn[MAXN], low[MAXN], timer;
+bool is_cut[MAXN];
+vector<pair<int,int>> bridges;
+
+void tarjan(int u, int fa) {
+    dfn[u] = low[u] = ++timer;
+    int children = 0;
+    for (int v : adj[u]) {
+        if (v == fa) { fa = -1; continue; }
+        if (dfn[v]) {
+            low[u] = min(low[u], dfn[v]);
+        } else {
+            children++;
+            tarjan(v, u);
+            low[u] = min(low[u], low[v]);
+            if (low[v] > dfn[u])           // 桥
+                bridges.push_back({u, v});
+            if (fa != -1 && low[v] >= dfn[u]) // 割点
+                is_cut[u] = true;
+        }
+    }
+    if (fa == -1 && children > 1)          // 根节点割点
+        is_cut[u] = true;
+}`,
+      python: `def tarjan_cutpoints_bridges(adj, n):
+    dfn = [0] * n
+    low = [0] * n
+    timer = [0]
+    is_cut = [False] * n
+    bridges = []
+
+    def dfs(u, fa):
+        timer[0] += 1
+        dfn[u] = low[u] = timer[0]
+        children = 0
+        for v in adj[u]:
+            if v == fa:
+                fa = -1
+                continue
+            if dfn[v]:
+                low[u] = min(low[u], dfn[v])
+            else:
+                children += 1
+                dfs(v, u)
+                low[u] = min(low[u], low[v])
+                if low[v] > dfn[u]:
+                    bridges.append((u, v))
+                if fa != -1 and low[v] >= dfn[u]:
+                    is_cut[u] = True
+        if fa == -1 and children > 1:
+            is_cut[u] = True
+
+    for i in range(n):
+        if not dfn[i]:
+            dfs(i, -1)
+    return is_cut, bridges`,
+    },
+    applications: [
+      '网络可靠性分析：找出关键节点和关键链路',
+      '双连通分量分解的基础',
+      'CCPC/ICPC 竞赛图论高频题',
+      'LeetCode 1192 查找集群内的关键连接',
+    ],
+  },
+
+  lca: {
+    slug: 'lca',
+    name: 'LCA 最近公共祖先',
+    nameEn: 'Lowest Common Ancestor',
+    category: 'graph',
+    difficulty: '进阶',
+    fn: lca,
+    viz: 'lca',
+    timeComplexity: { best: 'O(n log n + Q log n)', average: 'O(n log n + Q log n)', worst: 'O(n log n + Q log n)' },
+    spaceComplexity: 'O(n log n)',
+    stable: null,
+    description: '倍增法预处理 O(n log n)，每次查询 O(log n) 找到两节点的最近公共祖先。',
+    intuition: `**最近公共祖先（LCA）** 是树上两个节点 u、v 的公共祖先中**深度最大**的那个。
+
+LCA 是树上路径问题的核心工具：
+- u 到 v 的路径长度 = depth[u] + depth[v] - 2 × depth[LCA(u,v)]
+- 树上路径的权值和/最大值等也可以用 LCA + 前缀和/树链剖分解决
+
+**倍增法（Binary Lifting）：**
+
+预处理：对每个节点 u，计算 up[u][k] = u 的第 2^k 个祖先。
+- up[u][0] = parent(u)
+- up[u][k] = up[up[u][k-1]][k-1]（递推关系）
+
+查询 LCA(u, v)：
+1. 确保 depth[u] ≥ depth[v]
+2. 将 u 向上跳 depth[u] - depth[v] 步，使两者同深度
+3. 若 u == v，返回 u
+4. 从大到小尝试 k = LOG-1 到 0：若 up[u][k] ≠ up[v][k]，同时跳
+5. 返回 up[u][0]
+
+预处理 O(n log n)，每次查询 O(log n)。`,
+    pseudocode: `procedure Preprocess(root):
+    DFS(root, 0)     // 计算 depth[], up[][0]
+    for k from 1 to LOG-1:
+        for u from 1 to n:
+            up[u][k] ← up[up[u][k-1]][k-1]
+
+procedure LCA(u, v):
+    if depth[u] < depth[v]: swap(u, v)
+    diff ← depth[u] - depth[v]
+    for k from 0 to LOG-1:
+        if (diff >> k) & 1: u ← up[u][k]   // 对齐深度
+    if u = v: return u
+    for k from LOG-1 down to 0:
+        if up[u][k] ≠ up[v][k]:
+            u ← up[u][k]
+            v ← up[v][k]
+    return up[u][0]`,
+    code: {
+      cpp: `const int LOG = 20;
+int up[MAXN][LOG], depth[MAXN];
+
+void dfs(int u, int p) {
+    up[u][0] = p;
+    for (int i = 1; i < LOG; i++)
+        up[u][i] = up[up[u][i-1]][i-1];
+    for (int v : adj[u])
+        if (v != p) { depth[v] = depth[u] + 1; dfs(v, u); }
+}
+
+int lca(int u, int v) {
+    if (depth[u] < depth[v]) swap(u, v);
+    int diff = depth[u] - depth[v];
+    for (int i = 0; i < LOG; i++)
+        if ((diff >> i) & 1) u = up[u][i];
+    if (u == v) return u;
+    for (int i = LOG - 1; i >= 0; i--)
+        if (up[u][i] != up[v][i]) {
+            u = up[u][i]; v = up[v][i];
+        }
+    return up[u][0];
+}`,
+      python: `import math
+
+def build_lca(adj, root, n):
+    LOG = int(math.log2(n)) + 1
+    up = [[0]*LOG for _ in range(n)]
+    depth = [0] * n
+
+    def dfs(u, p):
+        up[u][0] = p
+        for i in range(1, LOG):
+            up[u][i] = up[up[u][i-1]][i-1]
+        for v in adj[u]:
+            if v != p:
+                depth[v] = depth[u] + 1
+                dfs(v, u)
+    dfs(root, root)
+    return up, depth, LOG
+
+def lca(u, v, up, depth, LOG):
+    if depth[u] < depth[v]:
+        u, v = v, u
+    diff = depth[u] - depth[v]
+    for i in range(LOG):
+        if (diff >> i) & 1:
+            u = up[u][i]
+    if u == v:
+        return u
+    for i in range(LOG-1, -1, -1):
+        if up[u][i] != up[v][i]:
+            u = up[u][i]
+            v = up[v][i]
+    return up[u][0]`,
+    },
+    applications: [
+      '树上两点距离 = depth[u] + depth[v] - 2×depth[LCA]',
+      '树上路径权值和 / 最大值（配合前缀和 / 树链剖分）',
+      '虚树构建',
+      'CCPC/ICPC 竞赛树上问题必备',
+    ],
+  },
+
+  dinic: {
+    slug: 'dinic',
+    name: 'Dinic 最大流',
+    nameEn: "Dinic's Max Flow",
+    category: 'graph',
+    difficulty: '进阶',
+    fn: dinic,
+    viz: 'dinic',
+    timeComplexity: { best: 'O(V²E)', average: 'O(V²E)', worst: 'O(V²E)' },
+    spaceComplexity: 'O(V+E)',
+    stable: null,
+    description: '层次图 + 阻塞流，用 BFS 建层次、DFS 找增广路，求最大流。',
+    intuition: `**最大流问题：** 给定有向图，每条边有容量上限，求从源点 S 到汇点 T 的最大流量。
+
+**Dinic 算法**是 Edmonds-Karp（BFS 增广）的优化版本，核心是**层次图**概念：
+
+1. **BFS 建层次图：** 从 S 出发做 BFS，给每个节点标 level（最短距离）。只保留从低 level 指向高 level 的边。
+2. **DFS 找阻塞流：** 在层次图上用 DFS 找增广路（从 S 到 T 的路径），沿路增加流量。**当前弧优化**：记录每个节点已经探索到第几条边，避免重复搜索。
+3. **重复**直到 BFS 无法到达 T（即没有增广路）。
+
+**为什么快？** 每轮 BFS 后，S→T 的最短距离至少 +1，所以最多 V 轮。每轮内 DFS 找阻塞流是 O(VE)。总计 O(V²E)。
+
+对于单位容量图（如二分图匹配），Dinic 退化到 O(E√V)，这是匈牙利算法的替代方案。`,
+    pseudocode: `procedure Dinic(S, T):
+    max_flow ← 0
+    while BFS(S, T):            // 建层次图
+        fill iter[] with 0       // 当前弧优化
+        while (flow ← DFS(S, ∞)) > 0:
+            max_flow += flow
+    return max_flow
+
+procedure BFS(S, T):
+    fill level[] with -1
+    level[S] ← 0;  queue ← [S]
+    while queue not empty:
+        u ← dequeue
+        for each edge (u, v, cap):
+            if cap > 0 and level[v] < 0:
+                level[v] ← level[u] + 1
+                enqueue(v)
+    return level[T] ≥ 0
+
+procedure DFS(u, flow):
+    if u = T: return flow
+    for i from iter[u] to |adj[u]|:
+        iter[u] ← i
+        edge e ← adj[u][i]
+        if e.cap > 0 and level[v] = level[u] + 1:
+            d ← DFS(e.to, min(flow, e.cap))
+            if d > 0:
+                e.cap -= d;  rev.cap += d
+                return d
+    return 0`,
+    code: {
+      cpp: `struct Edge { int to; ll cap; int rev; };
+vector<Edge> adj[MAXN];
+int level[MAXN], iter[MAXN];
+
+void add_edge(int from, int to, ll cap) {
+    adj[from].push_back({to, cap, (int)adj[to].size()});
+    adj[to].push_back({from, 0, (int)adj[from].size() - 1});
+}
+
+bool bfs(int s, int t) {
+    memset(level, -1, sizeof level);
+    queue<int> q; level[s] = 0; q.push(s);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (auto& e : adj[u])
+            if (e.cap > 0 && level[e.to] < 0) {
+                level[e.to] = level[u] + 1;
+                q.push(e.to);
+            }
+    }
+    return level[t] >= 0;
+}
+
+ll dfs(int u, int t, ll flow) {
+    if (u == t) return flow;
+    for (int& i = iter[u]; i < (int)adj[u].size(); i++) {
+        Edge& e = adj[u][i];
+        if (e.cap > 0 && level[e.to] == level[u] + 1) {
+            ll d = dfs(e.to, t, min(flow, e.cap));
+            if (d > 0) { e.cap -= d; adj[e.to][e.rev].cap += d; return d; }
+        }
+    }
+    return 0;
+}
+
+ll dinic(int s, int t) {
+    ll flow = 0;
+    while (bfs(s, t)) {
+        memset(iter, 0, sizeof iter);
+        ll d; while ((d = dfs(s, t, 1e18)) > 0) flow += d;
+    }
+    return flow;
+}`,
+      python: `from collections import deque
+
+class Dinic:
+    def __init__(self, n):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+
+    def add_edge(self, u, v, cap):
+        self.adj[u].append([v, cap, len(self.adj[v])])
+        self.adj[v].append([u, 0, len(self.adj[u]) - 1])
+
+    def bfs(self, s, t):
+        self.level = [-1] * self.n
+        self.level[s] = 0
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for v, cap, _ in self.adj[u]:
+                if cap > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u, t, flow):
+        if u == t: return flow
+        while self.it[u] < len(self.adj[u]):
+            e = self.adj[u][self.it[u]]
+            v, cap, rev = e
+            if cap > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(flow, cap))
+                if d > 0:
+                    e[1] -= d
+                    self.adj[v][rev][1] += d
+                    return d
+            self.it[u] += 1
+        return 0
+
+    def max_flow(self, s, t):
+        flow = 0
+        while self.bfs(s, t):
+            self.it = [0] * self.n
+            while True:
+                d = self.dfs(s, t, float('inf'))
+                if d == 0: break
+                flow += d
+        return flow`,
+    },
+    applications: [
+      '网络流：输油管道、交通网络最大吞吐量',
+      '二分图最大匹配（Dinic O(E√V)）',
+      '最小割 = 最大流（对偶定理）',
+      '项目选择问题、棒球淘汰问题',
+    ],
+  },
+
+  mcmf: {
+    slug: 'mcmf',
+    name: '最小费用最大流',
+    nameEn: 'Min Cost Max Flow',
+    category: 'graph',
+    difficulty: '进阶',
+    fn: mcmf,
+    viz: 'mcmf',
+    timeComplexity: { best: 'O(V·E·f)', average: 'O(V·E·f)', worst: 'O(V·E·f)' },
+    spaceComplexity: 'O(V+E)',
+    stable: null,
+    description: 'SPFA 找最短路增广，同时求最大流和最小费用。',
+    intuition: `**最小费用最大流（MCMF）** 在最大流的基础上，每条边还有一个**单位费用 cost**。目标是：在达到最大流的前提下，使总费用最小。
+
+**核心思想：** 每次沿**费用最小的增广路**增广。用 SPFA（或 Bellman-Ford）代替 BFS 来找增广路——这次找的是费用最短路而非边数最短路。
+
+**算法流程：**
+1. SPFA 从 S 出发，按 cost 做最短路，找到到 T 的最小费用路径
+2. 沿该路径增广（取瓶颈流量），更新正向/反向边容量
+3. 反向边的费用 = 正向边费用的相反数（保证"退费"机制正确）
+4. 重复直到没有增广路
+
+**为什么反向边费用取负？** 如果之前的增广路不是全局最优，后续可以通过"退回"反向边来修正，退费就是正向费用的相反数。
+
+总费用 = Σ(每次增广的流量 × 该次路径的单位费用)`,
+    pseudocode: `procedure MCMF(S, T):
+    max_flow ← 0, min_cost ← 0
+    while SPFA(S, T):           // 按 cost 找最短路
+        flow ← bottleneck on path
+        max_flow += flow
+        min_cost += flow × dist[T]
+        update residual capacities
+    return (max_flow, min_cost)
+
+procedure SPFA(S, T):
+    dist[] ← ∞, in_queue[] ← false
+    dist[S] ← 0, queue ← [S]
+    while queue not empty:
+        u ← dequeue
+        for each edge (u, v, cap, cost):
+            if cap > 0 and dist[v] > dist[u] + cost:
+                dist[v] ← dist[u] + cost
+                pre_v[v] ← u, pre_e[v] ← edge_index
+                if not in_queue[v]:
+                    enqueue(v); in_queue[v] ← true
+    return dist[T] < ∞`,
+    code: {
+      cpp: `struct Edge { int to; ll cap, cost; int rev; };
+vector<Edge> adj[MAXN];
+ll dist[MAXN]; int pre_v[MAXN], pre_e[MAXN];
+bool in_q[MAXN];
+
+void add_edge(int u, int v, ll cap, ll cost) {
+    adj[u].push_back({v, cap, cost, (int)adj[v].size()});
+    adj[v].push_back({u, 0, -cost, (int)adj[u].size() - 1});
+}
+
+bool spfa(int s, int t, int n) {
+    fill(dist, dist+n, 1e18);
+    fill(in_q, in_q+n, false);
+    dist[s] = 0; queue<int> q; q.push(s); in_q[s] = true;
+    while (!q.empty()) {
+        int u = q.front(); q.pop(); in_q[u] = false;
+        for (int i = 0; i < (int)adj[u].size(); i++) {
+            auto& e = adj[u][i];
+            if (e.cap > 0 && dist[e.to] > dist[u] + e.cost) {
+                dist[e.to] = dist[u] + e.cost;
+                pre_v[e.to] = u; pre_e[e.to] = i;
+                if (!in_q[e.to]) { q.push(e.to); in_q[e.to] = true; }
+            }
+        }
+    }
+    return dist[t] < 1e18;
+}
+
+pair<ll,ll> mcmf(int s, int t, int n) {
+    ll flow = 0, cost = 0;
+    while (spfa(s, t, n)) {
+        ll f = 1e18;
+        for (int v = t; v != s; v = pre_v[v])
+            f = min(f, adj[pre_v[v]][pre_e[v]].cap);
+        flow += f; cost += f * dist[t];
+        for (int v = t; v != s; v = pre_v[v]) {
+            auto& e = adj[pre_v[v]][pre_e[v]];
+            e.cap -= f; adj[v][e.rev].cap += f;
+        }
+    }
+    return {flow, cost};
+}`,
+      python: `from collections import deque
+
+class MCMF:
+    def __init__(self, n):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+
+    def add_edge(self, u, v, cap, cost):
+        self.adj[u].append([v, cap, cost, len(self.adj[v])])
+        self.adj[v].append([u, 0, -cost, len(self.adj[u]) - 1])
+
+    def spfa(self, s, t):
+        dist = [float('inf')] * self.n
+        in_q = [False] * self.n
+        self.pre_v = [0] * self.n
+        self.pre_e = [0] * self.n
+        dist[s] = 0
+        q = deque([s]); in_q[s] = True
+        while q:
+            u = q.popleft(); in_q[u] = False
+            for i, (v, cap, cost, _) in enumerate(self.adj[u]):
+                if cap > 0 and dist[v] > dist[u] + cost:
+                    dist[v] = dist[u] + cost
+                    self.pre_v[v] = u; self.pre_e[v] = i
+                    if not in_q[v]: q.append(v); in_q[v] = True
+        self.dist = dist
+        return dist[t] < float('inf')
+
+    def solve(self, s, t):
+        flow, cost = 0, 0
+        while self.spfa(s, t):
+            f = float('inf')
+            v = t
+            while v != s:
+                u = self.pre_v[v]
+                f = min(f, self.adj[u][self.pre_e[v]][1])
+                v = u
+            flow += f; cost += f * self.dist[t]
+            v = t
+            while v != s:
+                u = self.pre_v[v]
+                e = self.adj[u][self.pre_e[v]]
+                e[1] -= f
+                self.adj[v][e[3]][1] += f
+                v = u
+        return flow, cost`,
+    },
+    applications: [
+      '运输问题：最小运费调度',
+      '任务分配：最小代价匹配',
+      '最小费用流的各种变体',
+      'CCPC/ICPC 竞赛网络流进阶题',
+    ],
+  },
+
+  eulerpath: {
+    slug: 'eulerpath',
+    name: '欧拉回路',
+    nameEn: 'Euler Circuit (Hierholzer)',
+    category: 'graph',
+    difficulty: '进阶',
+    fn: eulerPath,
+    viz: 'eulerpath',
+    timeComplexity: { best: 'O(V+E)', average: 'O(V+E)', worst: 'O(V+E)' },
+    spaceComplexity: 'O(V+E)',
+    stable: null,
+    description: 'Hierholzer 算法：DFS 走遍所有边，回溯时拼出欧拉回路。',
+    intuition: `**欧拉回路**是经过图中**每条边恰好一次**并回到起点的路径。
+
+**存在性条件（无向图）：** 所有节点度数为偶数（连通图）。
+
+**Hierholzer 算法：**
+1. 从任意节点出发做 DFS，沿未使用的边行走
+2. 走到死胡同（无未使用边）时，把当前节点加入回路的**头部**
+3. 回溯：如果栈中还有节点，弹出继续走
+4. 最终得到逆序的欧拉回路
+
+**直觉：** 想象一笔画。从某点开始画，最终一定会回到起点（因为每个点进出的次数相同）。如果画的过程中走了"小圈"，剩余未画的边会形成若干连通子图，每个子图也满足欧拉回路条件，可以递归处理并"拼接"。
+
+**时间复杂度 O(V+E)**：每条边恰好被访问一次。`,
+    pseudocode: `procedure Hierholzer(graph, start):
+    stack ← [start]
+    circuit ← []
+    while stack not empty:
+        u ← stack.top()
+        if u has unused edges:
+            pick any unused edge (u, v)
+            mark edge as used
+            stack.push(v)
+        else:
+            circuit.append(stack.pop())
+    reverse(circuit)   // 或直接在头部插入
+    return circuit`,
+    code: {
+      cpp: `vector<int> circuit;
+int edge_ptr[MAXN];  // 当前弧优化
+
+void hierholzer(int u, vector<vector<int>>& adj) {
+    while (edge_ptr[u] < (int)adj[u].size()) {
+        int v = adj[u][edge_ptr[u]++];
+        hierholzer(v, adj);
+    }
+    circuit.push_back(u);  // 回溯时加入
+}
+
+vector<int> euler_circuit(int n, vector<vector<int>>& adj) {
+    circuit.clear();
+    fill(edge_ptr, edge_ptr + n, 0);
+    hierholzer(0, adj);
+    reverse(circuit.begin(), circuit.end());
+    return circuit;
+}`,
+      python: `def euler_circuit(adj, start=0):
+    n = len(adj)
+    edge_ptr = [0] * n
+    circuit = []
+
+    def dfs(u):
+        while edge_ptr[u] < len(adj[u]):
+            v = adj[u][edge_ptr[u]]
+            edge_ptr[u] += 1
+            dfs(v)
+        circuit.append(u)
+
+    dfs(start)
+    circuit.reverse()
+    return circuit`,
+    },
+    applications: [
+      '一笔画问题',
+      'De Bruijn 序列生成',
+      'DNA 片段拼接（Overlap graph）',
+      '中国邮递员问题的子问题',
+    ],
+  },
 }
 
 export default GRAPH_ALGORITHMS

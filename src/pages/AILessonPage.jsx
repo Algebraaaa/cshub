@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { AI_CURRICULUM, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { AI_CURRICULUM, AI_LESSON_ALIASES, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
 import LessonViewer from '../features/music/components/LessonViewer'
 import CurriculumIndex from '../features/music/components/CurriculumIndex'
@@ -19,10 +19,11 @@ function AIExercise({ exercise, lesson, onSnapshotChange }) {
 
 export default function AILessonPage() {
   const { lessonId } = useParams()
+  const canonicalLessonId = AI_LESSON_ALIASES[lessonId] || lessonId
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [playgroundSnapshot, setPlaygroundSnapshot] = useState(null)
   const snapshotKeyRef = useRef('')
-  const lesson = AI_LESSON_MAP[lessonId]
+  const lesson = AI_LESSON_MAP[canonicalLessonId]
   const { isCompleted, markComplete, progress } = useCourseProgress(
     AI_CURRICULUM.id,
     AI_TOTAL_LESSONS
@@ -31,7 +32,7 @@ export default function AILessonPage() {
   useEffect(() => {
     snapshotKeyRef.current = ''
     setPlaygroundSnapshot(null)
-  }, [lessonId])
+  }, [canonicalLessonId])
 
   const handlePlaygroundSnapshot = useCallback((snapshot) => {
     const current = snapshot?.current || {}
@@ -49,6 +50,10 @@ export default function AILessonPage() {
     snapshotKeyRef.current = key
     setPlaygroundSnapshot(snapshot)
   }, [lessonId])
+
+  if (canonicalLessonId !== lessonId && lesson) {
+    return <Navigate to={`/ai-course/lesson/${canonicalLessonId}`} replace />
+  }
 
   if (!lesson) {
     return (
@@ -100,7 +105,7 @@ export default function AILessonPage() {
             curriculum={AI_CURRICULUM}
             basePath="/ai-course"
             isCompleted={isCompleted}
-            currentLessonId={lessonId}
+            currentLessonId={canonicalLessonId}
           />
         </aside>
       </div>
@@ -116,8 +121,8 @@ export default function AILessonPage() {
 
         <LessonViewer
           lesson={lesson}
-          completed={isCompleted(lessonId)}
-          onComplete={() => markComplete(lessonId)}
+          completed={isCompleted(canonicalLessonId)}
+          onComplete={() => markComplete(canonicalLessonId)}
           playgroundSnapshot={playgroundSnapshot}
           showDetailTabs
           showIncompleteLessonFallback
@@ -128,7 +133,7 @@ export default function AILessonPage() {
 
         <ChapterNav
           curriculum={AI_CURRICULUM}
-          lessonId={lessonId}
+          lessonId={canonicalLessonId}
           basePath="/ai-course"
         />
       </main>

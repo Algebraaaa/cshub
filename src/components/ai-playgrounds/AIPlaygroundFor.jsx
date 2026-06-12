@@ -47,7 +47,7 @@ export default function AIPlaygroundFor({ viz, lesson, onSnapshotChange }) {
   return (
     <Suspense fallback={<PlaygroundFallback />}>
       <AIPlaygroundTelemetryProvider onSnapshotChange={onSnapshotChange}>
-        <Playground />
+        <Playground viz={viz} lesson={lesson} />
       </AIPlaygroundTelemetryProvider>
     </Suspense>
   )

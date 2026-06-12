@@ -65,6 +65,19 @@ export const NAV_ITEMS = [
     label: 'AI 专业课',
     shortLabel: 'AI',
     icon: '🤖',
-    match: pathname => pathname === '/ai-course' || pathname.startsWith('/ai-course/'),
+    match: pathname =>
+      (pathname === '/ai-course' || pathname.startsWith('/ai-course/')) &&
+      !pathname.startsWith('/ai-course/lesson/it-'),
+  },
+  {
+    id: 'information-theory',
+    to: '/ai-course?chapter=it',
+    label: '信息论',
+    shortLabel: '信息',
+    icon: '📡',
+    match: pathname =>
+      pathname === '/information-theory' ||
+      pathname.startsWith('/information-theory/') ||
+      pathname.startsWith('/ai-course/lesson/it-'),
   },
 ]

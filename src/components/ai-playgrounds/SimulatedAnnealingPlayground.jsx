@@ -5,7 +5,6 @@ import { OptVizCanvas, Axes, PathLine, CurrentDot, contourPaths } from './OptViz
 
 // 多峰函数
 const fn = (x, y) => {
-  const r = Math.sqrt(x * x + y * y)
   return 3 * (1 - x) ** 2 * Math.exp(-x * x - (y + 1) ** 2)
     - 10 * (x / 5 - x ** 3 - y ** 5) * Math.exp(-x * x - y * y)
     - 1 / 3 * Math.exp(-Math.pow(x + 1, 2) - y * y)
@@ -26,7 +25,6 @@ function computeSteps(T0, alpha) {
 
   for (let i = 0; i < maxSteps; i++) {
     const val = fn(x, y)
-    const acceptProb = T > 0 ? Math.exp(-Math.abs(fn(x, y) - val) / T) : 0
 
     steps.push({
       description: `步骤 ${i + 1}: x=(${x.toFixed(2)}, ${y.toFixed(2)}), f=${val.toFixed(3)}, T=${T.toFixed(2)}`,

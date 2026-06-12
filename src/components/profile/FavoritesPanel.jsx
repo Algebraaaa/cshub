@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { ALGORITHMS } from '../../data/algorithmMeta'
+import { ALGORITHMS, isAlgorithmLibraryItem } from '../../data/algorithmMeta'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 
 const FOLDERS_KEY = 'algoviz-folders'
@@ -12,7 +12,7 @@ export default function FavoritesPanel({ favorites }) {
   const [editingSlug, setEditingSlug] = useState(null)
   const [inputVal, setInputVal]     = useState('')
 
-  const slugList = useMemo(() => [...favorites].filter(s => ALGORITHMS[s]), [favorites])
+  const slugList = useMemo(() => [...favorites].filter(s => isAlgorithmLibraryItem(ALGORITHMS[s])), [favorites])
 
   // 分组（必须在 early return 前，保持 hook 顺序稳定）
   const grouped = useMemo(() => {

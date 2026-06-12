@@ -2,7 +2,6 @@ import { useMemo, useCallback } from 'react'
 import PlaygroundShell from '../playgrounds/PlaygroundShell'
 import VizCard from '../playgrounds/VizCard'
 import { OptVizCanvas, Axes, PathLine, CurrentDot, contourPaths } from './OptViz2D'
-import { AI_LEGEND } from '../../styles/aiVizTokens'
 
 // 窄长山谷函数（Momentum 优势明显）
 const fn = (x, y) => 0.1 * x * x + 5 * y * y

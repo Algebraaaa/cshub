@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './layout/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -86,6 +86,8 @@ export default function App() {
             <Route path="/violin/lesson/:lessonId" element={<ViolinLessonPage />} />
             <Route path="/ai-course" element={<AIPage />} />
             <Route path="/ai-course/lesson/:lessonId" element={<AILessonPage />} />
+            <Route path="/information-theory" element={<Navigate to="/ai-course?chapter=it" replace />} />
+            <Route path="/information-theory/*" element={<Navigate to="/ai-course?chapter=it" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

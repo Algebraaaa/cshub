@@ -44,7 +44,7 @@ export default function AppLayout() {
   // iPad 默认收起侧栏，给主内容更多空间；桌面默认展开
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => !isDesktop)
   const mainRef = useRef(null)
-  const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [setSidebarOpen])
 
   useEffect(() => { setSidebarOpen(false) }, [pathname, isPhone])
   // useLayoutEffect (not useEffect) so the scroll reset happens before the browser
