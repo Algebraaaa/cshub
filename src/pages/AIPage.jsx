@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AI_CURRICULUM, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
+
+// 记住章节页的位置：进入某课节再返回时，停在原来的屏与滚动位置，
+// 不再重置到第一屏顶部（模块级变量，SPA 会话内持久；整页刷新才清零）。
+let savedSnapPage = 0
+let savedScrollTop = 0
 
 const LEFT_FORMULAS = [
   'θ ← θ - α ∇_θ J(θ)',
@@ -47,7 +52,7 @@ const PARTICLES = [
 export default function AIPage() {
   const [searchParams] = useSearchParams()
   const { progress, isCompleted } = useCourseProgress(AI_CURRICULUM.id, AI_TOTAL_LESSONS)
-  const [snapPage, setSnapPage] = useState(0)
+  const [snapPage, setSnapPage] = useState(savedSnapPage)
   const rootRef = useRef(null)
   const chaptersScrollRef = useRef(null)
   const lockRef = useRef(false)
@@ -62,7 +67,41 @@ export default function AIPage() {
 
   useEffect(() => {
     pageRef.current = snapPage
+    savedSnapPage = snapPage
   }, [snapPage])
+
+  // 记录章节列表滚动位置（原生 scroll 事件：滚动条拖拽、触屏惯性滚动）。
+  // 章节列表主要靠自定义 wheel 处理器编程式改 scrollTop，那种改动不一定触发
+  // scroll 事件，所以 wheel 处理器里也会直接更新 savedScrollTop（见下方 onWheel）。
+  // 不在卸载时读 ref——React 卸载时会先把 ref 置空，那时读不到 scrollTop。
+  useEffect(() => {
+    const el = chaptersScrollRef.current
+    if (!el) return
+    const onScroll = () => { savedScrollTop = el.scrollTop }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // 挂载时恢复上次离开的滚动位置（仅在第二屏、且没有 ?chapter 锚点时）。
+  // 章节内容在挂载瞬间可能还没测好高度（scrollHeight≈clientHeight），
+  // 直接设 scrollTop 会被夹到 0；用 rAF 跨帧重试，直到内容高度就位、
+  // scrollTop 真正落到目标值为止（最多 20 帧兜底）。
+  useLayoutEffect(() => {
+    if (targetChapter || savedSnapPage !== 1 || savedScrollTop <= 0) return
+    let raf = 0, tries = 0
+    const apply = () => {
+      const el = chaptersScrollRef.current
+      if (!el) return
+      el.scrollTop = savedScrollTop
+      tries += 1
+      if (el.scrollTop < savedScrollTop - 2 && tries < 20) {
+        raf = requestAnimationFrame(apply)
+      }
+    }
+    apply()
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!targetChapter) return
@@ -110,6 +149,7 @@ export default function AIPage() {
           const canScrollUp = inner.scrollTop > 1
           if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {
             inner.scrollTop += event.deltaY
+            savedScrollTop = inner.scrollTop  // wheel 编程式滚动不一定触发 scroll 事件，直接记
             return
           }
         }
