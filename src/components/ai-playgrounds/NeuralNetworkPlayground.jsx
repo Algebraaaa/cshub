@@ -169,9 +169,9 @@ function NetworkDiagram({ current }) {
       {layers.map((layer, li) => {
         if (li === layers.length - 1) return null
         const nextLayer = layers[li + 1]
-        return layer.size.map((_, ni) => {
+        return Array.from({ length: layer.size }, (_, ni) => {
           const p1 = nodePos(li, ni, layer.size)
-          return nextLayer.size.map((_, nni) => {
+          return Array.from({ length: nextLayer.size }, (_, nni) => {
             const p2 = nodePos(li + 1, nni, nextLayer.size)
             const Wmat = li === 0 ? current.W1 : current.W2
             const w = Wmat[nni][ni]
@@ -197,7 +197,7 @@ function NetworkDiagram({ current }) {
 
       {/* Nodes */}
       {layers.map((layer, li) => (
-        layer.size.map((_, ni) => {
+        Array.from({ length: layer.size }, (_, ni) => {
           const { x, y } = nodePos(li, ni, layer.size)
           const act = a[li][ni]
           const isHL = isForward && current.highlight?.layer === li

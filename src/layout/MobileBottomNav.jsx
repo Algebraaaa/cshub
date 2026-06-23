@@ -199,20 +199,6 @@ function TabIcon({ id }) {
           <path d="M9 16c1.5 1.5 4.5 1.5 6 0" />
         </svg>
       )
-    case 'information-theory':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3" />
-          <path d="M12 19v3" />
-          <path d="M2 12h3" />
-          <path d="M19 12h3" />
-          <path d="m4.9 4.9 2.1 2.1" />
-          <path d="m17 17 2.1 2.1" />
-          <path d="m19.1 4.9-2.1 2.1" />
-          <path d="m7 17-2.1 2.1" />
-        </svg>
-      )
     default:
       return (
         <svg {...common}>

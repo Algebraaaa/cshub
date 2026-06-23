@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AppLayout from './layout/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -48,10 +48,11 @@ function PageFallback() {
   )
 }
 
-export default function App() {
+function AppRoutes() {
+  // resetKey 让 ErrorBoundary 在路由变化时自动恢复（见 ErrorBoundary.componentDidUpdate）
+  const location = useLocation()
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
+    <ErrorBoundary resetKey={location.pathname}>
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route element={<AppLayout />}>
@@ -92,7 +93,14 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
-      </ErrorBoundary>
+    </ErrorBoundary>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   )
 }

@@ -14,6 +14,15 @@ export default class ErrorBoundary extends Component {
     console.error('[ErrorBoundary]', error, info)
   }
 
+  // 路由切换时自动清除错误态：否则一个崩溃的页面会"粘住"边界，
+  // 导致之后导航到的所有正常页面也一直显示 fallback，直到手动点重试/刷新。
+  // App 用 resetKey={location.pathname} 触发。
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null })
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       const { fallback } = this.props

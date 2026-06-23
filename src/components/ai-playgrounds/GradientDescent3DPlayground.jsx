@@ -239,6 +239,7 @@ function SurfaceView3D({ func, path, current }) {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    if (!ctx) return  // 上下文获取失败（无头/丢失/jsdom）时静默跳过，不崩溃
     const W2 = canvas.width, H2 = canvas.height
     const cx = W2 / 2, cy = H2 / 2 + 20
     const scale = Math.min(W2, H2) * 0.075

@@ -83,6 +83,7 @@ export function LossSurface3D({
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    if (!ctx) return  // 上下文获取失败（无头/丢失/jsdom）时静默跳过，不崩溃
     const dpr = window.devicePixelRatio || 1
     canvas.width = width * dpr
     canvas.height = height * dpr
