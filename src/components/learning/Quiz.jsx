@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useProgress } from '../../contexts/ProgressContext'
+import { useProgressActions } from '../../contexts/ProgressContext'
 import { saveWrongForSlug } from '../profile/WrongAnswers'
 
 export default function Quiz({ questions, slug }) {
-  const { recordQuiz } = useProgress()
+  // 只写不读:useProgressActions 引用稳定,收藏/完成等进度变化不再重渲染本组件
+  const { recordQuiz } = useProgressActions()
   const [answers, setAnswers] = useState({})   // index → chosen option index
   const [revealed, setRevealed] = useState({}) // index → bool
   const [allDone, setAllDone] = useState(false)

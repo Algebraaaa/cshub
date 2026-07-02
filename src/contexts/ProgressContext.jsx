@@ -1,9 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import * as LocalStore from '../services/storage/LocalStore.js'
 import * as RemoteStore from '../services/storage/RemoteStore.js'
 import { createSyncService } from '../services/storage/SyncService.js'
 import { useAuth } from './AuthContext'
 
+// ── 架构说明(2026-07 P0 重渲染治理)────────────────────────────
+// 状态从 Provider 的 useState 迁到 ref store + useSyncExternalStore
+// (与 StepContext 同款模式):
+//   - Context value = { store, actions },引用永久稳定 → Provider 不再
+//     因状态变化重渲染,children 不级联
+//   - useProgress() 内部订阅 store,返回值构造与旧实现逐字相同,
+//     8 处既有消费者行为/时机完全不变(零迁移)
+//   - useProgressActions():只要 actions(如 Quiz),状态变化零重渲染
+//   - useProgressSelector(fn):精准订阅(P1 迁移 Sidebar/PathPage 用)
+// 注意:actions 里的 setState 已脱离 React,updater 必须纯同步,
+// 不可依赖 React 批处理语义。
 const ProgressContext = createContext(null)
 
 // SyncService 是应用级单例（module-level），持有 debounce 队列与同步标志。
@@ -41,6 +52,20 @@ function applyRealtimePatch(prev, patch) {
   return prev
 }
 
+// store 放 Provider 内(useRef)而非模块级:模块级会跨测试用例泄漏状态
+function createProgressStore(initial) {
+  let snapshot = initial
+  const listeners = new Set()
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (cb) => { listeners.add(cb); return () => listeners.delete(cb) },
+    setState: (updater) => {
+      snapshot = updater(snapshot)
+      listeners.forEach(l => l())
+    },
+  }
+}
+
 export function ProgressProvider({ children }) {
   const { user } = useAuth()
   const userId = user?.id
@@ -50,20 +75,23 @@ export function ProgressProvider({ children }) {
     _syncUserId = userId ?? null
   }, [userId])
 
-  const [state, setState] = useState(() => sync.initial())
+  const storeRef = useRef(null)
+  if (!storeRef.current) storeRef.current = createProgressStore(sync.initial())
+  const store = storeRef.current
 
-  // 始终镜像到 localStorage（即使登录，离线也能用）
+  // 始终镜像到 localStorage（即使登录，离线也能用）：挂载写一次 + 订阅驱动
   useEffect(() => {
-    sync.persistLocal(state)
-  }, [state])
+    sync.persistLocal(store.getSnapshot())
+    return store.subscribe(() => sync.persistLocal(store.getSnapshot()))
+  }, [store])
 
   // 未登录：监听跨标签变更
   useEffect(() => {
     if (userId) return
     return sync.subscribeCrossTab(patch => {
-      setState(prev => ({ ...prev, ...patch }))
+      store.setState(prev => ({ ...prev, ...patch }))
     })
-  }, [userId])
+  }, [userId, store])
 
   // 登录态变化：拉云端 + 合并本地 → 推回云端
   useEffect(() => {
@@ -74,66 +102,87 @@ export function ProgressProvider({ children }) {
     let cancelled = false
     sync.syncWithRemote().then(merged => {
       if (cancelled) return
-      if (merged) setState(merged)
+      if (merged) store.setState(() => merged)
     }).catch(() => {})
     return () => { cancelled = true }
-  }, [userId])
+  }, [userId, store])
 
   // 登录态下订阅 realtime
   useEffect(() => {
     if (!userId) return
     return sync.subscribeRealtime(userId, patch => {
-      setState(prev => applyRealtimePatch(prev, patch))
+      store.setState(prev => applyRealtimePatch(prev, patch))
     })
-  }, [userId])
+  }, [userId, store])
 
-  const toggleFavorite = useCallback((slug) => {
-    setState(prev => {
-      const favorites = new Set(prev.favorites)
-      const has = favorites.has(slug)
-      has ? favorites.delete(slug) : favorites.add(slug)
-      sync.enqueueProgress(slug, {
-        favorited: !has,
-        completed: prev.completed.has(slug),
+  // actions 引用永久稳定;内部逻辑与旧 useCallback 版本逐字一致,
+  // 仅 setState 换成 store.setState(updater 只执行一次,sync.enqueue* 不重复入队)
+  const actions = useMemo(() => ({
+    toggleFavorite(slug) {
+      store.setState(prev => {
+        const favorites = new Set(prev.favorites)
+        const has = favorites.has(slug)
+        has ? favorites.delete(slug) : favorites.add(slug)
+        sync.enqueueProgress(slug, {
+          favorited: !has,
+          completed: prev.completed.has(slug),
+        })
+        return { ...prev, favorites }
       })
-      return { ...prev, favorites }
-    })
-  }, [])
-
-  const toggleCompleted = useCallback((slug) => {
-    setState(prev => {
-      const completed = new Set(prev.completed)
-      const has = completed.has(slug)
-      has ? completed.delete(slug) : completed.add(slug)
-      sync.enqueueProgress(slug, {
-        completed: !has,
-        favorited: prev.favorites.has(slug),
+    },
+    toggleCompleted(slug) {
+      store.setState(prev => {
+        const completed = new Set(prev.completed)
+        const has = completed.has(slug)
+        has ? completed.delete(slug) : completed.add(slug)
+        sync.enqueueProgress(slug, {
+          completed: !has,
+          favorited: prev.favorites.has(slug),
+        })
+        return { ...prev, completed }
       })
-      return { ...prev, completed }
-    })
-  }, [])
+    },
+    recordQuiz(slug, correct, total) {
+      if (!slug || typeof correct !== 'number' || typeof total !== 'number' || total <= 0) return
+      store.setState(prev => {
+        const prior = prev.quizScores[slug]
+        const next = {
+          attempted: (prior?.attempted || 0) + 1,
+          correct: Math.max(prior?.correct || 0, correct),
+          total,
+          lastAt: Date.now(),
+        }
+        sync.enqueueQuiz(slug, next)
+        return { ...prev, quizScores: { ...prev.quizScores, [slug]: next } }
+      })
+    },
+    async clearAll() {
+      store.setState(() => ({ favorites: new Set(), completed: new Set(), quizScores: {} }))
+      await sync.clearAll()
+    },
+  }), [store])
 
-  const recordQuiz = useCallback((slug, correct, total) => {
-    if (!slug || typeof correct !== 'number' || typeof total !== 'number' || total <= 0) return
-    setState(prev => {
-      const prior = prev.quizScores[slug]
-      const next = {
-        attempted: (prior?.attempted || 0) + 1,
-        correct: Math.max(prior?.correct || 0, correct),
-        total,
-        lastAt: Date.now(),
-      }
-      sync.enqueueQuiz(slug, next)
-      return { ...prev, quizScores: { ...prev.quizScores, [slug]: next } }
-    })
-  }, [])
+  const value = useMemo(() => ({ store, actions }), [store, actions])
 
-  const clearAll = useCallback(async () => {
-    setState({ favorites: new Set(), completed: new Set(), quizScores: {} })
-    await sync.clearAll()
-  }, [])
+  return (
+    <ProgressContext.Provider value={value}>
+      {children}
+    </ProgressContext.Provider>
+  )
+}
 
-  const value = useMemo(() => {
+function useProgressContext(hookName) {
+  const ctx = useContext(ProgressContext)
+  if (!ctx) throw new Error(`${hookName} must be used within ProgressProvider`)
+  return ctx
+}
+
+/** 完整进度 API(与拆分前完全同形):订阅全部状态,任何进度变化都重渲染。 */
+export function useProgress() {
+  const { store, actions } = useProgressContext('useProgress')
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot)
+
+  return useMemo(() => {
     const { favorites, completed, quizScores } = state
     const entries = Object.entries(quizScores)
     const totalAttempted = entries.length
@@ -154,22 +203,25 @@ export function ProgressProvider({ children }) {
       },
       getQuizScore: (slug) => quizScores[slug] || null,
       quizStats: { totalAttempted, totalCorrect, totalQuestions, accuracy },
-      toggleFavorite,
-      toggleCompleted,
-      recordQuiz,
-      clearAll,
+      toggleFavorite: actions.toggleFavorite,
+      toggleCompleted: actions.toggleCompleted,
+      recordQuiz: actions.recordQuiz,
+      clearAll: actions.clearAll,
     }
-  }, [state, toggleFavorite, toggleCompleted, recordQuiz, clearAll])
-
-  return (
-    <ProgressContext.Provider value={value}>
-      {children}
-    </ProgressContext.Provider>
-  )
+  }, [state, actions])
 }
 
-export function useProgress() {
-  const ctx = useContext(ProgressContext)
-  if (!ctx) throw new Error('useProgress must be used within ProgressProvider')
-  return ctx
+/** 只取 actions(引用永久稳定):进度状态变化时组件零重渲染。适合 Quiz 这类只写不读的消费者。 */
+export function useProgressActions() {
+  return useProgressContext('useProgressActions').actions
+}
+
+/**
+ * 精准订阅:仅当 selector 返回值(Object.is 比较)变化时重渲染。
+ * ⚠️ selector 只能返回原始值(如 `s => s.favorites.has(slug)`),
+ * 返回新建对象/数组会每次都不等 → 失去去抖效果。
+ */
+export function useProgressSelector(selector) {
+  const { store } = useProgressContext('useProgressSelector')
+  return useSyncExternalStore(store.subscribe, () => selector(store.getSnapshot()))
 }
