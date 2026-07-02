@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { reportError } from '../lib/monitoring.js'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info)
+    reportError(error, { source: 'react-boundary', componentStack: info?.componentStack })
   }
 
   // 路由切换时自动清除错误态：否则一个崩溃的页面会"粘住"边界，
