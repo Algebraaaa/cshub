@@ -1,12 +1,18 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, use, useCallback, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { AI_CURRICULUM, AI_LESSON_ALIASES, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
+// 同步路径(别名解析/404/侧栏目录)走轻量索引;课节正文经 loadLesson 按章动态加载
+import { AI_COURSE_META, AI_CHAPTER_INDEX, AI_LESSON_ALIASES, AI_LESSON_INDEX, AI_TOTAL_LESSONS } from '../data/ai/curriculumIndex'
+import { loadLesson } from '../data/ai/loadChapter'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
 import LessonViewer from '../features/music/components/LessonViewer'
 import CurriculumIndex from '../features/music/components/CurriculumIndex'
 import ChapterNav from '../features/music/components/ChapterNav'
+import PageSkeleton from '../components/PageSkeleton'
 
 const AIPlaygroundFor = lazy(() => import('../components/ai-playgrounds/AIPlaygroundFor'))
+
+// CurriculumIndex / ChapterNav 只读 chapters[].lessons[].id/title,索引形状完全兼容
+const CURRICULUM_FOR_NAV = { ...AI_COURSE_META, chapters: AI_CHAPTER_INDEX }
 
 function AIExercise({ exercise, lesson, onSnapshotChange }) {
   if (!exercise || exercise.type !== 'playground') return null
@@ -17,22 +23,13 @@ function AIExercise({ exercise, lesson, onSnapshotChange }) {
   )
 }
 
-export default function AILessonPage() {
-  const { lessonId } = useParams()
-  const canonicalLessonId = AI_LESSON_ALIASES[lessonId] || lessonId
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+// 课节正文:use() 挂起等待章节 chunk;loadLesson 按 id 缓存 Promise,
+// 重渲染拿到同一实例不会无限 suspend。快照状态属于具体课节,一并放在这里,
+// lessonId 变化时组件因 key 重建,状态自然复位。
+function LessonBody({ canonicalLessonId, lessonId, isCompleted, markComplete }) {
+  const lesson = use(loadLesson(canonicalLessonId))
   const [playgroundSnapshot, setPlaygroundSnapshot] = useState(null)
   const snapshotKeyRef = useRef('')
-  const lesson = AI_LESSON_MAP[canonicalLessonId]
-  const { isCompleted, markComplete, progress } = useCourseProgress(
-    AI_CURRICULUM.id,
-    AI_TOTAL_LESSONS
-  )
-
-  useEffect(() => {
-    snapshotKeyRef.current = ''
-    setPlaygroundSnapshot(null)
-  }, [canonicalLessonId])
 
   const handlePlaygroundSnapshot = useCallback((snapshot) => {
     const current = snapshot?.current || {}
@@ -51,11 +48,44 @@ export default function AILessonPage() {
     setPlaygroundSnapshot(snapshot)
   }, [lessonId])
 
-  if (canonicalLessonId !== lessonId && lesson) {
+  return (
+    <>
+      <LessonViewer
+        lesson={lesson}
+        completed={isCompleted(canonicalLessonId)}
+        onComplete={() => markComplete(canonicalLessonId)}
+        playgroundSnapshot={playgroundSnapshot}
+        showDetailTabs
+        showIncompleteLessonFallback
+        exerciseSlot={lesson.exercise ? (
+          <AIExercise exercise={lesson.exercise} lesson={lesson} onSnapshotChange={handlePlaygroundSnapshot} />
+        ) : null}
+      />
+
+      <ChapterNav
+        curriculum={CURRICULUM_FOR_NAV}
+        lessonId={canonicalLessonId}
+        basePath="/ai-course"
+      />
+    </>
+  )
+}
+
+export default function AILessonPage() {
+  const { lessonId } = useParams()
+  const canonicalLessonId = AI_LESSON_ALIASES[lessonId] || lessonId
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const lessonExists = !!AI_LESSON_INDEX[canonicalLessonId]
+  const { isCompleted, markComplete, progress } = useCourseProgress(
+    AI_COURSE_META.id,
+    AI_TOTAL_LESSONS
+  )
+
+  if (canonicalLessonId !== lessonId && lessonExists) {
     return <Navigate to={`/ai-course/lesson/${canonicalLessonId}`} replace />
   }
 
-  if (!lesson) {
+  if (!lessonExists) {
     return (
       <div className="p-10 text-center text-fg-muted">
         课节不存在。<Link to="/ai-course" className="text-accent hover:underline">返回课程首页</Link>
@@ -78,14 +108,14 @@ export default function AILessonPage() {
         </svg>
       </button>
 
-      {/* Sidebar */}
+      {/* Sidebar:纯索引数据,立即渲染,不等章节 chunk */}
       <div className="music-lesson-sidebar-frame" data-collapsed={sidebarCollapsed ? 'true' : 'false'}>
         <aside className="flex h-full flex-col w-60 flex-shrink-0 border-r border-border-soft px-3 py-6 overflow-y-auto">
           <Link
             to="/ai-course"
             className="flex items-center gap-2 text-fg-muted hover:text-fg text-sm mb-5 transition-colors"
           >
-            <span>←</span> <span className="text-xs font-semibold">{AI_CURRICULUM.title}</span>
+            <span>←</span> <span className="text-xs font-semibold">{AI_COURSE_META.title}</span>
           </Link>
 
           <div className="mb-4 px-2">
@@ -102,7 +132,7 @@ export default function AILessonPage() {
           </div>
 
           <CurriculumIndex
-            curriculum={AI_CURRICULUM}
+            curriculum={CURRICULUM_FOR_NAV}
             basePath="/ai-course"
             isCompleted={isCompleted}
             currentLessonId={canonicalLessonId}
@@ -110,7 +140,7 @@ export default function AILessonPage() {
         </aside>
       </div>
 
-      {/* Main */}
+      {/* Main:正文挂起期间显示紧凑骨架 */}
       <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-8 sm:px-5 2xl:px-6">
         <Link
           to="/ai-course"
@@ -119,23 +149,15 @@ export default function AILessonPage() {
           ← 课程目录
         </Link>
 
-        <LessonViewer
-          lesson={lesson}
-          completed={isCompleted(canonicalLessonId)}
-          onComplete={() => markComplete(canonicalLessonId)}
-          playgroundSnapshot={playgroundSnapshot}
-          showDetailTabs
-          showIncompleteLessonFallback
-          exerciseSlot={lesson.exercise ? (
-            <AIExercise exercise={lesson.exercise} lesson={lesson} onSnapshotChange={handlePlaygroundSnapshot} />
-          ) : null}
-        />
-
-        <ChapterNav
-          curriculum={AI_CURRICULUM}
-          lessonId={canonicalLessonId}
-          basePath="/ai-course"
-        />
+        <Suspense fallback={<PageSkeleton compact />}>
+          <LessonBody
+            key={canonicalLessonId}
+            canonicalLessonId={canonicalLessonId}
+            lessonId={lessonId}
+            isCompleted={isCompleted}
+            markComplete={markComplete}
+          />
+        </Suspense>
       </main>
     </div>
   )

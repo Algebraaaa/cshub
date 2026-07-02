@@ -40,7 +40,8 @@ test('概念流图占位（AIConcept）已全部替换为真实演算可视化',
 })
 
 test('curriculum 引用的每个 viz key 都已注册', async () => {
-  const { AI_CURRICULUM } = await import('../../data/ai/curriculum.js')
+  const { loadFullCurriculum } = await import('../../data/ai/curriculum.js')
+  const AI_CURRICULUM = await loadFullCurriculum()
   const missing = []
   for (const ch of AI_CURRICULUM.chapters) {
     for (const lesson of ch.lessons) {

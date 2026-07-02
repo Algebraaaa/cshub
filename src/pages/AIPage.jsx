@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { AI_CURRICULUM, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
+// 只 import 轻量目录索引:目录页零章节正文加载(正文按章在课节页动态拉取)
+import { AI_COURSE_META, AI_CHAPTER_INDEX, AI_TOTAL_LESSONS } from '../data/ai/curriculumIndex'
+import { preloadRoute } from '../hooks/useRoutePreload'
+
+// hover 课节链接时预热:课节页路由 chunk + 对应章节数据 chunk。
+// loadChapter 必须动态 import——静态引会把 ~1600 行补全数据拉进本页 chunk。
+function preloadLesson(chapterId) {
+  preloadRoute('/ai-course/lesson')
+  import('../data/ai/loadChapter').then(m => m.loadChapter(chapterId)).catch(() => {})
+}
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
 
 // 记住章节页的位置：进入某课节再返回时，停在原来的屏与滚动位置，
@@ -51,7 +60,7 @@ const PARTICLES = [
 
 export default function AIPage() {
   const [searchParams] = useSearchParams()
-  const { progress, isCompleted } = useCourseProgress(AI_CURRICULUM.id, AI_TOTAL_LESSONS)
+  const { progress, isCompleted } = useCourseProgress(AI_COURSE_META.id, AI_TOTAL_LESSONS)
   const [snapPage, setSnapPage] = useState(savedSnapPage)
   const rootRef = useRef(null)
   const chaptersScrollRef = useRef(null)
@@ -61,8 +70,8 @@ export default function AIPage() {
   const pageRef = useRef(0)
   const touchStartRef = useRef(0)
 
-  const firstLesson = AI_CURRICULUM.chapters[0].lessons[0]
-  const nextLesson = findNextLesson(AI_CURRICULUM, isCompleted)
+  const firstLesson = AI_CHAPTER_INDEX[0].lessons[0]
+  const nextLesson = findNextLesson(AI_CHAPTER_INDEX, isCompleted)
   const targetChapter = searchParams.get('chapter')
 
   useEffect(() => {
@@ -237,7 +246,7 @@ export default function AIPage() {
             className="ai-course-chapters-scroll px-6 py-14"
           >
             <div className="mx-auto flex max-w-3xl flex-col gap-6">
-              {AI_CURRICULUM.chapters.map((chapter, ci) => {
+              {AI_CHAPTER_INDEX.map((chapter, ci) => {
                 const chapterDone = chapter.lessons.filter(l => isCompleted(l.id)).length
                 return (
                   <section key={chapter.id} data-ai-chapter={chapter.id} className="glass-card p-6">
@@ -261,6 +270,8 @@ export default function AIPage() {
                             <Link
                               to={`/ai-course/lesson/${lesson.id}`}
                               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface transition-colors group"
+                              onPointerEnter={() => preloadLesson(chapter.id)}
+                              onFocus={() => preloadLesson(chapter.id)}
                             >
                               <span
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-colors"
@@ -282,7 +293,7 @@ export default function AIPage() {
                                   </span>
                                 )}
                               </span>
-                              {lesson.exercise && (
+                              {lesson.hasExercise && (
                                 <span className="text-xs text-fg-faint flex-shrink-0">🎮</span>
                               )}
                             </Link>
@@ -1179,11 +1190,11 @@ function HeroStyles() {
   )
 }
 
-function findNextLesson(curriculum, isCompleted) {
-  for (const ch of curriculum.chapters) {
+function findNextLesson(chapters, isCompleted) {
+  for (const ch of chapters) {
     for (const lesson of ch.lessons) {
       if (!isCompleted(lesson.id)) return lesson
     }
   }
-  return curriculum.chapters[0].lessons[0]
+  return chapters[0].lessons[0]
 }

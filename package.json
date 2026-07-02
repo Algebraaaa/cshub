@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run lint && npm run test && npm run build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:ai-index": "node scripts/generateAiCurriculumIndex.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
