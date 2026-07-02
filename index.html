@@ -19,12 +19,21 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- display=swap:装饰性手写体加载期间先用系统字体渲染(FOUT),
+         避免 display=block 的隐形文字阻塞期;media="print"+onload 异步加载
+         CSS 与之互补(解决请求阻塞渲染),noscript 兜底无 JS 环境。 -->
     <link
-      href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Caveat:wght@600;700&display=block"
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Caveat:wght@600;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=Caveat:wght@600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>algo-viz</title>
   </head>
   <body>
