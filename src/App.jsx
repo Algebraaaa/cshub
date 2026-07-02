@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { Analytics } from '@vercel/analytics/react'
 import AppLayout from './layout/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import PageSkeleton from './components/PageSkeleton'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AlgorithmPage = lazy(() => import('./pages/AlgorithmPage'))
@@ -35,26 +36,12 @@ const AIPage = lazy(() => import('./pages/AIPage'))
 const AILessonPage = lazy(() => import('./pages/AILessonPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
-function PageFallback() {
-  return (
-    <div style={{
-      minHeight: '55vh',
-      display: 'grid',
-      placeItems: 'center',
-      color: 'var(--text-tertiary)',
-      fontWeight: 700,
-    }}>
-      Loading...
-    </div>
-  )
-}
-
 function AppRoutes() {
   // resetKey 让 ErrorBoundary 在路由变化时自动恢复（见 ErrorBoundary.componentDidUpdate）
   const location = useLocation()
   return (
     <ErrorBoundary resetKey={location.pathname}>
-      <Suspense fallback={<PageFallback />}>
+      <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />

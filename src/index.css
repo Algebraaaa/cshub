@@ -82,6 +82,16 @@
   }
 }
 
+/* ── 骨架屏延迟显现：秒开的 lazy chunk 不闪骨架 ─────────────
+   前 150ms 保持透明,之后 120ms 淡入;配合 PageSkeleton 组件使用 */
+.skeleton-fade-in {
+  opacity: 0;
+  animation: skeleton-appear 0.12s ease-out 0.15s forwards;
+}
+@keyframes skeleton-appear {
+  to { opacity: 1; }
+}
+
 /* ── Fallback：不支持 View Transitions 时 class 过渡 ──────── */
 .theme-transitioning,
 .theme-transitioning *,

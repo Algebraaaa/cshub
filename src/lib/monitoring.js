@@ -37,7 +37,6 @@ function classify(message, context) {
 }
 
 function consoleReporter(payload) {
-  // eslint-disable-next-line no-console
   console.error('[monitoring]', payload)
 }
 
