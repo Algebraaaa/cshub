@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import CodeBlock from '../../../components/learning/CodeBlock'
+import ResizableSplitPanel from '../../../components/learning/ResizableSplitPanel'
+import { useIsPhone } from '../../../hooks/useMediaQuery'
+import { useDrag } from '../../../hooks/useDrag'
+import { useLocalStorage } from '../../../hooks/useLocalStorage'
+import { getStepCodeLine } from '../../../utils/stepProtocol'
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath]
 const REHYPE_PLUGINS = [rehypeKatex]
@@ -28,13 +33,17 @@ const VARIANT_LABELS = {
   mini: 'Mini-batch',
 }
 
-const VARIANT_LEARNING_RATES = {
-  bgd: 0.002,
-  sgd: 0.001,
-  mini: 0.0015,
-}
+const MAX_VISUAL_OFFSET = 400
 
-export default function LessonViewer({ lesson, completed, onComplete, exerciseSlot, playgroundSnapshot }) {
+export default function LessonViewer({
+  lesson,
+  completed,
+  onComplete,
+  exerciseSlot,
+  playgroundSnapshot,
+  showDetailTabs = false,
+  showIncompleteLessonFallback = false,
+}) {
   const [lang, setLang] = useState('cpp')
   const [activeTab, setActiveTab] = useState('why')
   const [quizChoice, setQuizChoice] = useState(null)
@@ -43,9 +52,16 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
   if (!lesson) return null
 
   const isRichExercise = !!lesson.code && !!exerciseSlot
-  const articleClass = isRichExercise
-    ? 'w-full max-w-[1700px] min-w-0 mx-auto pb-16'
-    : 'max-w-2xl mx-auto pb-16'
+  // visualFirst：可视化自带公式/矩阵推导面板（如信息论模块），全宽展示、
+  // 不再并排静态代码面板抢焦点；通用示例代码降级为折叠参考。
+  const isVisualFirst = isRichExercise && lesson.displayMode === 'visualFirst'
+  const shouldShowDetailTabs = isRichExercise || showDetailTabs
+  const shouldShowConstructionNotice = showIncompleteLessonFallback && !isRichExercise && isLessonIncomplete(lesson)
+  const articleClass = isVisualFirst
+    ? 'w-full max-w-[1200px] min-w-0 mx-auto pb-16'
+    : isRichExercise
+      ? 'w-full max-w-[1700px] min-w-0 mx-auto pb-16'
+      : 'max-w-2xl mx-auto pb-16'
   const currentLang = LANGS.find(item => item.key === lang) || LANGS[0]
 
   return (
@@ -64,9 +80,25 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
         />
       )}
 
+      {shouldShowConstructionNotice && (
+        <LessonConstructionNotice lesson={lesson} />
+      )}
+
       {exerciseSlot && (
-        isRichExercise ? (
+        isVisualFirst ? (
+          <VisualFirstExercise
+            key={lesson.id}
+            lesson={lesson}
+            exerciseSlot={exerciseSlot}
+            lang={lang}
+            currentLang={currentLang}
+            onLangChange={setLang}
+          />
+        ) : isRichExercise ? (
+          /* key=lesson.id：切换课节时重置对齐偏移、竖排开关等局部状态，
+             并让 useLocalStorage 按新课节的 key 重新读取持久化值 */
           <RichExercise
+            key={lesson.id}
             lesson={lesson}
             exerciseSlot={exerciseSlot}
             lang={lang}
@@ -84,7 +116,7 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
         )
       )}
 
-      {isRichExercise && (
+      {shouldShowDetailTabs && (
         <LessonDetailTabs
           lesson={lesson}
           activeTab={activeTab}
@@ -135,6 +167,21 @@ export default function LessonViewer({ lesson, completed, onComplete, exerciseSl
 }
 
 function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, playgroundSnapshot }) {
+  // 对齐偏移按课节持久化；组件以 key=lesson.id 挂载，key 变化时重新读取
+  const [visualOffset, setVisualOffset] = useLocalStorage(`ai-visual-offset-${lesson.id}`, 0)
+  const [stackedMode, setStackedMode] = useState(false)
+  const isPhone = useIsPhone()
+
+  // 可拖动对齐条：按住上下拖动可视化面板，与右侧代码高亮行对齐；双击复位
+  const alignDragRef = useRef({ y: 0, offset: 0 })
+  const onAlignDragStart = useDrag({
+    cursor: 'row-resize',
+    onStart: (e) => { alignDragRef.current = { y: e.clientY, offset: visualOffset } },
+    onMove: (e) => {
+      const next = alignDragRef.current.offset + (e.clientY - alignDragRef.current.y)
+      setVisualOffset(Math.round(Math.max(0, Math.min(MAX_VISUAL_OFFSET, next))))
+    },
+  })
   const codeFocus = getCodeFocus(lesson, playgroundSnapshot)
   const highlightLine = getHighlightLine(lesson, lang, codeFocus, playgroundSnapshot)
   const snapshot = buildVariableSnapshot(lesson, playgroundSnapshot, codeFocus)
@@ -142,67 +189,198 @@ function RichExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange, p
     ? `step ${playgroundSnapshot.currentStep + 1}`
     : '当前预设'
 
-  return (
-      <section
-        data-ai-rich-exercise={lesson.id}
-        className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5 min-h-[660px]"
+  const visualPanel = useMemo(() => (
+    <div className="min-w-0 flex flex-col" style={{ overflow: 'visible', paddingRight: 2 }}>
+      {/* 对齐条：直接上下拖动可视化面板（替代旧的上移/下移滑条），双击复位 */}
+      <div
+        role="separator"
+        aria-label="拖动对齐可视化与代码"
+        title="按住上下拖动，把可视化对齐到右侧代码高亮行；双击复位"
+        onMouseDown={onAlignDragStart}
+        onTouchStart={onAlignDragStart}
+        onDoubleClick={() => setVisualOffset(0)}
+        className="mb-2 flex select-none items-center gap-2 rounded-lg border border-border-soft bg-[var(--bg)] px-3 py-1.5 text-[11px] text-fg-faint transition-colors hover:border-accent hover:text-fg-muted"
+        style={{ cursor: 'row-resize', touchAction: 'none' }}
       >
-      <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">
-        互动练习
+        <span aria-hidden className="tracking-[0.2em] font-bold">⋮⋮</span>
+        <span className="font-semibold">对齐条 · 拖动与代码对齐</span>
+        <span className="ml-auto font-mono">
+          {visualOffset > 0 ? `↓ ${visualOffset}px · 双击复位` : '双击复位'}
+        </span>
       </div>
+      <div
+        data-ai-visual-offset
+        className="transition-[margin] duration-75 ease-out"
+        style={{ marginTop: visualOffset }}
+      >
+        {exerciseSlot}
+      </div>
+    </div>
+  ), [exerciseSlot, visualOffset, onAlignDragStart, setVisualOffset])
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 xl:min-h-[600px] xl:grid-cols-[minmax(0,0.6fr)_minmax(340px,0.4fr)] 2xl:grid-cols-[minmax(620px,0.58fr)_minmax(440px,0.42fr)]">
-        <div
-          data-ai-rich-visual
-          className="ai-rich-visual-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 lg:p-4"
-        >
-          {exerciseSlot}
-        </div>
-
-        <aside data-ai-rich-code className="ai-rich-code-panel min-w-0 min-h-[560px] rounded-lg border border-border-soft p-3 flex flex-col gap-3 overflow-hidden">
-          <VariableSnapshot snapshot={snapshot} />
-
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint">
-                静态代码对照
-              </div>
-              <div className="ml-auto flex gap-1 text-[11px]">
-                {LANGS.map(item => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => onLangChange(item.key)}
-                    className={[
-                      'px-2.5 py-1 rounded-md border font-semibold transition-colors',
-                      lang === item.key
-                        ? 'bg-accent-soft text-accent border-accent'
-                        : 'border-border-soft text-fg-muted hover:bg-surface hover:text-fg',
-                    ].join(' ')}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 min-h-0">
-              <CodeBlock
-                code={lesson.code?.[lang] || ''}
-                lang={lang}
-                title={`${lesson.id}.${currentLang.ext}`}
-                highlightLine={highlightLine}
-                noAutoScroll
-                fill
-              />
-            </div>
-            <div className="mt-2 text-[11px] leading-5 text-fg-faint">
-              当前高亮：{lesson.codeFocusLabels?.[codeFocus] ?? VARIANT_LABELS[codeFocus] ?? codeFocus}，{stepLabel} 对应代码行。
-              动画步进、播放和左侧预设切换会同步更新变量与代码。
+  const codePanel = useMemo(() => (
+    <aside className="min-w-0 flex flex-col gap-3 overflow-visible p-1">
+      <VariableSnapshot snapshot={snapshot} />
+      <div className="flex flex-col">
+        <div className="flex-shrink-0 flex items-center gap-2 mb-2">
+          <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint">静态代码对照</div>
+          <div className="ml-auto flex items-center gap-2">
+            {!isPhone && (
+              <button
+                onClick={() => setStackedMode(s => !s)}
+                className="rounded-md border border-border-soft px-2 py-1 text-[11px] font-semibold transition-colors"
+                style={{
+                  background: stackedMode ? 'var(--accent-soft)' : 'var(--surface)',
+                  color: stackedMode ? 'var(--accent-light)' : 'var(--text-secondary)',
+                }}
+                title={stackedMode ? '切换到并排显示' : '切换到竖排显示'}
+              >{stackedMode ? '⬅ 并排' : '⬇ 竖排'}</button>
+            )}
+            <div className="flex gap-1 text-[11px]">
+              {LANGS.map(item => (
+                <button
+                  key={item.key} type="button"
+                  onClick={() => onLangChange(item.key)}
+                  className={[
+                    'px-2.5 py-1 rounded-md border font-semibold transition-colors',
+                    lang === item.key
+                      ? 'bg-accent-soft text-accent border-accent'
+                      : 'border-border-soft text-fg-muted hover:bg-surface hover:text-fg',
+                  ].join(' ')}
+                >{item.label}</button>
+              ))}
             </div>
           </div>
-        </aside>
+        </div>
+        <div className="flex flex-col" style={{ overflow: 'visible' }}>
+          <CodeBlock
+            code={lesson.code?.[lang] || ''}
+            lang={lang}
+            title={`${lesson.id}.${currentLang.ext}`}
+            highlightLine={highlightLine}
+            maxHeight={undefined}
+          />
+        </div>
+        <div className="mt-2 flex-shrink-0 rounded-md border border-border-soft bg-[var(--bg)] px-2.5 py-2 text-[11px] leading-5 text-fg-faint">
+          当前高亮：{lesson.codeFocusLabels?.[codeFocus] ?? VARIANT_LABELS[codeFocus] ?? codeFocus}，{stepLabel} 对应代码行。
+          动画步进、播放和左侧预设切换会同步更新变量与代码。
+        </div>
       </div>
+    </aside>
+  ), [lesson, lang, currentLang, onLangChange, highlightLine, snapshot, stepLabel, codeFocus, isPhone, stackedMode])
+
+  // 移动端或竖排：简单纵向；桌面：ResizableSplitPanel 拖拽对齐
+  if (isPhone || stackedMode) {
+    return (
+      <section
+        data-ai-rich-exercise={lesson.id}
+        className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5"
+      >
+        <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">互动练习</div>
+        <div className="flex flex-col gap-4">
+          <div className="min-w-0">{visualPanel}</div>
+          <div className="min-w-0">{codePanel}</div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section
+      data-ai-rich-exercise={lesson.id}
+      className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5"
+    >
+      <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">互动练习</div>
+      <div className="mb-2 flex items-center gap-2 text-[11px] text-fg-faint">
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-light)] inline-block" />
+        💡 提示：拖动中间分割线可调整可视化与代码面板大小。
+      </div>
+      <div style={{ minHeight: 'min(900px, calc(100vh - 120px))' }}>
+        <ResizableSplitPanel
+          left={visualPanel}
+          right={codePanel}
+          storageKey={`ai-split-${lesson.id}`}
+          minWidth={280}
+          defaultRatio={0.56}
+        />
+      </div>
+    </section>
+  )
+}
+
+// 公式高亮优先模式：可视化（自带公式/矩阵推导面板）全宽独占教学焦点，
+// 通用示例代码收进折叠区，按需展开参考。用于信息论等"公式比代码重要"的课节。
+function VisualFirstExercise({ lesson, exerciseSlot, lang, currentLang, onLangChange }) {
+  return (
+    <section
+      data-ai-rich-exercise={lesson.id}
+      className="mb-8 min-w-0 rounded-xl bg-surface border border-border-soft p-3 lg:p-4 2xl:p-5"
+    >
+      <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-3">
+        互动练习 · 公式推导优先
+      </div>
+      <div className="min-w-0">{exerciseSlot}</div>
+
+      {lesson.code && (
+        <details className="mt-4 rounded-lg border border-border-soft bg-[var(--bg)] px-3 py-2">
+          <summary className="cursor-pointer select-none text-[12px] font-semibold text-fg-muted hover:text-fg">
+            参考实现代码（通用示例，与上方推导面板不联动）
+          </summary>
+          <div className="mt-3">
+            <div className="mb-2 flex gap-1 text-[11px]">
+              {LANGS.map(item => (
+                <button
+                  key={item.key} type="button"
+                  onClick={() => onLangChange(item.key)}
+                  className={[
+                    'px-2.5 py-1 rounded-md border font-semibold transition-colors',
+                    lang === item.key
+                      ? 'bg-accent-soft text-accent border-accent'
+                      : 'border-border-soft text-fg-muted hover:bg-surface hover:text-fg',
+                  ].join(' ')}
+                >{item.label}</button>
+              ))}
+            </div>
+            <CodeBlock
+              code={lesson.code?.[lang] || ''}
+              lang={lang}
+              title={`${lesson.id}.${currentLang.ext}`}
+              noAutoScroll
+            />
+          </div>
+        </details>
+      )}
+    </section>
+  )
+}
+
+function isLessonIncomplete(lesson) {
+  return !lesson.theory
+    || !lesson.code
+    || !lesson.pseudocode
+    || !lesson.bigO
+    || !Array.isArray(lesson.compare)
+    || lesson.compare.length === 0
+    || !Array.isArray(lesson.quiz)
+    || lesson.quiz.length === 0
+}
+
+function LessonConstructionNotice({ lesson }) {
+  return (
+    <section className="mb-8 rounded-xl border border-border-soft bg-surface p-5">
+      <div className="text-[10px] font-bold tracking-widest uppercase text-fg-faint mb-2">
+        建设中
+      </div>
+      <h2 className="text-lg font-bold text-fg mb-2">{lesson.title}</h2>
+      <p className="text-sm leading-7 text-fg-muted mb-3">
+        本节内容正在建设中。
+      </p>
+      <div className="rounded-lg border border-border-soft bg-[var(--bg)] px-3 py-2 text-xs font-mono text-fg-muted">
+        lesson id: {lesson.id}
+      </div>
+      <p className="mt-3 text-sm leading-7 text-fg-muted">
+        后续会补充：原理、伪代码、复杂度、可视化、测验、笔记。
+      </p>
     </section>
   )
 }
@@ -236,6 +414,12 @@ function getCodeFocus(lesson, playgroundSnapshot) {
 }
 
 function getHighlightLine(lesson, lang, codeFocus, playgroundSnapshot) {
+  // 最高优先级：playground 步骤自带的显式行号（统一高亮协议，
+  // 见 utils/stepProtocol.getStepCodeLine）。explicitOnly —— AI 步骤里的
+  // `line` 字段可能另有含义，不做泛化兜底。
+  const direct = getStepCodeLine(playgroundSnapshot?.current, lang, { explicitOnly: true })
+  if (direct != null) return direct
+
   const stepLineSet = lesson.codeStepHighlightLines?.[lang]
   const stepLines = Array.isArray(stepLineSet)
     ? stepLineSet
@@ -244,6 +428,17 @@ function getHighlightLine(lesson, lang, codeFocus, playgroundSnapshot) {
   if (stepLines?.length && playgroundSnapshot?.currentStep != null) {
     const index = playgroundSnapshot.currentStep % stepLines.length
     return stepLines[index]
+  }
+
+  if (playgroundSnapshot?.currentStep != null && lesson.code?.[lang]) {
+    const nonEmptyLines = lesson.code[lang]
+      .split('\n')
+      .map((text, index) => ({ text, line: index + 1 }))
+      .filter(item => item.text.trim().length > 0)
+      .map(item => item.line)
+    if (nonEmptyLines.length) {
+      return nonEmptyLines[playgroundSnapshot.currentStep % nonEmptyLines.length]
+    }
   }
 
   return lesson.codeHighlightLines?.[lang]?.[codeFocus]
@@ -364,26 +559,28 @@ function LessonTabPanel({
   onNoteChange,
 }) {
   if (activeTab === 'why') {
+    if (!lesson.theory) return <TabPlaceholder lesson={lesson} label="原理" />
     return <MarkdownSection text={lesson.theory} className="prose-lesson" />
   }
 
   if (activeTab === 'pseudocode') {
+    if (!lesson.pseudocode) return <TabPlaceholder lesson={lesson} label="伪代码" />
     return (
       <CodeBlock
         code={lesson.pseudocode}
         lang="pseudo"
-        title="gd_variants.pseudo"
+        title={`${lesson.id}.pseudo`}
         noAutoScroll
       />
     )
   }
 
   if (activeTab === 'bigO') {
-    return <BigOPanel bigO={lesson.bigO} />
+    return <BigOPanel bigO={lesson.bigO} lesson={lesson} />
   }
 
   if (activeTab === 'compare') {
-    return <ComparePanel rows={lesson.compare} />
+    return <ComparePanel rows={lesson.compare} lesson={lesson} />
   }
 
   if (activeTab === 'quiz') {
@@ -394,6 +591,7 @@ function LessonTabPanel({
         revealed={quizRevealed}
         onChoice={onQuizChoice}
         onReveal={onQuizReveal}
+        lesson={lesson}
       />
     )
   }
@@ -419,8 +617,18 @@ function MarkdownSection({ text, className }) {
   )
 }
 
-function BigOPanel({ bigO }) {
-  if (!bigO) return <p className="text-sm text-fg-muted">暂无复杂度数据。</p>
+function TabPlaceholder({ lesson, label }) {
+  return (
+    <div className="rounded-xl border border-border-soft bg-surface p-4 text-sm leading-7 text-fg-muted">
+      <p className="m-0 font-semibold text-fg">{label}内容正在建设中。</p>
+      <p className="m-0 mt-2">lesson id: <span className="font-mono text-accent">{lesson.id}</span></p>
+      <p className="m-0 mt-2">后续会补充：原理、伪代码、复杂度、可视化、测验、笔记。</p>
+    </div>
+  )
+}
+
+function BigOPanel({ bigO, lesson }) {
+  if (!bigO) return <TabPlaceholder lesson={lesson} label="复杂度" />
   return (
     <div className="grid gap-3 md:grid-cols-3">
       {[
@@ -439,8 +647,8 @@ function BigOPanel({ bigO }) {
   )
 }
 
-function ComparePanel({ rows = [] }) {
-  if (rows.length === 0) return <p className="text-sm text-fg-muted">暂无对比数据。</p>
+function ComparePanel({ rows = [], lesson }) {
+  if (rows.length === 0) return <TabPlaceholder lesson={lesson} label="方法对比" />
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
@@ -467,8 +675,8 @@ function ComparePanel({ rows = [] }) {
   )
 }
 
-function QuizPanel({ question, choice, revealed, onChoice, onReveal }) {
-  if (!question) return <p className="text-sm text-fg-muted">暂无测验。</p>
+function QuizPanel({ question, choice, revealed, onChoice, onReveal, lesson }) {
+  if (!question) return <TabPlaceholder lesson={lesson} label="测验" />
   return (
     <div className="max-w-2xl">
       <p className="mb-4 text-sm font-semibold text-fg">{question.q}</p>

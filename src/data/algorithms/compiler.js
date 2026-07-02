@@ -48,6 +48,8 @@ export const COMPILER_ALGORITHMS = {
         Star(A):
             new s, a
             ε edges: s→A.start, s→a, A.accept→A.start, A.accept→a`,
+    // 注意：regexToNfa.js 的步骤通过 cppLine/pythonLine 引用下方代码的行号，
+    // 增删行后需同步更新 src/algorithms/compiler/regexToNfa.js 里的 LINES 表。
     code: {
       cpp: `// Thompson 构造（简化）
 struct NFA { int start, accept; };
@@ -63,6 +65,22 @@ NFA buildChar(char c) {
 NFA buildConcat(NFA A, NFA B) {
     edges.push_back({A.accept, B.start, '\\0'});
     return {A.start, B.accept};
+}
+NFA buildAlt(NFA A, NFA B) {
+    int s = newState(), a = newState();
+    edges.push_back({s, A.start, '\\0'});
+    edges.push_back({s, B.start, '\\0'});
+    edges.push_back({A.accept, a, '\\0'});
+    edges.push_back({B.accept, a, '\\0'});
+    return {s, a};
+}
+NFA buildStar(NFA A) {
+    int s = newState(), a = newState();
+    edges.push_back({s, A.start, '\\0'});        // 进入 A
+    edges.push_back({s, a, '\\0'});              // 跳过（零次）
+    edges.push_back({A.accept, A.start, '\\0'}); // 循环
+    edges.push_back({A.accept, a, '\\0'});       // 收束
+    return {s, a};
 }`,
       python: `def thompson(node):
     if node.kind == 'Char':
@@ -138,6 +156,8 @@ NFA buildConcat(NFA A, NFA B) {
             DFA.edges.add(D --c--> target)
             if NFA.accept ∈ target:
                 target.accepting ← true`,
+    // 注意：nfaToDfa.js 的步骤通过 cppLine/pythonLine 引用下方代码的行号，
+    // 增删行后需同步更新 src/algorithms/compiler/nfaToDfa.js 里的 LINES 表。
     code: {
       cpp: `set<int> epsilonClosure(set<int> states) {
     queue<int> q; for (int s : states) q.push(s);
@@ -149,6 +169,23 @@ NFA buildConcat(NFA A, NFA B) {
             }
     }
     return states;
+}
+
+void subsetConstruction(NFA nfa) {
+    auto start = epsilonClosure({nfa.start});
+    vector<StateSet> dfaStates = {start};
+    queue<StateSet> work; work.push(start);
+    while (!work.empty()) {
+        StateSet D = work.front(); work.pop();
+        for (char c : alphabet) {
+            auto target = epsilonClosure(move(D, c));
+            if (target.empty()) continue;
+            if (!contains(dfaStates, target)) {
+                dfaStates.push_back(target); work.push(target);
+            }
+            dfaEdges.push_back({D, c, target});
+        }
+    }
 }`,
       python: `def subset_construction(nfa):
     start = eps_closure({nfa.start})
@@ -229,12 +266,10 @@ function parseFactor():
         consume('('); e ← parseExpr(); consume(')')
         return e
     return Num(consume(NUMBER).value)`,
+    // 注意：buildAst.js 的步骤通过 cppLine/pythonLine 引用下方代码的行号，
+    // 增删行后需同步更新 src/algorithms/compiler/buildAst.js 里的 LINES 表。
     code: {
       cpp: `struct Node { string op; int value; Node *l, *r; };
-
-Node* parseExpr();
-Node* parseTerm();
-Node* parseFactor();
 
 Node* parseExpr() {
     Node* left = parseTerm();
@@ -244,6 +279,24 @@ Node* parseExpr() {
         left = new Node{string(1, op), 0, left, right};
     }
     return left;
+}
+Node* parseTerm() {
+    Node* left = parseFactor();
+    while (peek() == '*' || peek() == '/') {
+        char op = consume();
+        Node* right = parseFactor();
+        left = new Node{string(1, op), 0, left, right};
+    }
+    return left;
+}
+Node* parseFactor() {
+    if (peek() == '(') {
+        consume();                 // '('
+        Node* e = parseExpr();
+        consume();                 // ')'
+        return e;
+    }
+    return new Node{"num", consumeNumber(), nullptr, nullptr};
 }`,
       python: `def parse_expr():
     left = parse_term()
@@ -334,28 +387,61 @@ function parse(input, table):
         X = stack.top; a = input.peek
         if X is terminal: match and advance
         else: push reverse(table[X][a])`,
+    // 注意：ll1.js 的步骤通过 cppLine/pythonLine 引用下方代码的行号，
+    // 增删行后需同步更新 src/algorithms/compiler/ll1.js 里的 LINES 表。
     code: {
-      cpp: `// FIRST 集计算（简化）
-map<char, set<char>> first;
-void computeFirst(vector<pair<char,string>>& rules) {
+      cpp: `void computeFirst(Rules& rules, Sets& first) {
     bool changed = true;
     while (changed) { changed = false;
-        for (auto& [A, rhs] : rules) {
-            size_t before = first[A].size();
-            for (char X : rhs) {
-                for (char c : first[X]) if (c != 'e') first[A].insert(c);
-                if (!first[X].count('e')) break;
-                if (&X == &rhs.back()) first[A].insert('e');
+        for (auto& [lhs, rhs] : rules) {
+            size_t before = first[lhs].size();
+            for (auto& sym : rhs) {
+                addAllButEps(first[lhs], first[sym]);
+                if (!first[sym].count("ε")) break;
+                if (&sym == &rhs.back()) first[lhs].insert("ε");
             }
-            if (first[A].size() != before) changed = true;
+            changed |= first[lhs].size() != before;
         }
     }
+}
+void computeFollow(Rules& rules, Sets& first, Sets& follow) {
+    follow["E"].insert("$");                  // 开始符号
+    for (auto& [lhs, rhs] : rules)
+        for (int i = 0; i < rhs.size(); i++) {
+            if (!isNonTerminal(rhs[i])) continue;
+            auto rest = firstOfSeq(rhs, i + 1, first);
+            addAllButEps(follow[rhs[i]], rest);
+            if (rest.count("ε") || i + 1 == rhs.size())
+                addAll(follow[rhs[i]], follow[lhs]);
+        }
+}
+void buildTable(Rules& rules, Sets& first, Sets& follow, Table& M) {
+    for (auto& [lhs, rhs] : rules) {
+        auto fa = firstOfSeq(rhs, 0, first);
+        for (auto& t : fa) if (t != "ε") M[lhs][t] = rhs;
+        if (fa.count("ε"))
+            for (auto& t : follow[lhs]) M[lhs][t] = {"ε"};
+    }
+}
+bool parse(vector<string> tokens, Table& M) {
+    vector<string> stk = {"$", "E"};
+    int pos = 0;
+    while (!stk.empty()) {
+        string top = stk.back(), cur = tokens[pos];
+        if (top == "$" && cur == "$") return true; // 接受
+        if (top == cur) { stk.pop_back(); pos++; } // 匹配
+        else if (isTerminal(top)) return false;    // 不匹配
+        else {
+            auto prod = M[top][cur];               // 查表
+            if (prod.empty()) return false;        // 表空 → 拒绝
+            stk.pop_back();
+            if (prod != Prod{"ε"})
+                pushReversed(stk, prod);           // 逆序压栈
+        }
+    }
+    return false;
 }`,
-      python: `from collections import defaultdict
-
-def compute_first(rules):
-    first = defaultdict(set)
-    for t in 'id+*()$': first[t] = {t}
+      python: `def compute_first(rules, first):
     changed = True
     while changed:
         changed = False
@@ -366,8 +452,44 @@ def compute_first(rules):
                 if 'ε' not in first[sym]: break
             else:
                 first[lhs].add('ε')
-            if len(first[lhs]) != before: changed = True
-    return first`,
+            changed |= len(first[lhs]) != before
+
+def compute_follow(rules, first, follow, start):
+    follow[start].add('$')          # 开始符号
+    for lhs, rhs in rules:
+        for i, A in enumerate(rhs):
+            if not is_nonterminal(A): continue
+            rest = first_of_seq(rhs[i+1:], first)
+            follow[A] |= rest - {'ε'}
+            if 'ε' in rest or i == len(rhs) - 1:
+                follow[A] |= follow[lhs]
+
+def build_table(rules, first, follow, table):
+    for lhs, rhs in rules:
+        fa = first_of_seq(rhs, first)
+        for t in fa - {'ε'}:
+            table[lhs][t] = rhs
+        if 'ε' in fa:
+            for t in follow[lhs]:
+                table[lhs][t] = ('ε',)
+
+def parse(tokens, table):
+    stack, pos = ['$', 'E'], 0
+    while stack:
+        top, cur = stack[-1], tokens[pos]
+        if top == cur == '$':
+            return True             # 接受
+        if top == cur:
+            stack.pop(); pos += 1   # 匹配终结符
+        elif top in TERMINALS:
+            raise SyntaxError(top)  # 终结符不匹配
+        else:
+            prod = table[top][cur]  # 查表
+            if prod is None:
+                raise SyntaxError(cur)
+            stack.pop()
+            if prod != ('ε',):
+                stack.extend(reversed(prod))`,
     },
     applications: [
       '手写解析器（Recursive Descent Parser 是 LL(1) 的递归实现）',
@@ -441,33 +563,113 @@ function parse(input, table):
         elif ACTION[s][a] = reduce A→β:
             pop |β| states; push GOTO[stack.top][A]
         elif ACTION[s][a] = accept: return OK`,
+    // 注意：lr0.js 的步骤通过 cppLine/pythonLine 引用下方代码的行号，
+    // 增删行后需同步更新 src/algorithms/compiler/lr0.js 里的 LINES 表。
     code: {
-      cpp: `struct Item { int rule, dot; };
-set<Item> closure(set<Item> items, Grammar& g) {
+      cpp: `set<Item> closure(set<Item> items, Grammar& g) {
     bool changed = true;
     while (changed) { changed = false;
         for (auto& [r, d] : items) {
-            char B = g.rules[r].rhs[d]; // symbol after dot
+            if (d >= g.rules[r].rhs.size()) continue;
+            char B = g.rules[r].rhs[d];
             for (int i = 0; i < g.rules.size(); i++)
                 if (g.rules[i].lhs == B)
                     changed |= items.insert({i, 0}).second;
         }
     }
     return items;
+}
+vector<set<Item>> buildStates(Grammar& g) {
+    auto I0 = closure({{0, 0}}, g);
+    vector<set<Item>> states = {I0};
+    queue<set<Item>> work; work.push(I0);
+    while (!work.empty()) {
+        auto I = work.front(); work.pop();
+        for (char X : symbolsAfterDot(I)) {
+            auto J = closure(gotoSet(I, X), g);
+            if (!J.empty() && !contains(states, J)) {
+                states.push_back(J); work.push(J);
+            }
+        }
+    }
+    return states;
+}
+void buildTable(vector<set<Item>>& states, Grammar& g) {
+    for (int i = 0; i < states.size(); i++) {
+        for (auto& [r, dot] : states[i]) {
+            auto& rule = g.rules[r];
+            if (dot < rule.rhs.size() && isTerminal(rule.rhs[dot]))
+                ACTION[i][rule.rhs[dot]] = shift(gotoId(i, rule.rhs[dot]));
+            else if (dot == rule.rhs.size())
+                rule.isStart ? ACTION[i]['$'] = accept()
+                             : fillReduce(ACTION[i], r);
+        }
+        for (char nt : NON_TERMINALS)
+            GOTO[i][nt] = gotoId(i, nt);
+    }
+}
+bool parse(vector<string> tokens) {
+    vector<int> stk = {0}; int pos = 0;
+    while (true) {
+        Action act = ACTION[stk.back()][tokens[pos]];
+        if (act.kind == ERROR) return false;
+        if (act.kind == ACCEPT) return true;
+        if (act.kind == SHIFT) { stk.push_back(act.state); pos++; }
+        else {  // REDUCE
+            auto& rule = g.rules[act.rule];
+            stk.resize(stk.size() - rule.rhs.size());
+            stk.push_back(GOTO[stk.back()][rule.lhs]);
+        }
+    }
 }`,
       python: `def closure(items, grammar):
-    items = set(items)
-    changed = True
+    items, changed = set(items), True
     while changed:
         changed = False
         for (rule_id, dot) in list(items):
             rhs = grammar[rule_id][1]
-            if dot < len(rhs):
-                B = rhs[dot]
-                for i, (lhs, _) in enumerate(grammar):
-                    if lhs == B and (i, 0) not in items:
-                        items.add((i, 0)); changed = True
-    return items`,
+            if dot >= len(rhs): continue
+            B = rhs[dot]
+            for i, (lhs, _) in enumerate(grammar):
+                if lhs == B and (i, 0) not in items:
+                    items.add((i, 0)); changed = True
+    return items
+
+def build_states(grammar):
+    I0 = closure({(0, 0)}, grammar)
+    states, work = [I0], [I0]
+    while work:
+        I = work.pop(0)
+        for X in symbols_after_dot(I):
+            J = closure(goto(I, X), grammar)
+            if J and J not in states:
+                states.append(J); work.append(J)
+    return states
+
+def build_table(states, grammar):
+    for i, I in enumerate(states):
+        for (r, dot) in I:
+            lhs, rhs = grammar[r]
+            if dot < len(rhs) and is_terminal(rhs[dot]):
+                ACTION[i][rhs[dot]] = ('shift', goto_id(i, rhs[dot]))
+            elif dot == len(rhs):
+                if lhs == "S'": ACTION[i]['$'] = 'accept'
+                else: fill_reduce(ACTION[i], r)
+        for nt in NON_TERMINALS:
+            GOTO[i][nt] = goto_id(i, nt)
+
+def parse(tokens):
+    stack, pos = [0], 0
+    while True:
+        act = ACTION[stack[-1]].get(tokens[pos])
+        if act is None: raise SyntaxError(tokens[pos])
+        if act == 'accept': return True
+        if act[0] == 'shift':
+            stack.append(act[1]); pos += 1
+        else:  # reduce
+            lhs, rhs = grammar[act[1]]
+            del stack[-len(rhs):]
+            stack.append(GOTO[stack[-1]][lhs])`,
     },
     applications: [
       'yacc / bison（LALR(1) 是 LR(0) 的加强版，底层思路相同）',

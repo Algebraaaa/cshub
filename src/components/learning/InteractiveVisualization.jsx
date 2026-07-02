@@ -5,6 +5,7 @@ import ResizableSplitPanel from './ResizableSplitPanel'
 import VariablePanel from './VariablePanel'
 import { useStepData } from '../../contexts/StepContext'
 import { useIsPhone } from '../../hooks/useMediaQuery'
+import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { inferCodeLine } from './codeLineInference'
 
 const ALL_LANGS = [
@@ -24,13 +25,23 @@ const ALL_LANGS = [
 // playground prop 需由父级用 useMemo 稳定引用，才能让 memo 生效。
 const InteractiveVisualization = memo(function InteractiveVisualization({ playground, code, slug, showCode = true, forceStacked = false }) {
   const LANGS = code ? ALL_LANGS.filter(l => code[l.key]) : ALL_LANGS.slice(0, 2)
-  const [lang, setLang] = useState('cpp')
+  const [lang, setLang] = useState(() => {
+    if (code?.cpp) return 'cpp'
+    if (code?.python) return 'python'
+    return Object.keys(code || {})[0] || 'cpp'
+  })
   const [stackedMode, setStackedMode] = useState(false)
+  // 高度策略：默认「完整展开」——代码不内部滚动，整页随内容滚动；
+  // 「固定视口」保留旧行为（面板钉在一屏内、代码区内滚），适合边播动画边看代码。
+  const [pinned, setPinned] = useLocalStorage('algoviz-viz-pinned', false)
   const [isNarrow, setIsNarrow] = useState(false)
   const stepData = useStepData()
   const isPhone = useIsPhone()
   const outletContext = useOutletContext() || {}
   const sidebarCollapsed = outletContext.sidebarCollapsed || false
+  const currentLang = LANGS.find(x => x.key === lang) || LANGS[0] || ALL_LANGS[0]
+  const activeLang = currentLang.key
+  const currentCode = code?.[activeLang] || ''
 
   // 检测屏幕宽度，当侧栏折叠时调整阈值
   useEffect(() => {
@@ -48,16 +59,17 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
   
   // 从步骤数据中提取代码行号；没有显式映射时按描述自动推断
   const highlightLine = stepData?.current && showCode
-    ? inferCodeLine(code?.[lang], stepData.current, lang)
+    ? inferCodeLine(currentCode, stepData.current, activeLang)
     : null
   
-  const shouldStackCode = stackedMode || isNarrow || forceStacked || !showCode
+  const shouldStackCode = stackedMode || isNarrow || forceStacked || !showCode || !currentCode
 
   const visualPanel = (
     <div style={{
       minWidth: 0,
-      height: '100%',
-      overflow: 'auto',
+      // 固定视口：面板内滚；完整展开：自然高度，跟随页面滚动
+      height: pinned ? '100%' : undefined,
+      overflow: pinned ? 'auto' : 'visible',
       paddingRight: 2,
     }}>
       {playground}
@@ -77,7 +89,7 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
       {isPhone ? (
         // 手机端：用原生 select 节省横向空间（3 个 tab 约 240px，太宽）
         <select
-          value={lang}
+          value={activeLang}
           onChange={e => setLang(e.target.value)}
           style={{
             padding: '7px 12px',
@@ -109,7 +121,7 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
           width: 'fit-content',
         }}>
           {LANGS.map(l => {
-            const active = lang === l.key
+            const active = activeLang === l.key
             return (
               <button key={l.key} onClick={() => setLang(l.key)}
                 style={{
@@ -132,46 +144,69 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
         </div>
       )}
       
-      {/* 布局切换按钮 */}
-      {!isNarrow && !forceStacked && showCode && (
-        <button
-          onClick={() => setStackedMode(!stackedMode)}
-          style={{
-            padding: '5px 12px',
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 5,
-            border: '1px solid var(--border)',
-            background: stackedMode ? 'var(--accent-soft)' : 'var(--surface)',
-            color: stackedMode ? 'var(--accent-light)' : 'var(--text-secondary)',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-          title={stackedMode ? '切换到并排显示' : '切换到竖排显示'}
-        >
-          {stackedMode ? '⬅️ 并排' : '⬇️ 竖排'}
-        </button>
-      )}
+      {/* 布局切换按钮组 */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        {showCode && (
+          <button
+            onClick={() => setPinned(p => !p)}
+            style={{
+              padding: '5px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: pinned ? 'var(--accent-soft)' : 'var(--surface)',
+              color: pinned ? 'var(--accent-light)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            title={pinned
+              ? '完整展开：代码全部铺开，整页滚动，适合通读代码'
+              : '固定视口：面板钉在一屏内、代码区内部滚动，适合边播动画边看代码'}
+          >
+            {pinned ? '📜 完整展开' : '📌 固定视口'}
+          </button>
+        )}
+        {!isNarrow && !forceStacked && showCode && (
+          <button
+            onClick={() => setStackedMode(!stackedMode)}
+            style={{
+              padding: '5px 12px',
+              fontSize: 11,
+              fontWeight: 600,
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: stackedMode ? 'var(--accent-soft)' : 'var(--surface)',
+              color: stackedMode ? 'var(--accent-light)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            title={stackedMode ? '切换到并排显示' : '切换到竖排显示'}
+          >
+            {stackedMode ? '⬅️ 并排' : '⬇️ 竖排'}
+          </button>
+        )}
+      </div>
     </div>
   )
   
-  // 代码面板组件
+  // 代码面板组件 · 固定视口时 fill（内部滚动），完整展开时自然铺开
   const codePanel = (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       gap: 12,
-      flex: '1 1 auto',
+      flex: pinned ? '1 1 auto' : '0 0 auto',
       minHeight: 0,
     }}>
       {codeToolbar}
       <CodeBlock
-        code={code[lang]}
-        lang={lang}
-        title={`${slug}.${LANGS.find(x => x.key === lang).ext}`}
+        code={currentCode}
+        lang={activeLang}
+        title={`${slug}.${currentLang.ext}`}
         highlightLine={highlightLine}
-        noAutoScroll={false}
-        fill
+        noAutoScroll={!pinned}
+        fill={pinned}
       />
     </div>
   )
@@ -181,31 +216,33 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
       display: 'flex',
       flexDirection: 'column',
       gap: 12,
-      height: '100%',
+      height: pinned ? '100%' : undefined,
       minHeight: 0,
-      overflow: 'hidden',
+      overflow: pinned ? 'hidden' : 'visible',
     }}>
       <div style={{
         flex: '0 0 auto',
-        maxHeight: 190,
-        overflow: 'auto',
+        maxHeight: pinned ? 190 : undefined,
+        overflow: pinned ? 'auto' : 'visible',
       }}>
         <VariablePanel />
       </div>
-      {showCode && code && codePanel}
+      {showCode && currentCode && codePanel}
     </div>
   )
   
   return (
     <>
-      {/* 并排显示：使用可调节分割面板 */}
-      {!shouldStackCode && showCode && code ? (
+      {/* 并排显示：使用可调节分割面板
+          完整展开（默认）：高度随内容生长，代码不内滚，整页滚动；
+          固定视口：钉死一屏高度，代码区内部滚动（旧行为） */}
+      {!shouldStackCode && showCode && currentCode ? (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
-          height: 'clamp(480px, calc(100vh - 180px), 760px)',
-          minHeight: 0,
+          height: pinned ? 'clamp(480px, calc(100vh - 180px), 760px)' : undefined,
+          minHeight: pinned ? 0 : 480,
         }}>
           {/* 提示标签 */}
           <div style={{
@@ -244,11 +281,11 @@ const InteractiveVisualization = memo(function InteractiveVisualization({ playgr
         }}>
           {/* 动画可视化 */}
           {visualPanel}
-          
-          {/* 代码 */}
+
+          {/* 代码 · 完整展开时自然高度 */}
           <div style={{
-            height: showCode && code ? 'min(620px, calc(100vh - 120px))' : 'auto',
-            minHeight: showCode && code ? 420 : 'auto',
+            height: pinned && showCode && currentCode ? 'min(620px, calc(100vh - 120px))' : 'auto',
+            minHeight: pinned && showCode && currentCode ? 420 : 'auto',
           }}>
             {executionPanel}
           </div>

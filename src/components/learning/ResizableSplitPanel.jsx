@@ -47,10 +47,9 @@ export default function ResizableSplitPanel({
       style={{
         display: 'flex',
         width: '100%',
-        height: '100%',
+        minHeight: '100%',
         flex: '1 1 auto',
-        minHeight: 0,
-        overflow: 'hidden',
+        overflow: 'visible',
         userSelect: isDragging ? 'none' : 'auto',
       }}
     >
@@ -59,7 +58,7 @@ export default function ResizableSplitPanel({
         style={{
           flex: `0 0 ${leftWidth}%`,
           minWidth: 0,
-          overflow: 'auto',
+          overflow: 'visible',
           transition: isDragging ? 'none' : 'flex 0.15s',
         }}
       >
@@ -113,7 +112,7 @@ export default function ResizableSplitPanel({
         style={{
           flex: `0 0 ${rightWidth}%`,
           minWidth: 0,
-          overflow: 'auto',
+          overflow: 'visible',
           transition: isDragging ? 'none' : 'flex 0.15s',
         }}
       >

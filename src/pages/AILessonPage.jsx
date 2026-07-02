@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { AI_CURRICULUM, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { AI_CURRICULUM, AI_LESSON_ALIASES, AI_LESSON_MAP, AI_TOTAL_LESSONS } from '../data/ai/curriculum'
 import { useCourseProgress } from '../features/music/hooks/useCourseProgress'
 import LessonViewer from '../features/music/components/LessonViewer'
 import CurriculumIndex from '../features/music/components/CurriculumIndex'
@@ -8,21 +8,22 @@ import ChapterNav from '../features/music/components/ChapterNav'
 
 const AIPlaygroundFor = lazy(() => import('../components/ai-playgrounds/AIPlaygroundFor'))
 
-function AIExercise({ exercise, onSnapshotChange }) {
+function AIExercise({ exercise, lesson, onSnapshotChange }) {
   if (!exercise || exercise.type !== 'playground') return null
   return (
     <Suspense fallback={<div className="h-64 bg-surface rounded-lg animate-pulse" />}>
-      <AIPlaygroundFor viz={exercise.viz} onSnapshotChange={onSnapshotChange} />
+      <AIPlaygroundFor viz={exercise.viz} lesson={lesson} onSnapshotChange={onSnapshotChange} />
     </Suspense>
   )
 }
 
 export default function AILessonPage() {
   const { lessonId } = useParams()
+  const canonicalLessonId = AI_LESSON_ALIASES[lessonId] || lessonId
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [playgroundSnapshot, setPlaygroundSnapshot] = useState(null)
   const snapshotKeyRef = useRef('')
-  const lesson = AI_LESSON_MAP[lessonId]
+  const lesson = AI_LESSON_MAP[canonicalLessonId]
   const { isCompleted, markComplete, progress } = useCourseProgress(
     AI_CURRICULUM.id,
     AI_TOTAL_LESSONS
@@ -31,7 +32,7 @@ export default function AILessonPage() {
   useEffect(() => {
     snapshotKeyRef.current = ''
     setPlaygroundSnapshot(null)
-  }, [lessonId])
+  }, [canonicalLessonId])
 
   const handlePlaygroundSnapshot = useCallback((snapshot) => {
     const current = snapshot?.current || {}
@@ -49,6 +50,10 @@ export default function AILessonPage() {
     snapshotKeyRef.current = key
     setPlaygroundSnapshot(snapshot)
   }, [lessonId])
+
+  if (canonicalLessonId !== lessonId && lesson) {
+    return <Navigate to={`/ai-course/lesson/${canonicalLessonId}`} replace />
+  }
 
   if (!lesson) {
     return (
@@ -100,7 +105,7 @@ export default function AILessonPage() {
             curriculum={AI_CURRICULUM}
             basePath="/ai-course"
             isCompleted={isCompleted}
-            currentLessonId={lessonId}
+            currentLessonId={canonicalLessonId}
           />
         </aside>
       </div>
@@ -116,17 +121,19 @@ export default function AILessonPage() {
 
         <LessonViewer
           lesson={lesson}
-          completed={isCompleted(lessonId)}
-          onComplete={() => markComplete(lessonId)}
+          completed={isCompleted(canonicalLessonId)}
+          onComplete={() => markComplete(canonicalLessonId)}
           playgroundSnapshot={playgroundSnapshot}
+          showDetailTabs
+          showIncompleteLessonFallback
           exerciseSlot={lesson.exercise ? (
-            <AIExercise exercise={lesson.exercise} onSnapshotChange={handlePlaygroundSnapshot} />
+            <AIExercise exercise={lesson.exercise} lesson={lesson} onSnapshotChange={handlePlaygroundSnapshot} />
           ) : null}
         />
 
         <ChapterNav
           curriculum={AI_CURRICULUM}
-          lessonId={lessonId}
+          lessonId={canonicalLessonId}
           basePath="/ai-course"
         />
       </main>

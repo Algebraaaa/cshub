@@ -154,11 +154,11 @@ export default function StepController({
           }} />
         </div>
 
-        {/* Tick marks */}
+        {/* Tick marks · total=1 时 i/(total-1) 是 0/0 → NaN%，钳到 0 */}
         {total <= 40 && Array.from({ length: total }, (_, i) => (
           <div key={i} style={{
             position: 'absolute',
-            left: `${(i / (total - 1)) * 100}%`,
+            left: `${total > 1 ? (i / (total - 1)) * 100 : 0}%`,
             width: i === step ? 3 : 2,
             height: i === step ? 10 : 5,
             borderRadius: 2,

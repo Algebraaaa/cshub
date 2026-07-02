@@ -140,7 +140,7 @@ export function AchievementsProvider({ children }) {
       const out = {}
       for (const s of subjects.SUBJECT_LIST) out[s.id] = subjects.getSubjectStats(s.id, completed)
       setSubjectStats(out)
-      setTotalAlgorithms(meta.ALGORITHM_LIST.length)
+      setTotalAlgorithms(meta.ALGORITHM_LIBRARY_LIST.length)
     })
     return () => { cancelled = true }
   }, [completed])

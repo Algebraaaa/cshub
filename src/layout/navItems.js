@@ -65,6 +65,13 @@ export const NAV_ITEMS = [
     label: 'AI 专业课',
     shortLabel: 'AI',
     icon: '🤖',
-    match: pathname => pathname === '/ai-course' || pathname.startsWith('/ai-course/'),
+    // 信息论已并入 AI 专业课（"信息论与编码"章节），不再单列顶级 tab。
+    // AI 专业课 tab 现在统管所有 /ai-course/* 路由（含 it- 课节）与遗留的
+    // /information-theory 跳转，让信息论成为课程内部的一章而非平级入口。
+    match: pathname =>
+      pathname === '/ai-course' ||
+      pathname.startsWith('/ai-course/') ||
+      pathname === '/information-theory' ||
+      pathname.startsWith('/information-theory/'),
   },
 ]

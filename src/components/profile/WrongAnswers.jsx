@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ALGORITHMS } from '../../data/algorithmMeta'
 import { storageGet, storageSet } from '../../hooks/useLocalStorage'
@@ -21,15 +20,12 @@ export function saveWrongForSlug(slug, wrongIndices) {
 }
 
 export default function WrongAnswers({ quizScores }) {
-  const wrongData = useMemo(() => loadWrongQuestions(), [quizScores])
+  const wrongData = loadWrongQuestions()
 
-  const wrongSlugs = useMemo(() =>
-    Object.entries(quizScores)
-      .filter(([, s]) => s.correct < s.total)
-      .sort((a, b) => (b[1].lastAt || 0) - (a[1].lastAt || 0))
-      .map(([slug]) => slug),
-    [quizScores]
-  )
+  const wrongSlugs = Object.entries(quizScores)
+    .filter(([, s]) => s.correct < s.total)
+    .sort((a, b) => (b[1].lastAt || 0) - (a[1].lastAt || 0))
+    .map(([slug]) => slug)
 
   if (wrongSlugs.length === 0) {
     return (

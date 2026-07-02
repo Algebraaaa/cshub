@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ALGORITHM_LIST, ALGORITHMS, CATEGORIES } from '../data/algorithmMeta'
+import { ALGORITHM_LIBRARY_LIST, ALGORITHMS, CATEGORIES, isAlgorithmLibraryItem } from '../data/algorithmMeta'
 import { useProgress } from '../contexts/ProgressContext'
 import { storageGet, storageSet } from '../hooks/useLocalStorage'
 
@@ -33,6 +33,7 @@ function pushRecent(item) {
 const GUIDE_ITEMS = [
   { type: 'guide', slug: 'github', to: '/github', name: 'GitHub 入门', icon: '🐙', color: '#34d399', desc: '账号注册、仓库管理、Pull Request、团队协作全流程。' },
   { type: 'guide', slug: 'ai', to: '/ai', name: 'AI 编程工具', icon: '🤖', color: '#60a5fa', desc: 'Copilot、Claude 等 AI 助手的实战使用技巧。' },
+  { type: 'guide', slug: 'information-theory', to: '/ai-course?chapter=it', name: '信息论专题', icon: '📡', color: '#06b6d4', desc: '信息量、熵、互信息、信道容量、马尔可夫模型与编码。' },
   { type: 'guide', slug: 'finance', to: '/finance', name: '理财', icon: '💹', color: '#fbbf24', desc: '人赚不到认知以外的钱。' },
   { type: 'guide', slug: 'interview', to: '/interview', name: '面试与求职', icon: '💼', color: '#f472b6', desc: 'STAR 简历、高频八股文速查、算法套路总结。' },
   { type: 'guide', slug: 'roadmap', to: '/roadmap', name: 'AI 时代破局路线图', icon: '🗺️', color: '#11998e', desc: 'AI 时代 CS 学习、项目、求职破局路线。' },
@@ -54,8 +55,9 @@ export default function SearchPalette({ open, onClose }) {
   const favoriteItems = useMemo(() => {
     const items = []
     for (const slug of favorites) {
-      const algo = ALGORITHMS[slug]
-      if (algo) items.push({ ...algo, type: 'algo', _section: 'favorite' })
+        const algo = ALGORITHMS[slug]
+        if (!isAlgorithmLibraryItem(algo)) continue
+        if (algo) items.push({ ...algo, type: 'algo', _section: 'favorite' })
     }
     return items
   }, [favorites])
@@ -66,6 +68,7 @@ export default function SearchPalette({ open, onClose }) {
     for (const r of recent) {
       if (r.type === 'algo') {
         const algo = ALGORITHMS[r.slug]
+        if (!isAlgorithmLibraryItem(algo)) continue
         if (algo && !favSet.has(algo.slug)) out.push({ ...algo, type: 'algo', _section: 'recent' })
       } else if (r.type === 'guide') {
         const g = GUIDE_ITEMS.find(x => x.slug === r.slug)
@@ -85,7 +88,7 @@ export default function SearchPalette({ open, onClose }) {
     if (!q) {
       const usedSlugs = new Set([...favoriteItems, ...recentItems].map(x => `${x.type}-${x.slug}`))
       const guidesLeft = GUIDE_ITEMS.filter(g => !usedSlugs.has(`guide-${g.slug}`))
-      const algosLeft = ALGORITHM_LIST
+      const algosLeft = ALGORITHM_LIBRARY_LIST
         .filter(a => !usedSlugs.has(`algo-${a.slug}`))
         .map(a => ({ ...a, type: 'algo' }))
       return [...favoriteItems, ...recentItems, ...SUBJECT_ITEMS, ...guidesLeft, ...algosLeft]
@@ -112,7 +115,7 @@ export default function SearchPalette({ open, onClose }) {
       }
       return 0
     }
-    const algoResults = ALGORITHM_LIST
+    const algoResults = ALGORITHM_LIBRARY_LIST
       .map(a => ({ ...a, type: 'algo', s: score(a) }))
       .filter(x => x.s > 0)
       .sort((x, y) => y.s - x.s)

@@ -28,7 +28,6 @@ function computeSteps(useCG) {
 
     for (let i = 0; i < 5; i++) {
       const loss = fn(x, y)
-      const g = grad(x, y)
 
       steps.push({
         description: `CG 步骤 ${i + 1}: x=(${x.toFixed(3)}, ${y.toFixed(3)}), loss=${loss.toFixed(4)}`,

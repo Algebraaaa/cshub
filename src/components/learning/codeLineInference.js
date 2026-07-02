@@ -1,18 +1,14 @@
+import { getStepCodeLine } from '../../utils/stepProtocol'
+
 function tokenize(text) {
   return (text || '')
     .toLowerCase()
     .match(/[a-z_][a-z0-9_]*|\d+|[\u4e00-\u9fff]+/g) || []
 }
 
+// \u663e\u5f0f\u884c\u53f7\u89e3\u6790\u7edf\u4e00\u8d70 stepProtocol.getStepCodeLine\uff08\u542b codeLine/line/pseudoLine \u515c\u5e95\uff09
 function getDirectLine(step, lang) {
-  if (!step) return null
-  if (lang === 'cpp' && Number.isInteger(step.cppLine)) return step.cppLine
-  if (lang === 'python' && Number.isInteger(step.pythonLine)) return step.pythonLine
-  if (step.codeLines && Number.isInteger(step.codeLines[lang])) return step.codeLines[lang]
-  if (Number.isInteger(step.codeLine)) return step.codeLine
-  if (Number.isInteger(step.line)) return step.line
-  if (Number.isInteger(step.pseudoLine)) return step.pseudoLine
-  return null
+  return getStepCodeLine(step, lang)
 }
 
 const HINTS = [

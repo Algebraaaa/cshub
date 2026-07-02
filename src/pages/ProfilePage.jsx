@@ -5,7 +5,7 @@ import { useProgress } from '../contexts/ProgressContext'
 import { useAchievements } from '../contexts/AchievementsContext'
 import { ACHIEVEMENT_LIST, TIER_META } from '../data/achievements'
 import { SUBJECT_LIST, getSubjectStats } from '../data/subjects'
-import { ALGORITHM_LIST, ALGORITHMS } from '../data/algorithmMeta'
+import { ALGORITHM_LIBRARY_LIST, ALGORITHMS } from '../data/algorithmMeta'
 import { getRecentAlgoSlug } from '../services/recents'
 import LearningHeatmap from '../components/profile/LearningHeatmap'
 import Recommendations from '../components/profile/Recommendations'
@@ -33,7 +33,7 @@ export default function ProfilePage() {
     })
   }, [unlocked])
 
-  const total = ALGORITHM_LIST.length
+  const total = ALGORITHM_LIBRARY_LIST.length
   const pct = total ? Math.round((completed.size / total) * 100) : 0
 
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.user_name || user?.email || '本地访客'

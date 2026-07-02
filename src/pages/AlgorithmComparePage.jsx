@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { ALGORITHM_LIST, ALGORITHMS, CATEGORIES } from '../data/algorithmMeta'
+import { ALGORITHM_LIBRARY_LIST, ALGORITHMS, CATEGORIES, getAlgorithmsByCategory } from '../data/algorithmMeta'
 import { loadAlgorithmDetails } from '../data/algorithmDetails'
 import { StepProvider } from '../contexts/StepContext'
 import AlgorithmPlaygroundFor from '../components/learning/AlgorithmPlaygroundFor'
@@ -206,7 +206,7 @@ function AlgoSelect({ label, value, onChange }) {
       <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{label}</span>
       <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
         {Object.entries(CATEGORIES).map(([catKey, cat]) => {
-          const options = ALGORITHM_LIST.filter(a => a.category === catKey)
+          const options = getAlgorithmsByCategory(catKey)
           if (options.length === 0) return null
           return (
             <optgroup key={catKey} label={cat.name}>
@@ -268,14 +268,15 @@ function complexityScore(value) {
 }
 
 function resolveSlug(slug, fallback) {
-  if (slug && ALGORITHMS[slug]) return slug
-  return fallback
+  if (slug && ALGORITHM_LIBRARY_LIST.some(algo => algo.slug === slug)) return slug
+  if (fallback && ALGORITHM_LIBRARY_LIST.some(algo => algo.slug === fallback)) return fallback
+  return ALGORITHM_LIBRARY_LIST[0]?.slug || fallback
 }
 
 function resolveDistinctSlug(slug, avoidSlug, fallback) {
-  if (slug && ALGORITHMS[slug] && slug !== avoidSlug) return slug
-  if (fallback && ALGORITHMS[fallback] && fallback !== avoidSlug) return fallback
-  return ALGORITHM_LIST.find(a => a.slug !== avoidSlug)?.slug || avoidSlug
+  if (slug && slug !== avoidSlug && ALGORITHM_LIBRARY_LIST.some(algo => algo.slug === slug)) return slug
+  if (fallback && fallback !== avoidSlug && ALGORITHM_LIBRARY_LIST.some(algo => algo.slug === fallback)) return fallback
+  return ALGORITHM_LIBRARY_LIST.find(a => a.slug !== avoidSlug)?.slug || avoidSlug
 }
 
 const pillStyle = {

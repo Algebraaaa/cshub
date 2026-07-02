@@ -60,6 +60,11 @@ export const VIZ_TO_NAME = {
   floyd: 'Floyd',
   topo: 'Topo',
   astar: 'AStar',
+  tarjancp: 'TarjanCutpoint',
+  lca: 'LCA',
+  dinic: 'Dinic',
+  mcmf: 'Mcmf',
+  eulerpath: 'EulerPath',
   // 树（共享 TreePlayground）
   bst: 'Tree',
   rb: 'Tree',
@@ -80,6 +85,12 @@ export const VIZ_TO_NAME = {
   philosophers: 'Philosophers',
   // 字符串
   string: 'String',
+  aho: 'Aho',
+  stringhash: 'StringHash',
+  // 数学
+  fastpow: 'FastPow',
+  sieve: 'Sieve',
+  matrixpow: 'MatrixPow',
   // 回溯
   backtracking: 'NQueens',
   // 数据结构
@@ -90,6 +101,8 @@ export const VIZ_TO_NAME = {
   segtree: 'SegTree',
   fenwick: 'Fenwick',
   binarysearch: 'BinarySearch',
+  lazyseg: 'LazySeg',
+  diffarray: 'DiffArray',
   slidingwindow: 'SlidingWindow',
   advancedstructure: 'AdvancedStructure',
   // 网络
@@ -116,6 +129,21 @@ export const VIZ_TO_NAME = {
   ll1: 'LL1',
   lr0: 'LR0',
   codeGen: 'CodeGen',
+  // 信息论
+  itSelfInfo: 'ItSelfInfo',
+  itEntropy: 'ItEntropy',
+  itJointEntropy: 'ItJointEntropy',
+  itMutualInfo: 'ItMutualInfo',
+  itKLDivergence: 'ItKLDivergence',
+  itEntropyRate: 'ItEntropyRate',
+  itChannel: 'ItChannel',
+  itChannelCapacity: 'ItChannelCapacity',
+  itMarkovSource: 'ItMarkovSource',
+  itMarkovChannel: 'ItMarkovChannel',
+  itHuffman: 'ItHuffman',
+  itShannonFano: 'ItShannonFano',
+  itErrorCorrect: 'ItErrorCorrect',
+  itDataCompression: 'ItDataCompression',
 }
 
 export const PLAYGROUND_LOADERS = Object.fromEntries(

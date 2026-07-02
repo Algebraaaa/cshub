@@ -30,6 +30,17 @@ function move(nfa, stateIds, symbol) {
 
 function setKey(arr) { return arr.join(',') }
 
+// action → 详情页代码行号（data/algorithms/compiler.js 中 nfaToDfa.code 的行号）。
+// 改动那份展示代码时需同步这张表。
+const LINES = {
+  'init':      { cpp: 14, python: 2 },   // start = ε-closure({nfa.start})
+  'no-move':   { cpp: 21, python: 10 },  // 空集 → continue
+  'new-state': { cpp: 23, python: 12 },  // 新建 DFA 状态并入队
+  'existing':  { cpp: 22, python: 11 },  // 集合已出现 → 复用
+  'edge':      { cpp: 25, python: 13 },  // 添加 DFA 转移
+  'done':      { cpp: 27, python: 14 },  // 队列空 → 完成
+}
+
 export function nfaToDfa(regex) {
   const nfa = regexToFinalNfa(regex)
   const alphabet = Array.from(new Set(nfa.edges.map(e => e.label).filter(l => l !== 'ε'))).sort()
@@ -40,6 +51,7 @@ export function nfaToDfa(regex) {
   const keyToIdx = new Map()
 
   function snap(focusClosure, focusDfaState, action, desc, focusEdge = null) {
+    const lines = LINES[action]
     steps.push({
       nfa,
       alphabet,
@@ -50,6 +62,7 @@ export function nfaToDfa(regex) {
       focusClosure, focusDfaState, focusEdge,
       action,
       description: desc,
+      ...(lines ? { cppLine: lines.cpp, pythonLine: lines.python } : {}),
     })
   }
 

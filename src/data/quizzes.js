@@ -1471,5 +1471,77 @@ export const QUIZZES = {
     { q: '将 AST 翻译为三地址码时，通常使用什么遍历顺序？', options: ['前序遍历（根-左-右）', '中序遍历（左-根-右）', '后序遍历（左-右-根），先处理子节点再处理当前节点', '层序遍历（BFS）'], answer: 2 },
     { q: '编译器生成的临时变量（如 t1、t2）在最终目标代码中最终会变成什么？', options: ['保留原名称作为内存变量', '经过寄存器分配后映射到物理寄存器或栈上位置', '被完全删除（都是冗余的）', '统一放入全局变量区'], answer: 1 },
   ],
+
+  tarjancp: [
+    { q: 'Tarjan 割点算法中，非根节点 u 是割点的条件是什么？', options: ['low[u] > dfn[u]', '存在子节点 v 使得 low[v] >= dfn[u]', 'dfn[u] == low[u]', 'u 的度数大于 2'], answer: 1 },
+    { q: '无向图中桥（割边）的判定条件是什么？', options: ['low[v] > dfn[u]（v 是 u 的 DFS 子节点）', 'low[v] < dfn[u]', 'dfn[u] == dfn[v]', 'u 和 v 之间有回边'], answer: 0 },
+    { q: 'Tarjan 割点算法的时间复杂度是？', options: ['O(V²)', 'O(V log V)', 'O(V + E)', 'O(V·E)'], answer: 2 },
+  ],
+
+  lca: [
+    { q: '倍增法求 LCA 的预处理时间复杂度是？', options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(log n)'], answer: 1 },
+    { q: '倍增表中 up[u][k] 表示什么？', options: ['u 的第 k 个子节点', 'u 的第 2^k 个祖先', 'u 到根的第 k 条路径', 'u 的深度为 k 的祖先'], answer: 1 },
+    { q: 'LCA 查询中，首先需要对两个节点做什么操作？', options: ['交换使 u < v', '对齐到相同深度', '同时跳到根节点', '找到它们的子节点'], answer: 1 },
+  ],
+
+  dinic: [
+    { q: 'Dinic 算法的时间复杂度是？', options: ['O(VE)', 'O(V²E)', 'O(E²V)', 'O(V³)'], answer: 1 },
+    { q: 'Dinic 算法中 BFS 的作用是什么？', options: ['找增广路', '构建层次图（level graph）', '计算最大流', '检测负环'], answer: 1 },
+    { q: '"当前弧优化"的含义是什么？', options: ['每次 DFS 从上次结束的边开始，避免重复搜索已用尽的边', '用优先队列加速 BFS', '预处理所有边的容量', '缓存增广路结果'], answer: 0 },
+  ],
+
+  mcmf: [
+    { q: 'MCMF 中反向边的费用应设为多少？', options: ['0', '与正向边相同', '正向边费用的相反数（取负）', '正向边费用的两倍'], answer: 2 },
+    { q: 'MCMF 通常用什么算法来找增广路？', options: ['BFS', 'DFS', 'SPFA（或 Bellman-Ford）', 'Dijkstra'], answer: 2 },
+    { q: '最小费用最大流的目标是什么？', options: ['只追求最大流', '只追求最小费用', '在达到最大流的前提下使总费用最小', '同时最大化流和最小化费用'], answer: 2 },
+  ],
+
+  eulerpath: [
+    { q: '无向图存在欧拉回路的充要条件是什么？', options: ['所有节点度数为奇数', '所有节点度数为偶数且图连通', '图中无环', '节点数为偶数'], answer: 1 },
+    { q: 'Hierholzer 算法中，节点何时被加入回路？', options: ['刚进入 DFS 时', '沿未使用边走出时', '无未使用边可走时（回溯时加入）', '所有边都用完后统一加入'], answer: 2 },
+    { q: 'Hierholzer 算法的时间复杂度是？', options: ['O(V²)', 'O(V+E)', 'O(E log E)', 'O(V·E)'], answer: 1 },
+  ],
+
+  lazyseg: [
+    { q: '懒标记线段树相比普通线段树的核心改进是什么？', options: ['使用了更多内存', '支持区间修改（而非仅单点修改），通过 lazy 标记延迟传播', '查询更快', '不需要建树'], answer: 1 },
+    { q: 'pushDown 操作的目的是什么？', options: ['将叶节点值向上传递', '将当前节点的 lazy 标记传播给子节点', '清空整棵树', '合并两个子树'], answer: 1 },
+    { q: '懒标记线段树的区间加操作时间复杂度是？', options: ['O(n)', 'O(log n)', 'O(n log n)', 'O(1)'], answer: 1 },
+  ],
+
+  diffarray: [
+    { q: '差分数组 d[i] 的定义是什么？', options: ['d[i] = a[i] + a[i-1]', 'd[i] = a[i] - a[i-1]', 'd[i] = a[i] × a[i-1]', 'd[i] = a[i] / a[i-1]'], answer: 1 },
+    { q: '对数组 a[l..r] 全部加 val，差分数组需要修改几个位置？', options: ['r - l + 1 个', '2 个：d[l] += val, d[r+1] -= val', '1 个：d[l] += val', 'n 个'], answer: 1 },
+    { q: '从差分数组恢复原数组的操作是什么？', options: ['对 d 做后缀和', '对 d 做前缀和', '对 d 逐项取反', '对 d 做差分'], answer: 1 },
+  ],
+
+  aho: [
+    { q: 'AC 自动机的 fail 指针功能类似于哪种算法的什么结构？', options: ['KMP 的 next（lps）数组', 'Dijkstra 的 dist 数组', '并查集的 parent 指针', 'Trie 的 children 指针'], answer: 0 },
+    { q: 'AC 自动机建 fail 指针使用什么遍历方式？', options: ['DFS（深度优先）', 'BFS（广度优先）', '中序遍历', '后序遍历'], answer: 1 },
+    { q: 'AC 自动机适用于什么场景？', options: ['单模式匹配', '多模式同时匹配', '字符串排序', '字符串压缩'], answer: 1 },
+  ],
+
+  stringhash: [
+    { q: '字符串哈希中，子串 hash(S[l..r]) 如何计算？', options: ['H[r+1] - H[l] × P[r-l+1]', 'H[r] - H[l]', 'H[r] + H[l]', 'H[l] × P[r]'], answer: 0 },
+    { q: '字符串哈希的预处理时间复杂度是？', options: ['O(n²)', 'O(n log n)', 'O(n)', 'O(1)'], answer: 2 },
+    { q: '为了降低碰撞概率，常用什么技巧？', options: ['增大字符串长度', '双哈希（两组不同的 base 和 mod）', '减小 base 值', '只用 ASCII 字符'], answer: 1 },
+  ],
+
+  fastpow: [
+    { q: '快速幂的时间复杂度是？', options: ['O(b)', 'O(log b)', 'O(b²)', 'O(√b)'], answer: 1 },
+    { q: '快速幂的核心思想是什么？', options: ['递归展开', '利用指数的二进制分解减少乘法次数', '查表法', '分治归并'], answer: 1 },
+    { q: '计算 a^13 时，13 的二进制是 1101，需要进行几次平方和几次乘法？', options: ['3 次平方，3 次乘法', '4 次平方，3 次乘法（结果累乘对应位为1的幂次）', '13 次乘法', '3 次平方，4 次乘法'], answer: 1 },
+  ],
+
+  sieve: [
+    { q: '欧拉筛的时间复杂度是？', options: ['O(n log n)', 'O(n log log n)', 'O(n)', 'O(n²)'], answer: 2 },
+    { q: '欧拉筛中 "if i % p == 0: break" 的作用是什么？', options: ['防止数组越界', '保证每个合数只被其最小质因子筛掉一次', '加速循环', '跳过偶数'], answer: 1 },
+    { q: '欧拉筛与埃氏筛（Eratosthenes）的主要区别是？', options: ['欧拉筛更快但用更多内存', '欧拉筛保证每个合数只被标记一次，埃氏筛可能重复标记', '两者完全相同', '埃氏筛能处理更大的范围'], answer: 1 },
+  ],
+
+  matrixpow: [
+    { q: '矩阵快速幂求 Fibonacci 第 n 项的时间复杂度是？', options: ['O(n)', 'O(log n)', 'O(n²)', 'O(n log n)'], answer: 1 },
+    { q: 'k×k 矩阵乘法的时间复杂度是？', options: ['O(k)', 'O(k²)', 'O(k³)', 'O(k log k)'], answer: 2 },
+    { q: '矩阵快速幂适用的递推关系需要满足什么条件？', options: ['非线性递推', '线性递推（当前项是前几项的线性组合）', '任意递推', '只有 Fibonacci 型递推'], answer: 1 },
+  ],
 }
 

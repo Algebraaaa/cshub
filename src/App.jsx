@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import AppLayout from './layout/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -49,11 +49,11 @@ function PageFallback() {
   )
 }
 
-export default function App() {
+function AppRoutes() {
+  // resetKey 让 ErrorBoundary 在路由变化时自动恢复（见 ErrorBoundary.componentDidUpdate）
+  const location = useLocation()
   return (
-    <BrowserRouter>
-      <Analytics />
-      <ErrorBoundary>
+    <ErrorBoundary resetKey={location.pathname}>
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route element={<AppLayout />}>
@@ -88,11 +88,21 @@ export default function App() {
             <Route path="/violin/lesson/:lessonId" element={<ViolinLessonPage />} />
             <Route path="/ai-course" element={<AIPage />} />
             <Route path="/ai-course/lesson/:lessonId" element={<AILessonPage />} />
+            <Route path="/information-theory" element={<Navigate to="/ai-course?chapter=it" replace />} />
+            <Route path="/information-theory/*" element={<Navigate to="/ai-course?chapter=it" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </Suspense>
-      </ErrorBoundary>
+    </ErrorBoundary>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Analytics />
+      <AppRoutes />
     </BrowserRouter>
   )
 }

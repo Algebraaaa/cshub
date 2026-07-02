@@ -4,6 +4,8 @@ import { fenwickTree } from '../../algorithms/dataStructures/fenwick'
 import { hashTable } from '../../algorithms/dataStructures/hashTable'
 import { linkedListOps } from '../../algorithms/dataStructures/linkedList'
 import { segTree } from '../../algorithms/dataStructures/segTree'
+import { lazySegTree } from '../../algorithms/dataStructures/lazySegTree'
+import { diffArray } from '../../algorithms/dataStructures/diffArray'
 import { trieOps } from '../../algorithms/dataStructures/trie'
 import { unionFind } from '../../algorithms/dataStructures/unionFind'
 
@@ -743,6 +745,259 @@ public:
     ],
   },
 
+  lazyseg: {
+    slug: 'lazyseg',
+    name: '懒标记线段树',
+    nameEn: 'Lazy Segment Tree',
+    category: 'dataStructures',
+    difficulty: '进阶',
+    fn: lazySegTree,
+    viz: 'lazyseg',
+    timeComplexity: { best: 'O(log n)', average: 'O(log n)', worst: 'O(log n)' },
+    spaceComplexity: 'O(n)',
+    stable: null,
+    description: '线段树 + lazy 标记，支持 O(log n) 的区间修改与区间查询。',
+    intuition: `懒标记线段树是普通线段树的进阶版本，解决了**区间修改**的效率问题。
+
+**问题：** 普通线段树的单点更新 O(log n)，但如果要做"区间加"操作（对 [l, r] 所有元素加 val），朴素做法是逐个单点更新，O(n log n)。
+
+**解决方案 — Lazy 标记：**
+- 当更新范围完全覆盖某个节点时，不继续向下递归，而是在该节点打上一个"懒标记" lazy[node]
+- lazy[node] 表示"这个节点的子树中每个元素都应该加上 lazy[node]，但还没来得及向下传播"
+- 查询或更新需要进入子树时，先 pushDown 把懒标记传给子节点
+
+**PushDown 操作：**
+- lazy[left] += lazy[node]
+- lazy[right] += lazy[node]
+- tree[left] += lazy[node] × (左子树长度)
+- tree[right] += lazy[node] × (右子树长度)
+- lazy[node] = 0
+
+这样区间加和区间查询都是 O(log n)。`,
+    pseudocode: `procedure PushDown(node, len):
+    if lazy[node] ≠ 0:
+        lazy[2·node] += lazy[node]
+        lazy[2·node+1] += lazy[node]
+        tree[2·node] += lazy[node] × (len/2)
+        tree[2·node+1] += lazy[node] × (len - len/2)
+        lazy[node] ← 0
+
+procedure RangeAdd(node, l, r, ql, qr, val):
+    if ql ≤ l and r ≤ qr:           // 完全覆盖
+        tree[node] += val × (r-l+1)
+        lazy[node] += val; return
+    PushDown(node, r-l+1)
+    mid ← (l+r)/2
+    if ql ≤ mid: RangeAdd(2·node, l, mid, ql, qr, val)
+    if qr > mid: RangeAdd(2·node+1, mid+1, r, ql, qr, val)
+    tree[node] ← tree[2·node] + tree[2·node+1]
+
+procedure Query(node, l, r, ql, qr):
+    if ql ≤ l and r ≤ qr: return tree[node]
+    PushDown(node, r-l+1)
+    mid ← (l+r)/2; sum ← 0
+    if ql ≤ mid: sum += Query(2·node, l, mid, ql, qr)
+    if qr > mid: sum += Query(2·node+1, mid+1, r, ql, qr)
+    return sum`,
+    code: {
+      cpp: `struct LazySegTree {
+    int n;
+    vector<ll> tree, lazy;
+
+    void push_up(int u) { tree[u] = tree[2*u] + tree[2*u+1]; }
+
+    void push_down(int u, int len) {
+        if (lazy[u] == 0) return;
+        lazy[2*u] += lazy[u]; lazy[2*u+1] += lazy[u];
+        tree[2*u] += lazy[u] * (len/2);
+        tree[2*u+1] += lazy[u] * (len - len/2);
+        lazy[u] = 0;
+    }
+
+    void build(int u, int l, int r, vector<ll>& a) {
+        if (l == r) { tree[u] = a[l]; return; }
+        int mid = (l+r)/2;
+        build(2*u, l, mid, a); build(2*u+1, mid+1, r, a);
+        push_up(u);
+    }
+
+    void update(int u, int l, int r, int ql, int qr, ll val) {
+        if (ql <= l && r <= qr) {
+            tree[u] += val * (r - l + 1);
+            lazy[u] += val; return;
+        }
+        push_down(u, r - l + 1);
+        int mid = (l+r)/2;
+        if (ql <= mid) update(2*u, l, mid, ql, qr, val);
+        if (qr > mid) update(2*u+1, mid+1, r, ql, qr, val);
+        push_up(u);
+    }
+
+    ll query(int u, int l, int r, int ql, int qr) {
+        if (ql <= l && r <= qr) return tree[u];
+        push_down(u, r - l + 1);
+        int mid = (l+r)/2; ll res = 0;
+        if (ql <= mid) res += query(2*u, l, mid, ql, qr);
+        if (qr > mid) res += query(2*u+1, mid+1, r, ql, qr);
+        return res;
+    }
+};`,
+      python: `class LazySegTree:
+    def __init__(self, arr):
+        self.n = len(arr)
+        self.tree = [0] * (4 * self.n)
+        self.lazy = [0] * (4 * self.n)
+        self._build(1, 0, self.n-1, arr)
+
+    def _push_up(self, u):
+        self.tree[u] = self.tree[2*u] + self.tree[2*u+1]
+
+    def _push_down(self, u, length):
+        if self.lazy[u] == 0: return
+        for child, half in [(2*u, length//2), (2*u+1, length - length//2)]:
+            self.lazy[child] += self.lazy[u]
+            self.tree[child] += self.lazy[u] * half
+        self.lazy[u] = 0
+
+    def _build(self, u, l, r, arr):
+        if l == r: self.tree[u] = arr[l]; return
+        mid = (l+r)//2
+        self._build(2*u, l, mid, arr)
+        self._build(2*u+1, mid+1, r, arr)
+        self._push_up(u)
+
+    def update(self, ql, qr, val):
+        self._update(1, 0, self.n-1, ql, qr, val)
+
+    def _update(self, u, l, r, ql, qr, val):
+        if ql <= l and r <= qr:
+            self.tree[u] += val * (r - l + 1)
+            self.lazy[u] += val; return
+        self._push_down(u, r - l + 1)
+        mid = (l+r)//2
+        if ql <= mid: self._update(2*u, l, mid, ql, qr, val)
+        if qr > mid: self._update(2*u+1, mid+1, r, ql, qr, val)
+        self._push_up(u)
+
+    def query(self, ql, qr):
+        return self._query(1, 0, self.n-1, ql, qr)
+
+    def _query(self, u, l, r, ql, qr):
+        if ql <= l and r <= qr: return self.tree[u]
+        self._push_down(u, r - l + 1)
+        mid = (l+r)//2; res = 0
+        if ql <= mid: res += self._query(2*u, l, mid, ql, qr)
+        if qr > mid: res += self._query(2*u+1, mid+1, r, ql, qr)
+        return res`,
+    },
+    applications: [
+      '区间加 / 区间求和（经典模板题）',
+      '区间赋值 / 区间最值（需要不同 pushDown 策略）',
+      '二维线段树（矩阵区域操作）',
+      'CCPC/ICPC 数据结构核心考点',
+    ],
+  },
+
+  diffarray: {
+    slug: 'diffarray',
+    name: '差分数组',
+    nameEn: 'Difference Array',
+    category: 'dataStructures',
+    difficulty: '中等',
+    fn: diffArray,
+    viz: 'diffarray',
+    timeComplexity: { best: 'O(1)', average: 'O(1)', worst: 'O(1)' },
+    spaceComplexity: 'O(n)',
+    stable: null,
+    description: 'd[i] = a[i] − a[i−1]，区间加 O(1)，前缀和恢复 O(n)。',
+    intuition: `**差分数组**是前缀和的逆运算，专门用于高效处理**多次区间修改 + 最终统一查询**的场景。
+
+**定义：** 对于数组 a[0..n-1]，差分数组 d[0..n]：
+- d[0] = a[0]
+- d[i] = a[i] - a[i-1]（i ≥ 1）
+
+**区间加 O(1)：** 对 a[l..r] 所有元素加 val，只需：
+- d[l] += val
+- d[r+1] -= val
+
+因为前缀和恢复时，d[l] 的增加会影响 a[l], a[l+1], ..., a[n-1]，而 d[r+1] 的减少又抵消了 a[r+1] 之后的影响。
+
+**恢复数组 O(n)：** a[i] = a[i-1] + d[i]（即 d 的前缀和就是 a）
+
+**适用场景：**
+- 多次区间修改，最后一次查询全部结果
+- 不适合需要**区间修改 + 区间查询**交替进行的场景（用线段树）
+
+**与树状数组的配合：** 差分 + BIT = 区间修改 + 单点查询 O(log n)。`,
+    pseudocode: `// 构建差分数组
+procedure BuildDiff(a):
+    d[0] ← a[0]
+    for i from 1 to n-1:
+        d[i] ← a[i] - a[i-1]
+    return d
+
+// 区间加 [l, r] += val
+procedure RangeAdd(d, l, r, val):
+    d[l] += val
+    if r + 1 < n:
+        d[r + 1] -= val
+
+// 恢复数组（d 的前缀和）
+procedure Restore(d):
+    a[0] ← d[0]
+    for i from 1 to n-1:
+        a[i] ← a[i-1] + d[i]
+    return a`,
+    code: {
+      cpp: `// 构建差分数组
+vector<int> buildDiff(const vector<int>& a) {
+    int n = a.size();
+    vector<int> d(n + 1, 0);
+    d[0] = a[0];
+    for (int i = 1; i < n; i++) d[i] = a[i] - a[i-1];
+    return d;
+}
+
+// 区间加 [l, r] += val
+void rangeAdd(vector<int>& d, int l, int r, int val) {
+    d[l] += val;
+    if (r + 1 < (int)d.size()) d[r + 1] -= val;
+}
+
+// 恢复数组
+vector<int> restore(const vector<int>& d, int n) {
+    vector<int> a(n);
+    a[0] = d[0];
+    for (int i = 1; i < n; i++) a[i] = a[i-1] + d[i];
+    return a;
+}`,
+      python: `def build_diff(a):
+    n = len(a)
+    d = [0] * (n + 1)
+    d[0] = a[0]
+    for i in range(1, n):
+        d[i] = a[i] - a[i-1]
+    return d
+
+def range_add(d, l, r, val):
+    d[l] += val
+    if r + 1 < len(d):
+        d[r + 1] -= val
+
+def restore(d, n):
+    a = [0] * n
+    a[0] = d[0]
+    for i in range(1, n):
+        a[i] = a[i-1] + d[i]
+    return a`,
+    },
+    applications: [
+      '多次区间加操作后统一查询结果',
+      '航班预订统计（LeetCode 1109）',
+      '拼车问题（LeetCode 1094）',
+      '差分 + BIT：区间修改 + 单点查询',
+    ],
+  },
 }
 
 export default DATASTRUCTURES_ALGORITHMS

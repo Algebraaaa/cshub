@@ -1,4 +1,4 @@
-import { p0PipelineHazard, memoryTopic, osTopic, protocolTopic, cryptoTopic, structureTopic } from '../algorithms/p0Topics'
+import { memoryTopic, osTopic, protocolTopic, cryptoTopic, structureTopic } from '../algorithms/p0Topics'
 
 const COMMON_CODE = {
   cpp: `// 教学可视化伪代码：真实系统实现会包含更多边界处理
@@ -47,24 +47,10 @@ function entry({
 }
 
 export const EXTRA_ALGORITHMS = {
-  pipelinehazard: entry({
-    slug: 'pipelinehazard',
-    name: '五级流水线冒险处理',
-    nameEn: 'Pipeline Hazards',
-    category: 'co',
-    fn: p0PipelineHazard,
-    viz: 'pipeline',
-    desc: '展示 IF/ID/EX/MEM/WB 五级流水线中的数据冒险、STALL 气泡和数据转发。',
-    intuition: '流水线让多条指令重叠执行，但相邻指令存在数据依赖时，后续指令可能过早读取旧值。硬件通常用停顿和转发解决这类冒险。',
-    pseudo: `for each cycle:
-    advance pipeline stages
-    if load-use hazard:
-        insert STALL
-    if producer result is available:
-        forward data to consumer`,
-    apps: ['408 计算机组成原理', 'CPU 微体系结构入门', '面试中的流水线冒险问题'],
-  }),
-
+  // pipelinehazard 曾在这里有一份占位代码的瘦版定义，与 algorithms/co.js 的
+  // 完整版（真实 forwarding/stall 代码 + pipelineHazard 步骤函数）冲突：
+  // 元数据取 co.js 版、运行时聚合取本文件版，页面内容与目录不一致。已删除，
+  // 以 co.js 为唯一来源。generateAlgorithmMeta.cjs 现在会对重复 slug 报错。
   instructioncycle: entry({
     slug: 'instructioncycle',
     name: '指令执行周期',

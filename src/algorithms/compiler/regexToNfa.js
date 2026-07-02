@@ -5,6 +5,17 @@
 let _id = 0
 const nextId = () => `s${++_id}`
 
+// 步骤 → 详情页代码行号（data/algorithms/compiler.js 中 regexNfa.code 的行号）。
+// 改动那份展示代码时需同步这张表，否则高亮会指错行。
+const LINES = {
+  parse:  { cpp: 1,  python: 1 },   // 标题 / def thompson(node)
+  char:   { cpp: 9,  python: 4 },   // 推入字符边
+  concat: { cpp: 13, python: 9 },   // 左接收 --ε--> 右起始
+  alt:    { cpp: 18, python: 15 },  // 分叉/汇合 ε 边
+  star:   { cpp: 26, python: 21 },  // 闭包 ε 边
+  done:   { cpp: 1,  python: 1 },
+}
+
 // ─── 1. 词法 + 语法（递归下降）──
 // expr   = term ('|' term)*
 // term   = factor+
@@ -75,7 +86,8 @@ function thompson(ast, snapshot) {
       add(s, a, node.value)
       snapshot(['char-' + node.value],
         `字符 '${node.value}' → 两个状态 + 一条 '${node.value}' 边。`,
-        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node })
+        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node },
+        LINES.char)
       return { start: s, accept: a }
     }
     if (node.type === 'Concat') {
@@ -84,7 +96,8 @@ function thompson(ast, snapshot) {
       add(l.accept, r.start, 'ε')
       snapshot([l.accept, r.start],
         `连接：把左子的接收态与右子的起始态用 ε 连起来。`,
-        { nodes: new Map(nodes), edges: edges.slice(), start: l.start, accept: r.accept, ast: node })
+        { nodes: new Map(nodes), edges: edges.slice(), start: l.start, accept: r.accept, ast: node },
+        LINES.concat)
       return { start: l.start, accept: r.accept }
     }
     if (node.type === 'Alt') {
@@ -95,7 +108,8 @@ function thompson(ast, snapshot) {
       add(l.accept, a, 'ε'); add(r.accept, a, 'ε')
       snapshot([s, a],
         `选择 (A|B)：新建起始/接收态；起始 ε 分叉到两侧；两侧接收 ε 合到新接收。`,
-        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node })
+        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node },
+        LINES.alt)
       return { start: s, accept: a }
     }
     if (node.type === 'Star') {
@@ -105,7 +119,8 @@ function thompson(ast, snapshot) {
       add(c.accept, c.start, 'ε'); add(c.accept, a, 'ε') // 循环 + 收束
       snapshot([s, a],
         `Kleene 闭包 A*：起始 ε 分叉到 A 或直接接收（零次）；A 接收 ε 既可循环又可结束。`,
-        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node })
+        { nodes: new Map(nodes), edges: edges.slice(), start: s, accept: a, ast: node },
+        LINES.star)
       return { start: s, accept: a }
     }
     throw new Error('unknown node ' + node.type)
@@ -124,9 +139,10 @@ export function regexToNfa(regex) {
     nfa: { nodes: new Map(), edges: [], start: null, accept: null },
     focus: [], ast, regex,
     description: `解析正则 "${regex}"，得到语法树。下一步开始按 Thompson 规则逐子树构造 NFA。`,
+    cppLine: LINES.parse.cpp, pythonLine: LINES.parse.python,
   })
 
-  const ctx = thompson(ast, (focus, description, snap) => {
+  const ctx = thompson(ast, (focus, description, snap, lines) => {
     snap.nodes.get(snap.accept).accepting = true
     steps.push({
       nfa: {
@@ -137,6 +153,7 @@ export function regexToNfa(regex) {
       },
       focus, ast, regex,
       description,
+      ...(lines ? { cppLine: lines.cpp, pythonLine: lines.python } : {}),
     })
     snap.nodes.get(snap.accept).accepting = false  // 还原（中间快照只是看）
   })
@@ -150,6 +167,7 @@ export function regexToNfa(regex) {
     focus: [root.start, root.accept],
     ast, regex,
     description: `构造完成。共 ${finalNodes.size} 个状态、${ctx.edges.length} 条边。起始 ${root.start}，接收 ${root.accept}。`,
+    cppLine: LINES.done.cpp, pythonLine: LINES.done.python,
   })
 
   return steps

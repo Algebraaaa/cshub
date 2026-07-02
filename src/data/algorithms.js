@@ -27,6 +27,10 @@ export const CATEGORIES = {
   dbQuery:        { name: '查询执行', icon: '🔍', color: '#06b6d4', desc: '关系代数算子的物理执行（联接、聚合）' },
   compilerLex:    { name: '词法分析', icon: '🔤', color: '#f59e0b', desc: '正则 → NFA/DFA 状态机构造' },
   compilerSyn:    { name: '语法分析', icon: '🌲', color: '#ef4444', desc: '递归下降、LL/LR 等语法分析与 AST 构建' },
+  itFundamental:  { name: '信息度量', icon: '📊', color: '#06b6d4', desc: '自信息、熵、联合熵、条件熵、互信息、KL 散度' },
+  itChannel:      { name: '信道模型', icon: '📡', color: '#8b5cf6', desc: 'BSC/BEC 信道、信道容量、噪声与转移概率' },
+  itMarkov:       { name: '马尔可夫过程', icon: '🔄', color: '#ec4899', desc: '马尔可夫信源/信道、状态转移、平稳分布' },
+  itCoding:       { name: '编码理论', icon: '🧬', color: '#10b981', desc: '霍夫曼编码、香农-费诺编码、纠错编码' },
 }
 
 

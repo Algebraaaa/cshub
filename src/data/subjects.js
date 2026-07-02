@@ -19,7 +19,7 @@ export const SUBJECTS = {
     gradient: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
     description: '排序、图、动规、回溯、字符串与基础数据结构',
     available: true,
-    categories: ['sorting', 'graph', 'tree', 'dp', 'backtracking', 'string', 'dataStructures'],
+    categories: ['sorting', 'graph', 'tree', 'dp', 'backtracking', 'string', 'dataStructures', 'math'],
   },
   os: {
     id: 'os',
@@ -87,6 +87,18 @@ export const SUBJECTS = {
     available: true,
     categories: ['compilerLex', 'compilerSyn', 'compilerCode'],
   },
+  it: {
+    id: 'it',
+    name: '信息论',
+    shortName: '信息论',
+    icon: '📡',
+    color: '#06b6d4',
+    gradient: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 55%, #10b981 100%)',
+    description: '信息量、熵、信道、马尔可夫模型、编码与纠错',
+    available: true,
+    visible: false,
+    categories: ['itFundamental', 'itChannel', 'itMarkov', 'itCoding'],
+  },
 }
 
 // 从 SUBJECTS[].categories 派生的反向索引——category key → subject id。
@@ -95,7 +107,7 @@ export const CATEGORY_TO_SUBJECT = Object.fromEntries(
   Object.values(SUBJECTS).flatMap(s => (s.categories || []).map(c => [c, s.id]))
 )
 
-export const SUBJECT_LIST = Object.values(SUBJECTS)
+export const SUBJECT_LIST = Object.values(SUBJECTS).filter(s => s.visible !== false)
 
 export function getSubject(subjectId) {
   return SUBJECTS[subjectId] || null

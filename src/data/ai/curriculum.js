@@ -1,3 +1,18 @@
+// AI 专业课数据 · 组装器
+// 课节内容已按章节拆分到 ./chapters/<id>.js（2026-06，原单文件 4800+ 行难以审查）。
+// 本文件保留：章节组装、按章补全（AI_COMPLETION_DEFAULTS / completeAILessonMetadata）、
+// 后期代码注入（LATE_COURSE_CODE）与导出。补全逻辑会原位 mutate 章节数组里的 lesson 对象。
+import { INFO_THEORY_LESSONS } from './chapters/it'
+import { OPTIM_LESSONS } from './chapters/optim'
+import { ML_LESSONS } from './chapters/ml'
+import { DL_LESSONS } from './chapters/dl'
+import { OR_LESSONS } from './chapters/or'
+import { FEATURE_LESSONS } from './chapters/feature'
+import { NLP_LESSONS } from './chapters/nlp'
+import { CV_LESSONS } from './chapters/cv'
+import { RL_LESSONS } from './chapters/rl'
+import { LLM_LESSONS } from './chapters/llm'
+
 export const AI_CURRICULUM = {
   id: 'ai-masters',
   title: 'AI 专业课',
@@ -5,802 +20,16 @@ export const AI_CURRICULUM = {
   icon: '🤖',
   color: '#8b5cf6',
   chapters: [
-    {
-      id: 'optim',
-      title: '最优化方法',
-      lessons: [
-        {
-          id: 'optim-gd-variants',
-          title: '梯度下降变体对比',
-          summary: 'BGD、SGD、Mini-batch 的收敛行为差异',
-          theory: `## 梯度下降变体
-
-三种梯度下降的核心区别在于**每步使用多少数据**计算梯度。
-
-| 方法 | 每步数据量 | 梯度质量 | 速度 |
-|------|-----------|---------|------|
-| BGD | 全部 N 个 | 精确 | 最慢 |
-| SGD | 1 个 | 噪声大 | 最快 |
-| Mini-batch | B 个 | 折中 | 折中 |
-
-### 更新规则
-
-$$\\theta \\leftarrow \\theta - \\alpha \\nabla L(\\theta)$$
-
-SGD 的噪声反而有好处——能跳出局部最优。
-`,
-          exercise: { type: 'playground', viz: 'gdVariants' },
-          code: {
-            cpp: `#include <bits/stdc++.h>
-using namespace std;
-
-struct Point {
-    double x, y;
-};
-
-Point grad_rosenbrock(Point p) {
-    double gx = -2 * (1 - p.x) - 400 * p.x * (p.y - p.x * p.x);
-    double gy = 200 * (p.y - p.x * p.x);
-    return {gx, gy};
-}
-
-Point gd_step(Point p, double lr, string variant) {
-    Point g = grad_rosenbrock(p);
-
-    if (variant == "sgd") {
-        g.x += random_noise();
-        g.y += random_noise();
-    } else if (variant == "mini") {
-        g.x += 0.3 * random_noise();
-        g.y += 0.3 * random_noise();
-    }
-
-    return {
-        p.x - lr * g.x,
-        p.y - lr * g.y
-    };
-}`,
-            python: `def gd_step(x, y, lr, variant):
-    gx, gy = grad_rosenbrock(x, y)
-
-    if variant == "sgd":
-        gx += random_noise()
-        gy += random_noise()
-    elif variant == "mini":
-        gx += 0.3 * random_noise()
-        gy += 0.3 * random_noise()
-
-    return (
-        x - lr * gx,
-        y - lr * gy,
-    )`
-          },
-          variablesSnapshot: {
-            variant: 'BGD',
-            learningRate: 0.002,
-            position: '(-1.50, 2.00)',
-            loss: '12.34'
-          },
-          pseudocode: `procedure GD_VARIANTS(start, learningRate, variant)
-    point <- start
-    for step <- 1 to maxSteps do
-        gradient <- grad(loss, point)
-
-        if variant = SGD then
-            gradient <- gradient + sampleNoise()
-        else if variant = MINI_BATCH then
-            gradient <- gradient + smallBatchNoise()
-        end if
-
-        point <- point - learningRate * gradient
-        record(point, loss(point))
-    end for
-    return path`,
-          bigO: {
-            time: '可视化固定迭代 T 步，每步计算一次二维梯度，因此演示复杂度为 O(T)。真实训练中 BGD 每步需要扫 N 个样本，SGD 为 O(1)，Mini-batch 为 O(B)。',
-            space: '保存轨迹 path 需要 O(T)；只做在线更新时，参数和梯度都是常数空间 O(1)。',
-            note: '这里的 T 是迭代步数，N 是数据集规模，B 是 mini-batch 大小。',
-          },
-          compare: [
-            { method: 'BGD', data: '全部 N 个样本', strength: '梯度稳定，路径平滑', tradeoff: '单步最慢，大数据集代价高' },
-            { method: 'SGD', data: '1 个样本', strength: '单步最快，噪声有探索性', tradeoff: '震荡明显，收敛曲线不稳定' },
-            { method: 'Mini-batch', data: 'B 个样本', strength: '速度和稳定性折中', tradeoff: '需要选择合适 batch size' },
-          ],
-          quiz: [
-            {
-              q: '为什么 SGD 的轨迹通常比 BGD 更抖动？',
-              options: [
-                '因为 SGD 每步只用一个或少量样本估计梯度',
-                '因为 SGD 的学习率必须恒等于 0',
-                '因为 BGD 不需要计算梯度',
-                '因为 Mini-batch 不会产生随机性',
-              ],
-              answer: 0,
-              explanation: 'SGD 使用少量样本估计整体梯度，估计方差更大，所以路径更抖动；这种噪声有时也能帮助跳出较差区域。',
-            },
-          ],
-        },
-        {
-          id: 'optim-momentum',
-          title: 'Momentum 动量法',
-          summary: '物理直觉：小球滚下山坡，积累速度',
-          theory: `## Momentum
-
-普通梯度下降像一个无摩擦的小球，每步只看当前梯度。Momentum 加入"惯性"：
-
-$$v_t = \\beta v_{t-1} + \\nabla L(\\theta_t)$$
-$$\\theta_{t+1} = \\theta_t - \\alpha v_t$$
-
-### 为什么有效？
-
-- 在一致方向上**加速**（积累动量）
-- 在震荡方向上**抑制**（正负梯度互相抵消）
-- $\\beta$ 通常取 0.9
-`,
-          exercise: { type: 'playground', viz: 'momentum' },
-        },
-        {
-          id: 'optim-rmsprop',
-          title: 'RMSProp',
-          summary: '自适应学习率：梯度大的方向步长小',
-          theory: `## RMSProp
-
-RMSProp 为每个参数维护一个**自适应学习率**：
-
-$$s_t = \\beta s_{t-1} + (1-\\beta) g_t^2$$
-$$\\theta_{t+1} = \\theta_t - \\frac{\\alpha}{\\sqrt{s_t} + \\epsilon} g_t$$
-
-### 直觉
-
-- 梯度一直很大 → $s_t$ 大 → 步长变小（防止冲过头）
-- 梯度一直很小 → $s_t$ 小 → 步长变大（加速收敛）
-`,
-          exercise: { type: 'playground', viz: 'rmsprop' },
-        },
-        {
-          id: 'optim-adam',
-          title: 'Adam 优化器',
-          summary: '结合 Momentum + RMSProp，最常用的优化器',
-          theory: `## Adam (Adaptive Moment Estimation)
-
-Adam 同时维护**一阶矩估计**（动量）和**二阶矩估计**（自适应学习率）：
-
-$$m_t = \\beta_1 m_{t-1} + (1-\\beta_1) g_t$$
-$$v_t = \\beta_2 v_{t-1} + (1-\\beta_2) g_t^2$$
-
-偏差修正：
-$$\\hat{m}_t = \\frac{m_t}{1-\\beta_1^t}, \\quad \\hat{v}_t = \\frac{v_t}{1-\\beta_2^t}$$
-
-更新：
-$$\\theta_{t+1} = \\theta_t - \\frac{\\alpha}{\\sqrt{\\hat{v}_t} + \\epsilon} \\hat{m}_t$$
-
-### 默认超参
-
-$\\alpha=0.001, \\beta_1=0.9, \\beta_2=0.999, \\epsilon=10^{-8}$
-`,
-          exercise: { type: 'playground', viz: 'adam' },
-        },
-        {
-          id: 'optim-lr-compare',
-          title: '学习率对比实验',
-          summary: '同一出发点，不同学习率的收敛轨迹',
-          theory: `## 学习率的重要性
-
-学习率 $\\alpha$ 是最敏感的超参数：
-
-| 学习率 | 效果 |
-|--------|------|
-| 太小 | 收敛极慢，浪费计算 |
-| 适中 | 快速收敛到最优 |
-| 太大 | 震荡，可能发散 |
-| 极大 | 直接飞出去 |
-
-### 学习率调度
-
-实践中常用衰减策略：
-- Step Decay: 每 N 轮乘以 0.1
-- Cosine Annealing: 余弦曲线衰减
-- Warmup: 先升后降
-`,
-          exercise: { type: 'playground', viz: 'lrCompare' },
-        },
-        {
-          id: 'optim-newton',
-          title: '牛顿法',
-          summary: '二阶优化：用 Hessian 矩阵实现二次收敛',
-          theory: `## 牛顿法
-
-利用二阶导数信息，收敛速度比梯度下降快得多：
-
-$$\\theta_{t+1} = \\theta_t - H^{-1} \\nabla L(\\theta_t)$$
-
-其中 $H$ 是 Hessian 矩阵（二阶偏导数矩阵）。
-
-### 优缺点
-
-- **优点**: 二次收敛（误差平方级下降）
-- **缺点**: 需要计算和存储 $H^{-1}$，$O(n^2)$ 复杂度
-- **改进**: 拟牛顿法（BFGS、L-BFGS）用近似 Hessian
-`,
-          exercise: { type: 'playground', viz: 'newtonMethod' },
-        },
-        {
-          id: 'optim-conjugate-gradient',
-          title: '共轭梯度法',
-          summary: '求解线性系统，n 步收敛',
-          theory: `## 共轭梯度法
-
-用于求解 $Ax = b$ 形式的线性系统，或等价地最小化二次函数：
-
-$$f(x) = \\frac{1}{2} x^T A x - b^T x$$
-
-### 核心思想
-
-选择一组 $A$-共轭方向 $d_0, d_1, \\ldots$，使得在每个方向上只搜索一次。
-
-### 性质
-
-- 最多 $n$ 步精确收敛（$n$ 为维度）
-- 每步只需矩阵-向量乘法
-- 比最速下降法快得多
-`,
-          exercise: { type: 'playground', viz: 'conjugateGradient' },
-        },
-        {
-          id: 'optim-line-search',
-          title: '线搜索策略',
-          summary: '黄金分割法与回溯线搜索',
-          theory: `## 线搜索
-
-确定梯度下降的**步长** $\\alpha$：
-
-### 精确线搜索
-
-找到使 $f(\\theta - \\alpha d)$ 最小的 $\\alpha$。
-
-### 黄金分割法
-
-在区间 $[a, b]$ 内用黄金比例 0.618 缩小区间，$O(\\log n)$ 收敛。
-
-### 回溯线搜索（Armijo）
-
-从大步长开始，不断缩小直到满足 Armijo 条件：
-
-$$f(\\theta - \\alpha d) \\leq f(\\theta) - c \\alpha \\nabla f^T d$$
-
-$c$ 通常取 $10^{-4}$。
-`,
-          exercise: { type: 'playground', viz: 'lineSearch' },
-        },
-        {
-          id: 'optim-ga',
-          title: '遗传算法 (GA)',
-          summary: '模拟自然选择：选择、交叉、变异',
-          theory: `## 遗传算法
-
-受生物进化启发的全局优化算法。
-
-### 流程
-
-1. **初始化**: 随机生成种群
-2. **适应度评估**: 计算每个个体的适应度
-3. **选择**: 轮盘赌 / 锦标赛选择优秀个体
-4. **交叉**: 两个父代交换基因产生子代
-5. **变异**: 随机改变部分基因
-6. 重复 2-5 直到收敛
-
-### 关键参数
-
-| 参数 | 作用 | 典型值 |
-|------|------|--------|
-| 种群大小 | 多样性 vs 计算量 | 50-200 |
-| 交叉率 | 搜索范围 | 0.7-0.9 |
-| 变异率 | 防止早熟收敛 | 0.01-0.1 |
-`,
-          exercise: { type: 'playground', viz: 'geneticAlgorithm' },
-        },
-        {
-          id: 'optim-pso',
-          title: '粒子群优化 (PSO)',
-          summary: '模拟鸟群觅食：个体最优 + 全局最优',
-          theory: `## 粒子群优化
-
-每个粒子有位置和速度，受两个"吸引力"影响：
-
-$$v_t = w v_{t-1} + c_1 r_1 (p_{best} - x) + c_2 r_2 (g_{best} - x)$$
-$$x_{t+1} = x_t + v_t$$
-
-### 直觉
-
-- $w$: 惯性，保持原来方向
-- $c_1 r_1 (p_{best} - x)$: 个体记忆，飞向自己历史最优
-- $c_2 r_2 (g_{best} - x)$: 社会学习，飞向全局最优
-
-### 参数
-
-$w=0.7, c_1=c_2=1.5$ 是常用起点。
-`,
-          exercise: { type: 'playground', viz: 'pso' },
-        },
-        {
-          id: 'optim-sa',
-          title: '模拟退火 (SA)',
-          summary: 'Metropolis 准则：高温探索，低温收敛',
-          theory: `## 模拟退火
-
-模拟金属退火过程的随机优化算法。
-
-### 核心：Metropolis 准则
-
-接受更优解总是接受；接受更差解的概率：
-
-$$P = \\exp\\left(-\\frac{\\Delta E}{T}\\right)$$
-
-- $T$ 高 → 大概率接受差解（探索）
-- $T$ 低 → 小概率接受差解（收敛）
-
-### 降温策略
-
-$$T_{t+1} = \\alpha T_t, \\quad \\alpha \\in [0.9, 0.99]$$
-
-### 优点
-
-- 能跳出局部最优
-- 理论上能收敛到全局最优
-- 实现简单
-`,
-          exercise: { type: 'playground', viz: 'simulatedAnnealing' },
-        },
-      ],
-    },
-    {
-      id: 'ml',
-      title: '机器学习基础',
-      lessons: [
-        {
-          id: 'ml-linear-regression',
-          title: '线性回归',
-          summary: '最小二乘法、梯度下降求解线性模型参数',
-          theory: `## 线性回归
-
-线性回归是最基础的监督学习算法，目标是找到一条直线（或超平面）来拟合数据。
-
-### 模型
-
-$$\\hat{y} = wx + b$$
-
-其中 $w$ 是权重（斜率），$b$ 是偏置（截距）。
-
-### 损失函数（均方误差）
-
-$$L(w, b) = \\frac{1}{n} \\sum_{i=1}^{n} (y_i - \\hat{y}_i)^2$$
-
-### 梯度下降更新规则
-
-$$w \\leftarrow w - \\alpha \\frac{\\partial L}{\\partial w}$$
-$$b \\leftarrow b - \\alpha \\frac{\\partial L}{\\partial b}$$
-
-其中 $\\alpha$ 是学习率。
-
-### 关键概念
-
-| 概念 | 说明 |
-|------|------|
-| 学习率 | 控制每步更新的步长，太大会震荡，太小收敛慢 |
-| 迭代次数 | 梯度下降重复更新的次数 |
-| 收敛 | 当损失变化足够小时停止迭代 |
-`,
-          exercise: { type: 'playground', viz: 'linearRegression' },
-        },
-        {
-          id: 'ml-logistic-regression',
-          title: '逻辑回归',
-          summary: 'Sigmoid 函数、二分类决策边界',
-          theory: `## 逻辑回归
-
-逻辑回归虽然名字里有"回归"，实际上是一个**分类算法**，用于二分类问题。
-
-### 模型
-
-$$\\hat{y} = \\sigma(w^T x + b) = \\frac{1}{1 + e^{-(w^T x + b)}}$$
-
-Sigmoid 函数将任意实数映射到 (0, 1) 区间，输出可解释为概率。
-
-### 损失函数（交叉熵）
-
-$$L = -\\frac{1}{n} \\sum_{i=1}^{n} [y_i \\log(\\hat{y}_i) + (1-y_i) \\log(1-\\hat{y}_i)]$$
-
-### 决策边界
-
-当 $\\hat{y} \\geq 0.5$ 时预测为正类，即 $w^T x + b \\geq 0$。
-`,
-          exercise: { type: 'playground', viz: 'logisticRegression' },
-        },
-        {
-          id: 'ml-gradient-descent',
-          title: '梯度下降优化器',
-          summary: 'BGD、SGD、Mini-batch、Momentum、Adam',
-          theory: `## 梯度下降家族
-
-梯度下降是神经网络训练的核心优化算法。
-
-### 变体
-
-| 方法 | 每步使用数据 | 特点 |
-|------|-------------|------|
-| BGD | 全部数据 | 稳定但慢 |
-| SGD | 1 个样本 | 快但噪声大 |
-| Mini-batch | 小批量 | 折中方案 |
-| Momentum | 加入动量 | 加速收敛 |
-| Adam | 自适应学习率 | 最常用 |
-
-### Adam 更新规则
-
-$$m_t = \\beta_1 m_{t-1} + (1-\\beta_1) g_t$$
-$$v_t = \\beta_2 v_{t-1} + (1-\\beta_2) g_t^2$$
-$$\\theta_t = \\theta_{t-1} - \\alpha \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$$
-`,
-          exercise: { type: 'playground', viz: 'gradientDescent' },
-        },
-        {
-          id: 'ml-knn',
-          title: 'K 近邻 (KNN)',
-          summary: '距离度量、投票机制、K 值选择',
-          theory: `## K 近邻算法
-
-KNN 是一种惰性学习算法，不需要训练过程。
-
-### 算法流程
-
-1. 计算待预测点与所有训练样本的距离
-2. 选取距离最近的 K 个邻居
-3. 分类：多数投票；回归：取均值
-
-### 距离度量
-
-- **欧氏距离**: $d = \\sqrt{\\sum (x_i - y_i)^2}$
-- **曼哈顿距离**: $d = \\sum |x_i - y_i|$
-`,
-          exercise: { type: 'playground', viz: 'knn' },
-        },
-        {
-          id: 'ml-kmeans',
-          title: 'K-Means 聚类',
-          summary: '质心迭代、肘部法则、聚类评估',
-          theory: `## K-Means 聚类
-
-K-Means 是最经典的无监督聚类算法。
-
-### 算法流程
-
-1. 随机初始化 K 个质心
-2. 将每个点分配到最近的质心
-3. 重新计算每个簇的质心
-4. 重复 2-3 直到收敛
-
-### 评估
-
-- **肘部法则**: 绘制不同 K 值的 WCSS，找拐点
-- **轮廓系数**: 衡量簇内紧密度和簇间分离度
-`,
-          exercise: { type: 'playground', viz: 'kmeans' },
-        },
-        {
-          id: 'ml-decision-tree',
-          title: '决策树',
-          summary: '信息增益、基尼不纯度、剪枝',
-          theory: `## 决策树
-
-决策树通过递归分裂特征空间来构建分类/回归模型。
-
-### 分裂准则
-
-| 准则 | 公式 | 用途 |
-|------|------|------|
-| 信息增益 | $IG = H(parent) - \\sum \\frac{n_k}{n} H(child_k)$ | ID3 |
-| 基尼不纯度 | $Gini = 1 - \\sum p_i^2$ | CART |
-
-### 剪枝
-
-- **预剪枝**: 限制最大深度、最小样本数
-- **后剪枝**: 先长满再修剪
-`,
-          exercise: { type: 'playground', viz: 'decisionTree' },
-        },
-        {
-          id: 'ml-svm',
-          title: '支持向量机 (SVM)',
-          summary: '最大间隔、核技巧、软间隔',
-          theory: `## 支持向量机
-
-SVM 通过找到最大间隔超平面来分类数据。
-
-### 核心概念
-
-- **支持向量**: 离决策边界最近的样本点
-- **间隔**: 支持向量到超平面距离的 2 倍
-- **核技巧**: 将数据映射到高维空间以处理非线性
-
-### 常用核函数
-
-| 核 | 公式 | 适用场景 |
-|-----|------|---------|
-| 线性核 | $K(x,y) = x^T y$ | 线性可分 |
-| RBF 核 | $K(x,y) = e^{-\\gamma\|x-y\|^2}$ | 通用 |
-| 多项式核 | $K(x,y) = (x^T y + c)^d$ | 特定场景 |
-`,
-          exercise: { type: 'playground', viz: 'svm' },
-        },
-      ],
-    },
-    {
-      id: 'dl',
-      title: '深度学习',
-      lessons: [
-        {
-          id: 'dl-neural-network',
-          title: '神经网络基础',
-          summary: '感知机、前向传播、反向传播',
-          theory: `## 神经网络
-
-神经网络由多层神经元组成，通过前向传播和反向传播学习。
-
-### 前向传播
-
-$$z^{[l]} = W^{[l]} a^{[l-1]} + b^{[l]}$$
-$$a^{[l]} = g(z^{[l]})$$
-
-### 反向传播
-
-$$dz^{[l]} = da^{[l]} * g'(z^{[l]})$$
-$$dW^{[l]} = dz^{[l]} a^{[l-1]T}$$
-$$db^{[l]} = dz^{[l]}$$
-
-### 激活函数
-
-| 函数 | 公式 | 特点 |
-|------|------|------|
-| Sigmoid | $\\sigma(z) = \\frac{1}{1+e^{-z}}$ | 输出 (0,1)，梯度消失 |
-| ReLU | $\\max(0, z)$ | 训练快，可能死神经元 |
-| Tanh | $\\frac{e^z - e^{-z}}{e^z + e^{-z}}$ | 输出 (-1,1) |
-`,
-          exercise: { type: 'playground', viz: 'neuralNetwork' },
-        },
-        {
-          id: 'dl-cnn',
-          title: '卷积神经网络 (CNN)',
-          summary: '卷积层、池化层、特征图',
-          theory: `## CNN
-
-卷积神经网络专门处理网格结构数据（如图像）。
-
-### 核心层
-
-- **卷积层**: 用滤波器提取局部特征
-- **池化层**: 降维，增强平移不变性
-- **全连接层**: 最终分类
-
-### 卷积计算
-
-输出尺寸 = $(N - F + 2P) / S + 1$
-
-其中 N=输入尺寸, F=滤波器尺寸, P=填充, S=步长
-`,
-          exercise: { type: 'playground', viz: 'cnn' },
-        },
-        {
-          id: 'dl-rnn',
-          title: '循环神经网络 (RNN)',
-          summary: '序列建模、LSTM、GRU',
-          theory: `## RNN
-
-循环神经网络处理序列数据，具有记忆能力。
-
-### LSTM 门控机制
-
-- **遗忘门**: 决定丢弃哪些信息
-- **输入门**: 决定存储哪些新信息
-- **输出门**: 决定输出哪些信息
-`,
-          exercise: { type: 'playground', viz: 'rnn' },
-        },
-      ],
-    },
-    {
-      id: 'nlp',
-      title: '自然语言处理',
-      lessons: [
-        {
-          id: 'nlp-word-embedding',
-          title: '词嵌入',
-          summary: 'Word2Vec、GloVe、词向量空间',
-          theory: `## 词嵌入
-
-将离散的词语映射为连续的向量空间。
-
-### Word2Vec
-
-- **CBOW**: 用上下文预测中心词
-- **Skip-gram**: 用中心词预测上下文
-
-### 词向量的神奇性质
-
-$$vec("King") - vec("Man") + vec("Woman") \\approx vec("Queen")$$
-`,
-          exercise: { type: 'playground', viz: 'wordEmbedding' },
-        },
-        {
-          id: 'nlp-attention',
-          title: '注意力机制',
-          summary: 'Self-Attention、Multi-Head Attention',
-          theory: `## 注意力机制
-
-注意力让模型关注输入中最相关的部分。
-
-### Self-Attention
-
-$$Attention(Q, K, V) = softmax(\\frac{QK^T}{\\sqrt{d_k}}) V$$
-
-其中 Q=查询, K=键, V=值
-`,
-          exercise: { type: 'playground', viz: 'attention' },
-        },
-        {
-          id: 'nlp-transformer',
-          title: 'Transformer 架构',
-          summary: '编码器-解码器、位置编码、多头注意力',
-          theory: `## Transformer
-
-基于注意力机制的序列模型，抛弃了 RNN 的循环结构。
-
-### 核心组件
-
-- Multi-Head Self-Attention
-- Position-wise Feed-Forward
-- Positional Encoding
-- Layer Normalization
-`,
-          exercise: { type: 'playground', viz: 'transformer' },
-        },
-      ],
-    },
-    {
-      id: 'cv',
-      title: '计算机视觉',
-      lessons: [
-        {
-          id: 'cv-image-classification',
-          title: '图像分类',
-          summary: '经典网络架构：LeNet、ResNet、VGG',
-          theory: `## 图像分类
-
-使用 CNN 对图像进行类别预测。
-
-### 经典架构
-
-| 网络 | 年份 | 创新 |
-|------|------|------|
-| LeNet | 1998 | 卷积+池化 |
-| AlexNet | 2012 | ReLU、Dropout |
-| VGG | 2014 | 小卷积核堆叠 |
-| ResNet | 2015 | 残差连接 |
-`,
-          exercise: { type: 'playground', viz: 'imageClassification' },
-        },
-        {
-          id: 'cv-object-detection',
-          title: '目标检测',
-          summary: 'YOLO、R-CNN、锚框机制',
-          theory: `## 目标检测
-
-在图像中定位并分类多个目标。
-
-### 方法分类
-
-- **两阶段**: R-CNN → Fast R-CNN → Faster R-CNN
-- **单阶段**: YOLO、SSD
-`,
-          exercise: { type: 'playground', viz: 'objectDetection' },
-        },
-      ],
-    },
-    {
-      id: 'rl',
-      title: '强化学习',
-      lessons: [
-        {
-          id: 'rl-qlearning',
-          title: 'Q-Learning',
-          summary: 'Q 表、贝尔曼方程、ε-greedy 策略',
-          theory: `## Q-Learning
-
-基于值函数的无模型强化学习算法。
-
-### Q 值更新
-
-$$Q(s, a) \\leftarrow Q(s, a) + \\alpha [r + \\gamma \\max_{a'} Q(s', a') - Q(s, a)]$$
-
-### 关键参数
-
-- $\\alpha$: 学习率
-- $\\gamma$: 折扣因子
-- $\\epsilon$: 探索率（ε-greedy）
-`,
-          exercise: { type: 'playground', viz: 'qlearning' },
-        },
-        {
-          id: 'rl-policy-gradient',
-          title: '策略梯度',
-          summary: 'REINFORCE 算法、Actor-Critic',
-          theory: `## 策略梯度
-
-直接优化策略函数，而非值函数。
-
-### REINFORCE
-
-$$\\nabla J(\\theta) = \\mathbb{E}[\\nabla \\log \\pi_\\theta(a|s) \\cdot G_t]$$
-`,
-          exercise: { type: 'playground', viz: 'policyGradient' },
-        },
-      ],
-    },
-    {
-      id: 'llm',
-      title: '大语言模型',
-      lessons: [
-        {
-          id: 'llm-pretraining',
-          title: '预训练与微调',
-          summary: '语言模型预训练、SFT、RLHF',
-          theory: `## 大模型训练流程
-
-### 三阶段
-
-1. **预训练**: 在海量文本上学习语言知识
-2. **SFT (监督微调)**: 用指令数据微调
-3. **RLHF**: 通过人类反馈对齐
-
-### 语言模型目标
-
-$$L = -\\sum \\log P(x_t | x_{<t})$$
-`,
-          exercise: { type: 'playground', viz: 'pretraining' },
-        },
-        {
-          id: 'llm-rag',
-          title: 'RAG 检索增强生成',
-          summary: '向量数据库、语义检索、上下文注入',
-          theory: `## RAG
-
-将外部知识库与 LLM 结合，减少幻觉。
-
-### 流程
-
-1. 文档切片 → Embedding → 向量数据库
-2. 用户查询 → 语义检索 → Top-K 相关片段
-3. 将片段注入 Prompt → LLM 生成回答
-`,
-          exercise: { type: 'playground', viz: 'rag' },
-        },
-        {
-          id: 'llm-agent',
-          title: 'AI Agent',
-          summary: '工具调用、规划、记忆、多智能体协作',
-          theory: `## AI Agent
-
-让 LLM 具备自主行动能力。
-
-### 核心能力
-
-- **规划**: 将复杂任务分解为子步骤
-- **工具调用**: 使用 API、代码执行等外部工具
-- **记忆**: 短期（上下文）和长期（向量存储）记忆
-- **反思**: 评估结果并调整策略
-`,
-          exercise: { type: 'playground', viz: 'agent' },
-        },
-      ],
-    },
+    { id: 'optim', title: '最优化方法', lessons: OPTIM_LESSONS },
+    { id: 'ml', title: '机器学习基础', lessons: ML_LESSONS },
+    { id: 'dl', title: '深度学习', lessons: DL_LESSONS },
+    { id: 'or', title: '最优化与运筹优化', lessons: OR_LESSONS },
+    { id: 'feature', title: '特征工程与模型评估', lessons: FEATURE_LESSONS },
+    { id: 'it', title: '信息论与编码', lessons: INFO_THEORY_LESSONS },
+    { id: 'nlp', title: '自然语言处理', lessons: NLP_LESSONS },
+    { id: 'cv', title: '计算机视觉', lessons: CV_LESSONS },
+    { id: 'rl', title: '强化学习', lessons: RL_LESSONS },
+    { id: 'llm', title: '大语言模型', lessons: LLM_LESSONS },
   ],
 }
 
@@ -1424,41 +653,80 @@ def train_step(w1, w2, b, data, lr, l2):
     quiz: [{ q: '逻辑回归为什么输出可以解释为概率？', options: ['使用 sigmoid 把线性分数压到 0 到 1', '直接返回输入特征', '使用欧氏距离投票', '使用树的叶子节点'], answer: 0, explanation: 'sigmoid(z)=1/(1+e^-z) 会把任意实数映射到 0 到 1。' }],
   },
   'ml-gradient-descent': {
+    exercise: { type: 'playground', viz: 'gradientDescent3D' },
     defaultCodeFocus: 'quad',
-    codeFocusLabels: { quad: '二次函数', cubic: '三次函数', slow: '慢学习率', fast: '快学习率' },
+    codeFocusLabels: { quad: '二次曲面', rosenbrock: 'Rosenbrock', saddle: '鞍点', default: '2D/3D 梯度下降' },
     codeHighlightLines: {
-      cpp: { quad: 4, cubic: 4, slow: 4, fast: 4, default: 4 },
-      python: { quad: 3, cubic: 3, slow: 3, fast: 3, default: 3 },
+      cpp: { quad: 5, rosenbrock: 10, saddle: 5, default: 5 },
+      python: { quad: 4, rosenbrock: 8, saddle: 4, default: 4 },
     },
     codeStepHighlightLines: {
-      cpp: { default: [2, 3, 4, 5] },
-      python: { default: [2, 3, 4] },
+      cpp: { default: [3, 4, 5, 6, 10, 11, 12] },
+      python: { default: [2, 3, 4, 8, 9, 10] },
     },
-    variablesSnapshot: { method: 'Gradient Descent', learningRate: '-', position: '-', loss: '-' },
+    variablesSnapshot: { method: '2D/3D Gradient Descent', learningRate: '-', position: '-', loss: '-' },
     code: {
-      cpp: `double gd_step(double x, double lr) {
-    double y = loss(x);
-    double g = grad(x);
-    double next = x - lr * g;
-    return next;
+      cpp: `struct Point2D { double x, y; };
+
+Point2D gd_step_2d(Point2D p, double lr, auto grad_fn) {
+    auto [gx, gy] = grad_fn(p.x, p.y);
+    return {p.x - lr * gx, p.y - lr * gy};
+}
+
+double rosenbrock(double x, double y) {
+    double valley = y - x * x;
+    return (1 - x) * (1 - x) + 100 * valley * valley;
+}
+
+pair<double,double> rosenbrock_grad(double x, double y) {
+    double gx = -2 * (1 - x) - 400 * x * (y - x * x);
+    double gy = 200 * (y - x * x);
+    return {gx, gy};
+}
+
+vector<Point2D> optimize(Point2D start, double lr) {
+    vector<Point2D> path;
+    for (int step = 0; step < 40; step++) {
+        path.push_back(start);
+        start = gd_step_2d(start, lr, rosenbrock_grad);
+    }
+    return path;
 }`,
-      python: `def gd_step(x, lr):
-    y = loss(x)
-    g = grad(x)
-    return x - lr * g`,
+      python: `def gd_step_2d(point, lr, grad_fn):
+    x, y = point
+    gx, gy = grad_fn(x, y)
+    return x - lr * gx, y - lr * gy
+
+def rosenbrock(x, y):
+    valley = y - x * x
+    return (1 - x) ** 2 + 100 * valley ** 2
+
+def rosenbrock_grad(x, y):
+    gx = -2 * (1 - x) - 400 * x * (y - x * x)
+    gy = 200 * (y - x * x)
+    return gx, gy
+
+def optimize(start, lr, steps=40):
+    path = []
+    point = start
+    for _ in range(steps):
+        path.append(point)
+        point = gd_step_2d(point, lr, rosenbrock_grad)
+    return path`,
     },
-    pseudocode: `procedure GRADIENT_DESCENT(x, learningRate)
+    pseudocode: `procedure GRADIENT_DESCENT_2D(point, learningRate, loss)
     repeat
-        y <- loss(x)
-        g <- grad(loss, x)
-        x <- x - learningRate * g
+        (gx, gy) <- gradient(loss, point)
+        point.x <- point.x - learningRate * gx
+        point.y <- point.y - learningRate * gy
+        record point and loss(point)
     until convergence`,
-    bigO: { time: '每步一次梯度，T 步为 O(T * cost(grad))。', space: '在线更新 O(1)，若保存轨迹为 O(T)。', note: '学习率影响轨迹，不改变单步复杂度。' },
+    bigO: { time: '每步一次二维梯度，T 步为 O(T * cost(grad))。', space: '在线更新 O(1)，保存 2D/3D 轨迹为 O(T)。', note: '2D 等高线和 3D 曲面只是同一 loss landscape 的不同视角。' },
     compare: [
-      { method: '小学习率', data: '小步移动', strength: '稳定', tradeoff: '收敛慢' },
-      { method: '大学习率', data: '大步移动', strength: '可能很快', tradeoff: '易震荡或发散' },
+      { method: '2D 等高线', data: '俯视投影', strength: '路径和梯度方向清楚', tradeoff: '看不出曲面高度' },
+      { method: '3D 曲面', data: '真实 loss landscape', strength: '曲面、轨迹、收敛过程直观', tradeoff: '需要更多渲染空间' },
     ],
-    quiz: [{ q: '梯度下降中负梯度方向代表什么？', options: ['局部最快下降方向', '局部最快上升方向', '随机方向', '分类边界'], answer: 0, explanation: '梯度指向函数上升最快方向，所以负梯度是局部下降最快方向。' }],
+    quiz: [{ q: '三维损失曲面中的参数点沿什么方向移动？', options: ['负梯度方向', '正梯度方向', '随机方向', '坐标轴固定方向'], answer: 0, explanation: '梯度指向局部上升最快方向，梯度下降沿负梯度更新参数。' }],
   },
   'ml-knn': {
     defaultCodeFocus: 'k3',
@@ -1652,12 +920,729 @@ for (const lesson of AI_CURRICULUM.chapters.find(ch => ch.id === 'ml')?.lessons 
   }
 }
 
+const DL_ENRICHMENTS = {
+  'dl-neural-network': {
+    defaultCodeFocus: 'forward',
+    codeFocusLabels: { forward: '前向传播', backward: '反向传播', update: '参数更新', default: '神经网络训练' },
+    codeHighlightLines: {
+      cpp: { forward: 12, backward: 20, update: 25, default: 12 },
+      python: { forward: 8, backward: 15, update: 20, default: 8 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [8, 9, 10, 12, 16, 20, 21, 25] },
+      python: { default: [4, 5, 6, 8, 12, 15, 16, 20] },
+    },
+    variablesSnapshot: { layer: '-', activation: '-', loss: '-', gradient: '-' },
+    code: {
+      cpp: `double sigmoid(double z) {
+    return 1.0 / (1.0 + exp(-z));
+}
+
+double train_one_sample(Vector x, double y, Network& net, double lr) {
+    Vector a0 = x;
+    Vector z1 = net.W1 * a0 + net.b1;
+    Vector a1 = sigmoid(z1);
+    Vector z2 = net.W2 * a1 + net.b2;
+    double y_hat = sigmoid(z2[0]);
+    double loss = 0.5 * pow(y_hat - y, 2);
+
+    double dz2 = (y_hat - y) * y_hat * (1 - y_hat);
+    Matrix dW2 = outer(Vector{dz2}, a1);
+    Vector dz1 = (transpose(net.W2) * Vector{dz2}) * sigmoid_grad(z1);
+    Matrix dW1 = outer(dz1, a0);
+
+    net.W2 -= lr * dW2;
+    net.b2 -= lr * Vector{dz2};
+    net.W1 -= lr * dW1;
+    net.b1 -= lr * dz1;
+    return loss;
+}`,
+      python: `def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def train_one_sample(x, y, net, lr):
+    a0 = x
+    z1 = net.W1 @ a0 + net.b1
+    a1 = sigmoid(z1)
+    z2 = net.W2 @ a1 + net.b2
+    y_hat = sigmoid(z2)
+    loss = 0.5 * (y_hat - y) ** 2
+
+    dz2 = (y_hat - y) * y_hat * (1 - y_hat)
+    dW2 = np.outer(dz2, a1)
+    dz1 = (net.W2.T @ dz2) * a1 * (1 - a1)
+    dW1 = np.outer(dz1, a0)
+
+    net.W2 -= lr * dW2
+    net.b2 -= lr * dz2
+    net.W1 -= lr * dW1
+    net.b1 -= lr * dz1
+    return loss`,
+    },
+    pseudocode: `procedure TRAIN_ONE_SAMPLE(x, y)
+    a0 <- x
+    z1 <- W1 * a0 + b1
+    a1 <- sigmoid(z1)
+    z2 <- W2 * a1 + b2
+    y_hat <- sigmoid(z2)
+    compute output delta and hidden delta
+    compute dW/db for every layer
+    update parameters by gradient descent`,
+    bigO: { time: '单样本两层网络前向+反向约 O(dh + h)。批量训练乘以 batch size 和迭代轮数。', space: '保存激活、梯度和参数约 O(dh + h)。', note: '可视化按 step 展示前向、误差、梯度和更新。' },
+    compare: [
+      { method: '前向传播', data: '输入到输出', strength: '得到预测和 loss', tradeoff: '不更新参数' },
+      { method: '反向传播', data: '输出到输入', strength: '计算每层梯度', tradeoff: '依赖链式法则和缓存' },
+    ],
+    quiz: [{ q: '反向传播的核心数学工具是什么？', options: ['链式法则', '快速排序', '欧氏距离', '最大流'], answer: 0, explanation: '反向传播把 loss 对每层参数的导数按链式法则逐层传回。' }],
+  },
+  'dl-cnn': {
+    defaultCodeFocus: 'conv',
+    codeFocusLabels: { conv: '卷积', pool: '池化', classify: '分类', default: 'CNN 前向' },
+    codeHighlightLines: {
+      cpp: { conv: 8, pool: 18, classify: 27, default: 8 },
+      python: { conv: 7, pool: 16, classify: 24, default: 7 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [4, 5, 7, 8, 9, 17, 18, 27] },
+      python: { default: [3, 4, 6, 7, 8, 15, 16, 24] },
+    },
+    variablesSnapshot: { layer: 'conv', kernel: '3x3', featureMap: '-', pool: '-' },
+    code: {
+      cpp: `Matrix conv2d(Matrix image, Matrix kernel) {
+    int H = image.rows(), W = image.cols();
+    int K = kernel.rows();
+    Matrix out(H - K + 1, W - K + 1);
+    for (int r = 0; r <= H - K; ++r) {
+        for (int c = 0; c <= W - K; ++c) {
+            double sum = 0;
+            for (int i = 0; i < K; ++i)
+                for (int j = 0; j < K; ++j)
+                    sum += image(r+i, c+j) * kernel(i, j);
+            out(r, c) = relu(sum);
+        }
+    }
+    return out;
+}
+
+Matrix max_pool2d(Matrix feature, int size = 2) {
+    Matrix pooled(feature.rows()/size, feature.cols()/size);
+    for (int r = 0; r < pooled.rows(); ++r)
+        for (int c = 0; c < pooled.cols(); ++c)
+            pooled(r,c) = max_region(feature, r*size, c*size, size);
+    return pooled;
+}
+
+Vector cnn_forward(Matrix image, CNN& model) {
+    Matrix fmap = conv2d(image, model.kernel);
+    Matrix pooled = max_pool2d(fmap);
+    return softmax(model.fc * flatten(pooled) + model.bias);
+}`,
+      python: `def conv2d(image, kernel):
+    h, w = image.shape
+    k = kernel.shape[0]
+    out = np.zeros((h-k+1, w-k+1))
+    for r in range(h-k+1):
+        for c in range(w-k+1):
+            patch = image[r:r+k, c:c+k]
+            out[r, c] = np.maximum(0, np.sum(patch * kernel))
+    return out
+
+def max_pool2d(feature, size=2):
+    ph, pw = feature.shape[0] // size, feature.shape[1] // size
+    pooled = np.zeros((ph, pw))
+    for r in range(ph):
+        for c in range(pw):
+            patch = feature[r*size:(r+1)*size, c*size:(c+1)*size]
+            pooled[r, c] = np.max(patch)
+    return pooled
+
+def cnn_forward(image, model):
+    fmap = conv2d(image, model.kernel)
+    pooled = max_pool2d(fmap)
+    logits = model.fc @ pooled.flatten() + model.bias
+    return softmax(logits)`,
+    },
+    pseudocode: `procedure CNN_FORWARD(image)
+    slide kernel over image
+    multiply each patch by kernel and sum
+    apply activation to build feature map
+    pool local regions to downsample
+    flatten and classify with fully connected layer`,
+    bigO: { time: '单个卷积层约 O(HWKC)，池化约 O(HW)。多通道和多卷积核按通道数与核数线性放大。', space: '主要保存特征图和池化结果，约 O(HW * filters)。', note: '可视化逐步高亮感受野、kernel、feature map 和 pool 区域。' },
+    compare: [
+      { method: '卷积', data: '局部 patch', strength: '提取边缘/纹理', tradeoff: '依赖 kernel 和步长' },
+      { method: '池化', data: '局部区域', strength: '降采样、增强平移不变性', tradeoff: '丢失精细位置' },
+    ],
+    quiz: [{ q: 'CNN 卷积层主要利用了图像的什么结构？', options: ['局部空间结构', '随机顺序', '哈希表结构', '树结构'], answer: 0, explanation: '卷积核在局部窗口滑动，复用参数提取局部空间特征。' }],
+  },
+  'dl-rnn': {
+    defaultCodeFocus: 'rnn',
+    codeFocusLabels: { rnn: 'RNN 时间展开', lstm: 'LSTM 门控', default: '序列前向' },
+    codeHighlightLines: {
+      cpp: { rnn: 8, lstm: 20, default: 8 },
+      python: { rnn: 6, lstm: 17, default: 6 },
+    },
+    codeStepHighlightLines: {
+      cpp: { default: [4, 5, 6, 8, 9, 10, 19, 20] },
+      python: { default: [3, 4, 5, 6, 7, 15, 16, 17] },
+    },
+    variablesSnapshot: { time: '-', hidden: '-', output: '-', gate: '-' },
+    code: {
+      cpp: `Vector rnn_step(double x_t, Vector h_prev, RNNCell cell) {
+    Vector z = cell.Wxh * Vector{x_t} + cell.Whh * h_prev + cell.bh;
+    return tanh(z);
+}
+
+vector<Vector> rnn_forward(vector<double> seq, RNNCell cell) {
+    Vector h = zeros(cell.hiddenSize);
+    vector<Vector> states;
+    for (double x_t : seq) {
+        h = rnn_step(x_t, h, cell);
+        states.push_back(h);
+    }
+    return states;
+}
+
+LSTMState lstm_step(double x_t, LSTMState prev, LSTMCell cell) {
+    Vector f = sigmoid(cell.Wf * concat(prev.h, x_t) + cell.bf);
+    Vector i = sigmoid(cell.Wi * concat(prev.h, x_t) + cell.bi);
+    Vector o = sigmoid(cell.Wo * concat(prev.h, x_t) + cell.bo);
+    Vector c_hat = tanh(cell.Wc * concat(prev.h, x_t) + cell.bc);
+    Vector c = f * prev.c + i * c_hat;
+    Vector h = o * tanh(c);
+    return {h, c};
+}`,
+      python: `def rnn_step(x_t, h_prev, cell):
+    z = cell.Wxh @ np.array([x_t]) + cell.Whh @ h_prev + cell.bh
+    return np.tanh(z)
+
+def rnn_forward(seq, cell):
+    h = np.zeros(cell.hidden_size)
+    states = []
+    for x_t in seq:
+        h = rnn_step(x_t, h, cell)
+        states.append(h)
+    return states
+
+def lstm_step(x_t, prev, cell):
+    hx = np.concatenate([prev.h, [x_t]])
+    f = sigmoid(cell.Wf @ hx + cell.bf)
+    i = sigmoid(cell.Wi @ hx + cell.bi)
+    o = sigmoid(cell.Wo @ hx + cell.bo)
+    c_hat = np.tanh(cell.Wc @ hx + cell.bc)
+    c = f * prev.c + i * c_hat
+    h = o * np.tanh(c)
+    return LSTMState(h=h, c=c)`,
+    },
+    pseudocode: `procedure RNN_FORWARD(sequence)
+    h0 <- zeros
+    for each time step t do
+        ht <- tanh(Wxh * xt + Whh * h(t-1) + b)
+        yt <- Why * ht + by
+        record ht and yt
+    end for`,
+    bigO: { time: '标准 RNN 每步 O(hd + h^2)，长度 T 序列为 O(T(hd+h^2))。LSTM 常数约为 4 倍门控。', space: '推理可 O(h)，训练 BPTT 需保存 O(Th) 状态。', note: '可视化按时间步同步高亮输入、隐藏状态和输出。' },
+    compare: [
+      { method: 'RNN', data: '单隐藏状态', strength: '结构简单', tradeoff: '长序列梯度易消失' },
+      { method: 'LSTM/GRU', data: '门控状态', strength: '更适合长期依赖', tradeoff: '参数更多' },
+    ],
+    quiz: [{ q: 'RNN 中隐藏状态 h_t 的作用是什么？', options: ['携带历史信息', '排序数组', '压缩图片尺寸', '计算最短路'], answer: 0, explanation: 'h_t 由当前输入和上一时刻隐藏状态共同决定，用于保留序列历史。' }],
+  },
+}
+
+for (const lesson of AI_CURRICULUM.chapters.find(ch => ch.id === 'dl')?.lessons || []) {
+  if (DL_ENRICHMENTS[lesson.id]) {
+    Object.assign(lesson, DL_ENRICHMENTS[lesson.id])
+  }
+}
+
+const DL_COMPLETION_ENRICHMENTS = {
+  'dl-forward-propagation': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '每层矩阵乘法为 O(n_l * n_{l-1} * batch)，总复杂度为各层求和。', space: '需要缓存每层 A/Z，约为各层激活大小之和。', note: '可视化逐层展示输入、线性变换和激活输出。' },
+    compare: [{ method: '逐样本', data: '单个向量', strength: '便于理解', tradeoff: '效率低' }, { method: '批量矩阵', data: 'batch 矩阵', strength: 'GPU 友好', tradeoff: '维度更难追踪' }],
+    quiz: [{ q: '前向传播中 Z = W A + b 后通常接什么？', options: ['激活函数', '排序函数', '哈希函数', '剪枝操作'], answer: 0, explanation: '线性变换后通过激活函数引入非线性。' }],
+  },
+  'dl-backward-propagation': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '与前向传播同阶，通常也是各层矩阵乘法复杂度之和。', space: '需要前向缓存和各层梯度。', note: '可视化从输出层向输入层展示误差信号传播。' },
+    compare: [{ method: '数值梯度', data: '微小扰动', strength: '易验证', tradeoff: '极慢' }, { method: '反向传播', data: '链式法则', strength: '高效', tradeoff: '实现需保存缓存' }],
+    quiz: [{ q: '反向传播为什么需要前向缓存？', options: ['计算局部导数', '减少样本数量', '随机初始化', '生成测试集'], answer: 0, explanation: '梯度公式需要用到每层的输入、Z 和激活值。' }],
+  },
+  'dl-activation-functions': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '对每个元素独立计算，复杂度 O(N)。', space: '原地计算可 O(1)，保留输出为 O(N)。', note: '可视化比较 Sigmoid、Tanh、ReLU 等函数形状和梯度。' },
+    compare: [{ method: 'Sigmoid/Tanh', data: '平滑饱和', strength: '输出有界', tradeoff: '易梯度消失' }, { method: 'ReLU', data: '分段线性', strength: '训练快', tradeoff: '可能死神经元' }],
+    quiz: [{ q: 'ReLU 的主要优点是什么？', options: ['计算简单且缓解梯度消失', '输出概率分布', '自动聚类', '精确求逆'], answer: 0, explanation: 'ReLU 正区间梯度为 1，计算简单，深层网络中常用。' }],
+  },
+  'dl-loss-functions': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '对 batch 中每个样本累加，复杂度 O(N)。', space: '通常 O(1) 累加，保留逐样本误差为 O(N)。', note: '可视化比较 MSE、交叉熵等损失随预测变化的曲线。' },
+    compare: [{ method: 'MSE', data: '连续误差', strength: '回归常用', tradeoff: '对离群点敏感' }, { method: '交叉熵', data: '概率分布', strength: '分类常用', tradeoff: '预测接近 0 时数值敏感' }],
+    quiz: [{ q: '多分类 softmax 通常配合什么损失？', options: ['交叉熵', '欧氏距离排序', '基尼系数', '最大流'], answer: 0, explanation: 'softmax 输出类别概率，交叉熵衡量真实分布与预测分布差异。' }],
+  },
+  'dl-cnn-convolution': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '单输出通道约 O(HW K^2 C)，多卷积核乘以输出通道数。', space: '输出特征图 O(H_out W_out C_out)。', note: '可视化逐步高亮输入 patch、kernel 和输出单元。' },
+    compare: [{ method: 'valid 卷积', data: '无 padding', strength: '输出更小', tradeoff: '边缘信息损失' }, { method: 'same 卷积', data: '带 padding', strength: '尺寸保持', tradeoff: '引入边界填充' }],
+    quiz: [{ q: '卷积核在图像上滑动时，每个输出值来自什么？', options: ['局部区域加权求和', '整张图排序', '随机采样', '哈希映射'], answer: 0, explanation: '卷积输出由局部 patch 与 kernel 元素乘积求和得到。' }],
+  },
+  'dl-pooling': {
+    codeStepHighlightLines: { cpp: { default: [2, 3, 4, 5, 6, 7] }, python: { default: [2, 3, 4, 5, 6, 7] } },
+    bigO: { time: '池化遍历每个局部窗口，复杂度约 O(HW)。', space: '输出降采样特征图，通常小于输入。', note: '可视化高亮池化窗口和当前最大/平均值。' },
+    compare: [{ method: 'Max Pooling', data: '最大值', strength: '保留强响应', tradeoff: '忽略其它值' }, { method: 'Average Pooling', data: '平均值', strength: '平滑稳定', tradeoff: '特征响应变弱' }],
+    quiz: [{ q: '池化层的主要作用是什么？', options: ['降采样并增强平移鲁棒性', '增加参数量', '生成词向量', '求最短路'], answer: 0, explanation: '池化减少空间尺寸，同时让局部微小平移对输出影响更小。' }],
+  },
+}
+
+for (const lesson of AI_CURRICULUM.chapters.find(ch => ch.id === 'dl')?.lessons || []) {
+  if (DL_COMPLETION_ENRICHMENTS[lesson.id]) {
+    Object.assign(lesson, DL_COMPLETION_ENRICHMENTS[lesson.id])
+  }
+}
+
+const AI_COMPLETION_DEFAULTS = {
+  optim: {
+    bigO: {
+      time: '按可视化迭代步执行，T 步通常为 O(T * updateCost)，二阶或拟牛顿方法还会包含矩阵/方向更新成本。',
+      space: '在线更新为 O(d)，保存轨迹、动量、历史梯度或近似 Hessian 时按算法增加到 O(Td) 或 O(d^2)。',
+      note: '补齐层只提供教学页兜底说明；已有精写算法说明不会被覆盖。',
+    },
+    compare: [
+      { method: '一阶方法', data: '梯度方向', strength: '实现简单，适合大规模训练', tradeoff: '学习率敏感，可能震荡' },
+      { method: '二阶/拟二阶方法', data: '曲率或近似曲率', strength: '局部收敛快', tradeoff: '矩阵成本更高' },
+    ],
+    quiz: [{ q: '优化算法动画中最关键的同步状态是什么？', options: ['当前参数、梯度方向和损失变化', '页面背景颜色', '随机文件名', '浏览器缓存'], answer: 0, explanation: '教学重点是每一步参数如何沿更新方向移动，以及 loss 如何收敛。' }],
+  },
+  ml: {
+    bigO: {
+      time: '复杂度随样本数 N、特征维度 d 和迭代/树/簇数量变化；页面按动画 step 展示关键训练或推理阶段。',
+      space: '主要保存训练数据、模型参数和当前可视化状态，通常为 O(Nd) 加模型规模。',
+      note: '不同模型的精确复杂度会因实现而变，这里给出课程演示层面的统一说明。',
+    },
+    compare: [
+      { method: '训练阶段', data: '样本和特征', strength: '学习模型参数或结构', tradeoff: '计算量较大' },
+      { method: '预测/解释阶段', data: '当前样本和模型状态', strength: '便于观察决策过程', tradeoff: '只反映局部行为' },
+    ],
+    quiz: [{ q: '机器学习可视化 step 应该同步突出什么？', options: ['数据状态、模型参数和对应代码行', '只显示最终结论', '只显示静态文字', '隐藏中间变量'], answer: 0, explanation: '本平台要求动画、变量状态和右侧代码行一一对应。' }],
+  },
+  or: {
+    bigO: {
+      time: '最优化/运筹问题复杂度取决于变量数、约束数和求解策略；分支定界、整数规划等在最坏情况下可能指数级。',
+      space: '保存约束、松弛解、表格或搜索树，常见为 O(mn) 到 O(nodes * state)。',
+      note: '动画重点展示可行域、松弛问题、上下界、当前最优解和剪枝依据。',
+    },
+    compare: [
+      { method: '连续松弛', data: '线性/凸约束', strength: '可快速得到界', tradeoff: '不一定满足整数约束' },
+      { method: '离散搜索', data: '分支树和候选解', strength: '能处理整数条件', tradeoff: '搜索空间可能很大' },
+    ],
+    quiz: [{ q: '分支定界类动画中剪枝通常依赖什么？', options: ['上下界和当前最优整数解', '字体大小', '随机颜色', '代码文件长度'], answer: 0, explanation: '当节点界限不可能优于当前最优解，或不可行/已整数时即可剪枝。' }],
+  },
+  feature: {
+    bigO: {
+      time: '特征工程和评估指标通常线性扫描样本，常见为 O(Nd)；交叉验证会乘以折数和模型训练成本。',
+      space: '需要保存变换后的特征、统计量或评估曲线，通常为 O(Nd) 或 O(N)。',
+      note: '动画重点展示当前特征列、统计量、评估单元格和指标更新。',
+    },
+    compare: [
+      { method: '特征变换', data: '原始特征', strength: '改善尺度、表示和可分性', tradeoff: '可能增加维度' },
+      { method: '模型评估', data: '预测与真实标签', strength: '量化泛化表现', tradeoff: '需要关注数据划分和阈值' },
+    ],
+    quiz: [{ q: '评估指标动画最应该避免什么？', options: ['高亮与当前样本/矩阵单元错位', '显示变量状态', '展示公式过程', '支持单步'], answer: 0, explanation: '混淆矩阵、ROC 等模块必须让当前样本、公式和高亮位置保持同步。' }],
+  },
+  dl: {
+    bigO: {
+      time: '深度学习模块复杂度由层类型、输入尺寸、隐藏维度和 batch size 决定，动画按前向/反向关键步骤拆解。',
+      space: '训练需要保存参数、激活缓存和梯度，通常高于只做推理。',
+      note: '页面重点展示张量流动、梯度传播和代码行同步。',
+    },
+    compare: [
+      { method: '前向计算', data: '输入到输出', strength: '显示预测如何产生', tradeoff: '不解释参数如何学习' },
+      { method: '反向计算', data: 'loss 到参数', strength: '显示梯度来源', tradeoff: '链式法则步骤更密集' },
+    ],
+    quiz: [{ q: '深度学习动画中代码高亮应跟随什么？', options: ['当前层或当前时间步的计算', '导航栏位置', '页面滚动条', '文件修改时间'], answer: 0, explanation: 'CNN/RNN/反向传播都应按当前层、窗口或时间步同步高亮代码。' }],
+  },
+}
+
+function deriveDefaultStepLines(lesson, lang) {
+  const source = lesson.code?.[lang] || lesson.pseudocode || ''
+  const lines = source
+    .split('\n')
+    .map((text, index) => ({ text, line: index + 1 }))
+    .filter(item => item.text.trim().length > 0)
+    .map(item => item.line)
+  return lines.length ? lines.slice(0, 8) : [1]
+}
+
+function completeAILessonMetadata(chapter, lesson) {
+  if (lesson.exercise?.type !== 'playground') return
+
+  if (!lesson.codeStepHighlightLines) {
+    lesson.codeStepHighlightLines = {
+      cpp: { default: deriveDefaultStepLines(lesson, 'cpp') },
+      python: { default: deriveDefaultStepLines(lesson, 'python') },
+    }
+  }
+
+  if (!lesson.codeHighlightLines && lesson.code) {
+    lesson.codeHighlightLines = {
+      cpp: { default: deriveDefaultStepLines(lesson, 'cpp')[0] },
+      python: { default: deriveDefaultStepLines(lesson, 'python')[0] },
+    }
+  }
+
+  if (!lesson.variablesSnapshot) {
+    lesson.variablesSnapshot = { phase: '-', step: '-', metric: '-' }
+  }
+
+  const defaults = AI_COMPLETION_DEFAULTS[chapter.id]
+  if (!defaults) return
+
+  if (!lesson.bigO) {
+    lesson.bigO = { ...defaults.bigO }
+  }
+  if (!Array.isArray(lesson.compare) || lesson.compare.length === 0) {
+    lesson.compare = defaults.compare.map(row => ({ ...row }))
+  }
+  if (!Array.isArray(lesson.quiz) || lesson.quiz.length === 0) {
+    lesson.quiz = defaults.quiz.map(row => ({ ...row, options: [...row.options] }))
+  }
+}
+
+const LATE_COURSE_DEFAULTS = {
+  nlp: {
+    bigO: {
+      time: '序列模块复杂度通常随 token 数 T 和隐藏维度 d 增长；注意力核心为 O(T^2 d)。',
+      space: '需要保存 token 表示、注意力矩阵或中间激活，通常为 O(Td) 到 O(T^2)。',
+      note: '动画按 token、矩阵或模块链路逐步高亮。'
+    },
+    compare: [
+      { method: '词向量', data: 'token embedding', strength: '把离散词映射到连续空间', tradeoff: '上下文表达有限' },
+      { method: 'Transformer', data: '上下文化表示', strength: '捕获长距离依赖', tradeoff: '注意力矩阵成本较高' },
+    ],
+    quiz: [{ q: 'NLP 可视化中最重要的同步对象是什么？', options: ['当前 token/矩阵行和对应代码行', '页面背景图', '文件大小', '滚动条颜色'], answer: 0, explanation: '词向量、注意力和 Transformer 都要让当前 token 或矩阵行与代码步骤同步。' }],
+  },
+  cv: {
+    bigO: {
+      time: '卷积特征提取约为 O(HW K^2 C)，检测还会叠加候选框筛选与 NMS 成本。',
+      space: '主要保存图像张量、特征图、logits 和候选框。',
+      note: '动画突出局部感受野、特征流和最终类别/框。'
+    },
+    compare: [
+      { method: '图像分类', data: '整图标签', strength: '输出单一类别概率', tradeoff: '不定位目标' },
+      { method: '目标检测', data: '类别+位置', strength: '能定位多个对象', tradeoff: '训练和后处理更复杂' },
+    ],
+    quiz: [{ q: '目标检测相比图像分类额外预测什么？', options: ['边界框位置', '排序索引', '数据库事务', '梯度符号'], answer: 0, explanation: '检测任务同时输出类别和边界框。' }],
+  },
+  rl: {
+    bigO: {
+      time: '每个 episode 按环境交互步数展开；值函数更新通常 O(|A|)，策略梯度按轨迹长度累加。',
+      space: 'Q 表需要 O(|S||A|)，神经策略还需要保存参数和轨迹。',
+      note: '动画展示状态、动作、奖励、回报和参数更新。'
+    },
+    compare: [
+      { method: 'Q-Learning', data: '状态-动作值', strength: '无模型、更新直观', tradeoff: '大状态空间需函数逼近' },
+      { method: '策略梯度', data: '动作概率', strength: '可处理连续动作', tradeoff: '方差较高' },
+    ],
+    quiz: [{ q: 'Q-Learning 的 TD target 包含什么？', options: ['即时奖励和下一状态最大 Q 值', 'HTML 标签', '图片像素均值', '词频排序'], answer: 0, explanation: 'TD target = r + gamma * max_a Q(s_next,a)。' }],
+  },
+  llm: {
+    bigO: {
+      time: 'LLM 训练和推理成本主要由 token 数、层数和隐藏维度决定；RAG 还包含检索成本。',
+      space: '需要保存模型参数、上下文 token、检索片段或工具调用状态。',
+      note: '动画展示预训练、检索增强或 Agent 循环的关键链路。'
+    },
+    compare: [
+      { method: '预训练/微调', data: '文本和偏好数据', strength: '塑造模型能力和行为', tradeoff: '训练成本高' },
+      { method: 'RAG/Agent', data: '外部知识和工具', strength: '增强事实性和行动能力', tradeoff: '链路更长，需观测失败点' },
+    ],
+    quiz: [{ q: 'RAG 降低幻觉的关键做法是什么？', options: ['先检索证据再生成', '删除上下文', '随机选择答案', '只调大字体'], answer: 0, explanation: 'RAG 把相关知识片段注入 prompt，让生成基于外部证据。' }],
+  },
+}
+
+Object.assign(AI_COMPLETION_DEFAULTS, LATE_COURSE_DEFAULTS)
+
+const LATE_COURSE_CODE = {
+  'nlp-word-embedding': {
+    variablesSnapshot: { phase: 'embedding', metric: 'cosine' },
+    pseudocode: `procedure WORD_EMBEDDING(tokens, E)
+    ids <- tokenize(tokens)
+    vectors <- E[ids]
+    score <- cosine(vectors[i], vectors[j])
+    analogy <- vec("king") - vec("man") + vec("woman")
+    nearest <- argmax cosine(analogy, E)
+    return vectors, nearest`,
+    code: {
+      python: `import numpy as np
+
+def cosine(a, b):
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+E = {
+    "king": np.array([0.9, 0.2, 0.7]),
+    "queen": np.array([0.88, 0.22, 0.76]),
+    "man": np.array([0.7, 0.1, 0.1]),
+    "woman": np.array([0.68, 0.18, 0.2]),
+}
+query = E["king"] - E["man"] + E["woman"]
+nearest = max(E, key=lambda word: cosine(query, E[word]))`,
+      cpp: `double cosine(Vec a, Vec b) {
+    return dot(a, b) / (norm(a) * norm(b));
+}
+
+auto king = embedding["king"];
+auto man = embedding["man"];
+auto woman = embedding["woman"];
+auto query = king - man + woman;
+auto nearest = argmax_words([&](Word w) {
+    return cosine(query, embedding[w]);
+});`,
+    },
+  },
+  'nlp-transformer': {
+    variablesSnapshot: { phase: 'encoder', metric: 'attention' },
+    pseudocode: `procedure TRANSFORMER_BLOCK(X)
+    X <- X + positional_encoding
+    A <- multi_head_attention(X)
+    H <- layer_norm(X + A)
+    F <- feed_forward(H)
+    Y <- layer_norm(H + F)
+    return Y`,
+    code: {
+      python: `def transformer_block(x):
+    x = x + positional_encoding(x)
+    attn = multi_head_attention(x, x, x)
+    h = layer_norm(x + attn)
+    f = feed_forward(h)
+    y = layer_norm(h + f)
+    return y`,
+      cpp: `Tensor transformerBlock(Tensor x) {
+    x = x + positionalEncoding(x);
+    Tensor attn = multiHeadAttention(x, x, x);
+    Tensor h = layerNorm(x + attn);
+    Tensor f = feedForward(h);
+    Tensor y = layerNorm(h + f);
+    return y;
+}`,
+    },
+  },
+  'cv-image-classification': {
+    variablesSnapshot: { phase: 'classification', metric: 'top-1' },
+    pseudocode: `procedure CLASSIFY(image)
+    x <- normalize(resize(image))
+    features <- cnn_backbone(x)
+    pooled <- global_average_pool(features)
+    logits <- linear(pooled)
+    probs <- softmax(logits)
+    return argmax(probs)`,
+    code: {
+      python: `def classify(image, model):
+    x = normalize(resize(image))
+    features = model.backbone(x)
+    pooled = global_average_pool(features)
+    logits = model.classifier(pooled)
+    probs = softmax(logits)
+    return probs.argmax()`,
+      cpp: `int classify(Image image, Model model) {
+    Tensor x = normalize(resize(image));
+    Tensor features = model.backbone(x);
+    Tensor pooled = globalAveragePool(features);
+    Tensor logits = model.classifier(pooled);
+    Tensor probs = softmax(logits);
+    return argmax(probs);
+}`,
+    },
+  },
+  'cv-object-detection': {
+    variablesSnapshot: { phase: 'detection', metric: 'IoU' },
+    pseudocode: `procedure DETECT(image)
+    features <- backbone(image)
+    anchors <- generate_anchors(features)
+    boxes, scores <- detection_head(features, anchors)
+    keep <- nms(boxes, scores, iou_threshold)
+    return boxes[keep], scores[keep]`,
+    code: {
+      python: `def detect(image, model):
+    features = model.backbone(image)
+    anchors = generate_anchors(features)
+    boxes, scores = model.head(features, anchors)
+    keep = nms(boxes, scores, iou_threshold=0.5)
+    return boxes[keep], scores[keep]`,
+      cpp: `Detections detect(Image image, Detector model) {
+    Tensor features = model.backbone(image);
+    auto anchors = generateAnchors(features);
+    auto [boxes, scores] = model.head(features, anchors);
+    auto keep = nms(boxes, scores, 0.5);
+    return gatherDetections(boxes, scores, keep);
+}`,
+    },
+  },
+  'rl-qlearning': {
+    variablesSnapshot: { phase: 'td-update', metric: 'TD error' },
+    pseudocode: `procedure Q_LEARNING(s)
+    a <- epsilon_greedy(Q[s])
+    s_next, r <- env.step(a)
+    target <- r + gamma * max_a Q[s_next, a]
+    error <- target - Q[s, a]
+    Q[s, a] <- Q[s, a] + alpha * error`,
+    code: {
+      python: `def q_learning_step(Q, s, eps, alpha, gamma):
+    a = epsilon_greedy(Q[s], eps)
+    s_next, r = env.step(a)
+    target = r + gamma * Q[s_next].max()
+    td_error = target - Q[s, a]
+    Q[s, a] += alpha * td_error
+    return s_next, td_error`,
+      cpp: `StepResult qLearningStep(Table& Q, State s) {
+    Action a = epsilonGreedy(Q[s], eps);
+    auto [sNext, reward] = env.step(a);
+    double target = reward + gamma * maxValue(Q[sNext]);
+    double error = target - Q[s][a];
+    Q[s][a] += alpha * error;
+    return {sNext, error};
+}`,
+    },
+  },
+  'rl-policy-gradient': {
+    variablesSnapshot: { phase: 'policy-update', metric: 'return' },
+    pseudocode: `procedure REINFORCE(policy)
+    trajectory <- sample_episode(policy)
+    returns <- discounted_returns(trajectory.rewards)
+    for each step t do
+        loss <- -log pi(a_t | s_t) * returns[t]
+    end for
+    update policy by gradient descent`,
+    code: {
+      python: `def reinforce(policy):
+    trajectory = sample_episode(policy)
+    returns = discounted_returns(trajectory.rewards)
+    loss = 0.0
+    for step, G in zip(trajectory, returns):
+        loss += -policy.log_prob(step.state, step.action) * G
+    loss.backward()
+    optimizer.step()`,
+      cpp: `void reinforce(Policy& policy) {
+    auto trajectory = sampleEpisode(policy);
+    auto returns = discountedReturns(trajectory.rewards);
+    Loss loss = 0.0;
+    for (int t = 0; t < trajectory.size(); ++t) {
+        loss += -policy.logProb(trajectory[t].state, trajectory[t].action) * returns[t];
+    }
+    optimizer.step(loss);
+}`,
+    },
+  },
+  'llm-pretraining': {
+    variablesSnapshot: { phase: 'training', metric: 'loss' },
+    pseudocode: `procedure LLM_TRAINING(text)
+    tokens <- tokenize(text)
+    loss <- next_token_loss(tokens)
+    update model on pretraining corpus
+    fine_tune on instruction data
+    align with preference feedback`,
+    code: {
+      python: `def training_step(model, tokens):
+    inputs = tokens[:, :-1]
+    targets = tokens[:, 1:]
+    logits = model(inputs)
+    loss = cross_entropy(logits, targets)
+    loss.backward()
+    optimizer.step()
+    return loss`,
+      cpp: `double trainingStep(Model& model, Tokens tokens) {
+    auto inputs = tokens.dropLast();
+    auto targets = tokens.dropFirst();
+    Tensor logits = model.forward(inputs);
+    double loss = crossEntropy(logits, targets);
+    optimizer.step(loss);
+    return loss;
+}`,
+    },
+  },
+  'llm-rag': {
+    variablesSnapshot: { phase: 'retrieve', metric: 'top-k' },
+    pseudocode: `procedure RAG(query, docs)
+    chunks <- split_documents(docs)
+    index <- embed_and_store(chunks)
+    evidence <- retrieve_top_k(index, query)
+    prompt <- build_prompt(query, evidence)
+    answer <- llm.generate(prompt)
+    return answer, evidence`,
+    code: {
+      python: `def rag_answer(query, vector_db, llm):
+    q_vec = embed(query)
+    chunks = vector_db.search(q_vec, top_k=3)
+    prompt = build_prompt(query, chunks)
+    answer = llm.generate(prompt)
+    return answer, chunks`,
+      cpp: `RagResult ragAnswer(string query, VectorDB& db, LLM& llm) {
+    Vector q = embed(query);
+    auto chunks = db.search(q, 3);
+    string prompt = buildPrompt(query, chunks);
+    string answer = llm.generate(prompt);
+    return {answer, chunks};
+}`,
+    },
+  },
+  'llm-agent': {
+    variablesSnapshot: { phase: 'agent-loop', metric: 'progress' },
+    pseudocode: `procedure AGENT(goal)
+    memory <- load_context(goal)
+    while not done do
+        plan <- decide_next_action(goal, memory)
+        result <- call_tool(plan.tool, plan.args)
+        memory <- update_memory(result)
+    end while
+    return final_answer(memory)`,
+    code: {
+      python: `def run_agent(goal, tools):
+    memory = load_context(goal)
+    while not done(memory):
+        action = planner.next_action(goal, memory)
+        result = tools[action.name](**action.args)
+        memory = update_memory(memory, result)
+    return final_answer(memory)`,
+      cpp: `Answer runAgent(Goal goal, ToolSet tools) {
+    Memory memory = loadContext(goal);
+    while (!done(memory)) {
+        Action action = planner.nextAction(goal, memory);
+        Result result = tools.call(action.name, action.args);
+        memory = updateMemory(memory, result);
+    }
+    return finalAnswer(memory);
+}`,
+    },
+  },
+}
+
+for (const chapter of AI_CURRICULUM.chapters) {
+  for (const lesson of chapter.lessons || []) {
+    if (LATE_COURSE_CODE[lesson.id]) {
+      Object.assign(lesson, LATE_COURSE_CODE[lesson.id])
+    }
+  }
+}
+
+for (const chapter of AI_CURRICULUM.chapters) {
+  if (!AI_COMPLETION_DEFAULTS[chapter.id]) continue
+  for (const lesson of chapter.lessons || []) {
+    completeAILessonMetadata(chapter, lesson)
+  }
+}
+
 // 构建扁平查找表
 export const AI_LESSON_MAP = Object.fromEntries(
   AI_CURRICULUM.chapters.flatMap(ch =>
     ch.lessons.map(l => [l.id, l])
   )
 )
+
+export const AI_LESSON_ALIASES = {
+  'opt-branch-bound': 'or-branch-and-bound',
+  'or-branch-bound': 'or-branch-and-bound',
+  'dl-attention': 'nlp-attention',
+  attention: 'nlp-attention',
+}
 
 // 总课节数
 export const AI_TOTAL_LESSONS = AI_CURRICULUM.chapters.reduce(
