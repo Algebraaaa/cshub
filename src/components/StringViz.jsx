@@ -1,4 +1,28 @@
-export default function StringViz({ stepData }) {
+import { useEffect, useRef } from 'react'
+
+// 2026-07 动画升级(对齐 VisuAlgo 字符串匹配动画):
+//   - 主串/模式串放进同一个横向滚动容器,单行不换行——修复长主串
+//     flex-wrap 换行后模式串 padding 对齐彻底错位的布局 bug
+//   - 模式串滑动改用 transform: translateX(合成器动画,不再走
+//     padding-left 的逐帧 layout),KMP 失配时"跳跃式前移"清晰可见
+//   - 滑动时长跟随播放速度;比较指针位置自动滚入视野
+
+const CELL = 44 // 40px 格子 + 4px gap 的网格步距
+
+export default function StringViz({ stepData, speedMs = 1000 }) {
+  const scrollRef = useRef(null)
+  const textIdxForScroll = stepData?.textIdx
+  // 活跃比较位置自动保持在可视区内(长主串横向滚动时跟随指针)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || textIdxForScroll == null || textIdxForScroll < 0) return
+    const target = textIdxForScroll * CELL
+    const { scrollLeft, clientWidth } = el
+    if (target < scrollLeft + CELL || target > scrollLeft + clientWidth - CELL * 2) {
+      el.scrollTo({ left: Math.max(0, target - clientWidth / 2), behavior: 'smooth' })
+    }
+  }, [textIdxForScroll])
+
   if (!stepData) return null
 
   const {
@@ -22,6 +46,8 @@ export default function StringViz({ stepData }) {
   const winEnd = winStart != null && winStart >= 0 ? winStart + m - 1 : -1
   const hashHit = isRabinKarp && windowHash != null && windowHash === patHash
   const statusMeta = status ? { label: statusLabel(status), bg: statusBg(status), fg: statusFg(status) } : null
+  // 模式串滑动时长跟随播放速度(与 Sorting/Heap 同策略)
+  const dur = Math.max(140, Math.min(450, speedMs * 0.45))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
@@ -83,9 +109,11 @@ export default function StringViz({ stepData }) {
         </div>
       )}
 
-      {/* Main Text */}
+      {/* 主串 + 模式串:同一横向滚动容器,单行对齐(修复换行错位 bug) */}
       {!isBuildingLPS && text && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4, width: '100%' }}>
+      <div ref={scrollRef} style={{ width: '100%', overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{ width: text.length * CELL - 4, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
           {text.split('').map((char, i) => {
             let bg = 'var(--surface-sunken)'
             let border = '1px solid var(--border)'
@@ -138,18 +166,17 @@ export default function StringViz({ stepData }) {
             )
           })}
         </div>
-      )}
 
-      {/* Pattern */}
-      {!isBuildingLPS && pattern && text && (
+      {/* 模式串:transform 滑动(合成器动画),KMP 失配跳跃清晰可见 */}
+      {pattern && (
         <div style={{
           display: 'flex',
-          justifyContent: 'flex-start',
           gap: 4,
-          width: text.length * 44,
-          position: 'relative',
-          paddingLeft: shift != null && shift !== -1 ? shift * 44 : 0,
-          transition: 'padding-left 0.3s',
+          width: 'max-content',
+          marginTop: 24,
+          transform: `translateX(${shift != null && shift !== -1 ? shift * CELL : 0}px)`,
+          transition: `transform ${dur}ms cubic-bezier(0.34, 1.15, 0.64, 1)`,
+          willChange: 'transform',
         }}>
           {pattern.split('').map((char, j) => {
             let bg = 'var(--surface-sunken)'
@@ -192,6 +219,9 @@ export default function StringViz({ stepData }) {
             )
           })}
         </div>
+      )}
+        </div>
+      </div>
       )}
     </div>
   )

@@ -73,7 +73,7 @@ export default function StringPlayground({ algoFn, algoSlug }) {
           </div>
         )
       }}
-      renderViz={({ current, total }) => (
+      renderViz={({ current, total, ctrl }) => (
         <VizCard
           borderRadius={10}
           padding="30px 20px"
@@ -82,7 +82,7 @@ export default function StringPlayground({ algoFn, algoSlug }) {
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           {total > 0
-            ? <StringViz stepData={current} />
+            ? <StringViz stepData={current} speedMs={ctrl.speed} />
             : <div style={{ color: 'var(--text-dim)' }}>请输入有效的主串和模式串</div>}
         </VizCard>
       )}
