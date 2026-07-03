@@ -44,6 +44,7 @@ export default function NQueensViz({ data }) {
             {hasQueen && (
               <div
                 className="text-2xl"
+                style={{ animation: 'pop 0.25s ease-out' }}
               >
                 ♕
               </div>

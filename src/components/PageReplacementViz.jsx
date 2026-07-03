@@ -104,8 +104,10 @@ export default function PageReplacementViz({ stepData, steps }) {
                 }}
               >
                   {pageInFrame !== undefined && (
+                    // key 换值即重挂载 → 新调入的页播放 pop 入场(换出/换入一目了然)
                     <div
                       key={pageInFrame}
+                      style={{ animation: 'pop 0.3s ease-out' }}
                     >
                       {pageInFrame}
                     </div>

@@ -52,11 +52,13 @@ export default function CountingSortViz({ stepData }) {
         {output.map((el, i) => {
           const isActive = activeOutputIdx === i
           return (
-            <Cell key={i}
+            // key 含元素 id:空槽被填充时 Cell 重挂载 → pop 落位动画
+            <Cell key={el ? `f-${el.id}` : `e-${i}`}
               value={el ? el.value : ''}
               label={`[${i}]`}
               active={isActive}
               empty={!el}
+              justLanded={!!el && phase !== 'done'}
               color={
                 isActive ? '#a78bfa'
                 : phase === 'done' ? '#10b981'
@@ -84,7 +86,7 @@ function Label({ children }) {
   )
 }
 
-function Cell({ value, label, active, dim, empty, color }) {
+function Cell({ value, label, active, dim, empty, color, justLanded }) {
   const bg = color
     ? color
     : empty ? 'transparent'
@@ -103,6 +105,7 @@ function Cell({ value, label, active, dim, empty, color }) {
         opacity: dim ? 0.35 : 1,
         boxShadow: active ? `0 0 0 3px ${color}66, 0 0 18px ${color}99` : 'none',
         transition: 'all 0.25s',
+        animation: justLanded ? 'pop 0.3s ease-out' : 'none',
       }}>
         {value !== '' ? value : ''}
       </div>
