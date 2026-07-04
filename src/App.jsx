@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import AppLayout from './layout/AppLayout'
@@ -38,6 +38,38 @@ const ViolinLessonPage = lazy(ROUTE_LOADERS['/violin/lesson'])
 const AIPage = lazy(ROUTE_LOADERS['/ai-course'])
 const AILessonPage = lazy(ROUTE_LOADERS['/ai-course/lesson'])
 const NotFoundPage = lazy(NOT_FOUND_LOADER)
+
+// 路由 → document.title(最长前缀匹配)。浏览器历史/书签/搜索结果
+// 不再是清一色 "algo-viz"(审计 #11)。算法/课节等详情页用栏目名兜底,
+// 更细粒度的标题可由页面自身覆盖。
+const BASE_TITLE = 'CS Hub · 算法可视化学习平台'
+const ROUTE_TITLES = {
+  '/algo': '算法库',
+  '/compare': '算法对比',
+  '/learn': '资源导航',
+  '/logic': '逻辑学',
+  '/finance': '理财',
+  '/growth': '个人成长',
+  '/ai-course': 'AI 专业课',
+  '/path': '学习路径',
+  '/profile': '个人主页',
+  '/piano': '钢琴',
+  '/guitar': '吉他',
+  '/violin': '小提琴',
+  '/roadmap': '学习路线图',
+  '/interview': '面试与求职',
+  '/toolbox': '开发者工具箱',
+}
+const TITLE_KEYS = Object.keys(ROUTE_TITLES).sort((a, b) => b.length - a.length)
+
+function DocumentTitle() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const key = TITLE_KEYS.find(k => pathname === k || pathname.startsWith(k + '/'))
+    document.title = key ? `${ROUTE_TITLES[key]} · CS Hub` : BASE_TITLE
+  }, [pathname])
+  return null
+}
 
 function AppRoutes() {
   // resetKey 让 ErrorBoundary 在路由变化时自动恢复（见 ErrorBoundary.componentDidUpdate）
@@ -92,6 +124,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Analytics />
+      <DocumentTitle />
       <AppRoutes />
     </BrowserRouter>
   )
