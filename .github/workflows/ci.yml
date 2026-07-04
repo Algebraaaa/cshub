@@ -1,0 +1,32 @@
+# CI:每次 push / PR 跑 lint + test + build。
+# 这是 AI 辅助开发最重要的安全网——模型改坏了什么,由机器把关,
+# 而不是等部署到生产后由用户发现。
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

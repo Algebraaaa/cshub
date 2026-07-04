@@ -82,6 +82,18 @@
   }
 }
 
+/* ── 无障碍：尊重"减弱动态效果"系统偏好(WCAG 2.3.3) ────────
+   前庭障碍用户开启该偏好后,所有装饰性动画/过渡压到近零时长。
+   逻辑不受影响:transition 仍会瞬时到达最终状态,动画播最后一帧。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── 骨架屏延迟显现：秒开的 lazy chunk 不闪骨架 ─────────────
    前 150ms 保持透明,之后 120ms 淡入;配合 PageSkeleton 组件使用 */
 .skeleton-fade-in {

@@ -1,0 +1,17 @@
+# 依赖安全自动化:每周检查 npm 依赖的安全更新,
+# 高危 CVE 出现时自动开 PR(配合 CI 验证后合并)。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

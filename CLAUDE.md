@@ -10,7 +10,7 @@ src/
 ├── components/
 │   ├── home/                    HomePage 拆出的 sections
 │   ├── learning/                算法详情页相关组件
-│   ├── playgrounds/             每种 viz 一个 Playground（48 个）
+│   ├── playgrounds/             每种 viz 一个 Playground（86 个）
 │   └── profile/                 ProfilePage 拆出的板块
 ├── contexts/                    Auth / Progress / Achievements / Theme / Step
 ├── data/
@@ -82,12 +82,11 @@ src/
 ## 🔐 Supabase 可选
 
 无 `VITE_SUPABASE_URL` 时项目以单机模式运行（localStorage 持久化）。配置后自动启用：
-- 用户进度跨设备同步
+- 用户进度跨设备同步（LWW 合并，见 `src/services/storage/SyncService.js`）
 - 公开笔记浏览
 - 徽章云端持久化
-- AI 助手 Edge Function 路径
 
-详见 `supabase/README.md` 和 `supabase/functions/ai-chat/README.md`。
+表结构与 RLS 策略见 `supabase/schema.sql`。
 
 ## 🌐 路由
 
