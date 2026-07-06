@@ -30,7 +30,10 @@ export default function AppLayout() {
   const isHome = pathname === '/'
   const isAlgo = pathname.startsWith('/algo') || pathname.startsWith('/compare')
   const isAICourseHome = pathname === '/ai-course'
-  const isGuide = isAICourseHome || GUIDE_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
+  // 课节页也走 guide 模式（外层 main 不滚动，页面内部侧栏/正文各自滚动）：
+  // 否则路由切换时全局 scrollTo(0,0) 会把左侧课程目录一起拽回顶部。
+  const isAICourseLesson = pathname.startsWith('/ai-course/lesson/')
+  const isGuide = isAICourseHome || isAICourseLesson || GUIDE_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
   const hasGuideSidebar = GUIDE_BACK_PATHS.has(pathname)
   const floatingBackTarget = getFloatingBackTarget(pathname)
   // 三档断点：phone ≤640 / ipad 641-1024 / desktop >1024

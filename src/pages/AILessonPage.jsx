@@ -1,4 +1,4 @@
-import { lazy, Suspense, use, useCallback, useRef, useState } from 'react'
+import { lazy, Suspense, use, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import ErrorBoundary from '../components/ErrorBoundary'
 // 同步路径(别名解析/404/侧栏目录)走轻量索引;课节正文经 loadLesson 按章动态加载
@@ -86,10 +86,27 @@ export default function AILessonPage() {
   const canonicalLessonId = AI_LESSON_ALIASES[lessonId] || lessonId
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const lessonExists = !!AI_LESSON_INDEX[canonicalLessonId]
+  const asideRef = useRef(null)
+  const contentRef = useRef(null)
   const { isCompleted, markComplete, progress } = useCourseProgress(
     AI_COURSE_META.id,
     AI_TOTAL_LESSONS
   )
+
+  // 换课节：只有正文回到顶部；侧栏目录是独立滚动区，位置保持不动
+  useLayoutEffect(() => {
+    contentRef.current?.scrollTo(0, 0)
+  }, [canonicalLessonId])
+
+  // 首次进入（含深链直达）：把目录滚到当前课节附近；之后的滚动交还给用户
+  useEffect(() => {
+    const aside = asideRef.current
+    const active = aside?.querySelector('[data-active="true"]')
+    if (!aside || !active) return
+    const asideRect = aside.getBoundingClientRect()
+    const activeRect = active.getBoundingClientRect()
+    aside.scrollTop += activeRect.top - asideRect.top - aside.clientHeight / 2 + activeRect.height / 2
+  }, [])
 
   if (canonicalLessonId !== lessonId && lessonExists) {
     return <Navigate to={`/ai-course/lesson/${canonicalLessonId}`} replace />
@@ -104,7 +121,7 @@ export default function AILessonPage() {
   }
 
   return (
-    <div className="music-lesson-shell">
+    <div className="music-lesson-shell music-lesson-shell--fit">
       <button
         type="button"
         className="music-lesson-sidebar-toggle"
@@ -120,7 +137,7 @@ export default function AILessonPage() {
 
       {/* Sidebar:纯索引数据,立即渲染,不等章节 chunk */}
       <div className="music-lesson-sidebar-frame" data-collapsed={sidebarCollapsed ? 'true' : 'false'}>
-        <aside className="flex h-full flex-col w-60 flex-shrink-0 border-r border-border-soft px-3 py-6 overflow-y-auto">
+        <aside ref={asideRef} className="flex h-full flex-col w-60 flex-shrink-0 border-r border-border-soft px-3 py-6 overflow-y-auto">
           <Link
             to="/ai-course"
             className="flex items-center gap-2 text-fg-muted hover:text-fg text-sm mb-5 transition-colors"
@@ -151,7 +168,7 @@ export default function AILessonPage() {
       </div>
 
       {/* Main:正文挂起期间显示紧凑骨架 */}
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-8 sm:px-5 2xl:px-6">
+      <main ref={contentRef} className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-8 sm:px-5 2xl:px-6">
         <Link
           to="/ai-course"
           className="lg:hidden flex items-center gap-1 text-fg-muted hover:text-fg text-sm mb-6 transition-colors"

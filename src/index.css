@@ -260,6 +260,21 @@
     var(--bg);
 }
 
+/* guide 模式（外层 main 不滚动）下的课节页：shell 锁定为容器高度，
+   侧栏与正文成为各自独立的滚动区。路由切换时 AppLayout 的
+   scrollTo(0,0) 只作用于外层（已不滚动），左侧目录滚动位置得以保留。 */
+.music-lesson-shell--fit {
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 640px) {
+  /* 手机端底部导航是全局浮层，内部滚动的正文要自己留出安全区 */
+  .music-lesson-shell--fit > main {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
 .music-lesson-sidebar-frame {
   flex: 0 0 auto;
   width: 240px;

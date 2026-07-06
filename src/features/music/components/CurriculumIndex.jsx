@@ -16,6 +16,7 @@ export default function CurriculumIndex({ curriculum, basePath, isCompleted, cur
                 <li key={lesson.id}>
                   <Link
                     to={`${basePath}/lesson/${lesson.id}`}
+                    data-active={active ? 'true' : undefined}
                     className={[
                       'flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] transition-colors',
                       active
