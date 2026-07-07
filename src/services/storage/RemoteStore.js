@@ -14,11 +14,23 @@ export const enabled = hasSupabase
 
 export async function fetchProgress(userId) {
   if (!enabled) return null
-  const client = await getSupabase()
-  const [progRes, quizRes] = await Promise.all([
-    client.from('user_progress').select('slug, completed, favorited, updated_at').eq('user_id', userId),
-    client.from('user_quiz_scores').select('slug, attempted, correct, total, last_at').eq('user_id', userId),
-  ])
+  let progRes, quizRes
+  try {
+    const client = await getSupabase()
+    ;[progRes, quizRes] = await Promise.all([
+      client.from('user_progress').select('slug, completed, favorited, updated_at').eq('user_id', userId),
+      client.from('user_quiz_scores').select('slug, attempted, correct, total, last_at').eq('user_id', userId),
+    ])
+  } catch (err) {
+    console.warn('[RemoteStore] fetchProgress 网络异常，跳过本次同步：', err)
+    return null
+  }
+  // 任一表读取失败都按"拉取失败"处理（返回 null → 跳过合并），
+  // 否则半空的远端快照会让合并结果把远端更高的测验分数覆盖掉。
+  if (progRes.error || quizRes.error) {
+    console.warn('[RemoteStore] fetchProgress 查询失败：', progRes.error || quizRes.error)
+    return null
+  }
   const favorites = new Set()
   const completed = new Set()
   // rows 保留每行完整状态 + updated_at 时间戳，供 SyncService 做 LWW 合并
@@ -125,8 +137,9 @@ export function subscribeRealtime(userId, handler) {
   })
   return () => {
     cancelled = true
+    if (!channel) return
     getSupabase().then(client => {
       if (client && channel) client.removeChannel(channel)
-    })
+    }).catch(() => {})
   }
 }

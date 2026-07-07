@@ -606,12 +606,19 @@ function LessonTabPanel({
   )
 }
 
+// remark-math 只把「$$ 独占一行」的多行形式当块级公式；课程数据里大量
+// 单行 $$...$$ 会被按行内公式渲染（挤在文字流里、不居中、无上下边距）。
+// 在渲染入口统一展开为多行形式，让所有块级公式获得 katex-display 排版。
+function promoteSingleLineMathBlocks(text) {
+  return text.replace(/^\$\$(.+)\$\$[ \t]*$/gm, (_, tex) => `$$\n${tex}\n$$`)
+}
+
 function MarkdownSection({ text, className }) {
   if (!text) return null
   return (
     <div className={className}>
       <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS}>
-        {text}
+        {promoteSingleLineMathBlocks(text)}
       </ReactMarkdown>
     </div>
   )

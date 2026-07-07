@@ -3,8 +3,8 @@
 // 2026-07：课节内容改为直接取自算法库（algorithms/it.js 的小白化
 // intuition/伪代码/真实代码 + quizzes.js 的 3 题测验），单一数据源——
 // 此前 14 个课节共用同一段通用 entropy 代码和同一道通用测验。
-import IT_ALGORITHMS from '../../algorithms/it'
-import { QUIZZES } from '../../quizzes'
+import IT_ALGORITHMS from '../../algorithms/it.js'
+import { QUIZZES } from '../../quizzes.js'
 
 const INFO_THEORY_MODULES = [
   ['it-selfinfo', '自信息与信息量', '概率越小，信息量越大', 'I(x) = -log2 p(x)', 'itFundamental'],

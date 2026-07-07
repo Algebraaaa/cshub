@@ -492,15 +492,57 @@ export const AI_CHAPTER_INDEX = [
         "hasExercise": true
       },
       {
+        "id": "nlp-tokenization",
+        "title": "分词与子词编码",
+        "summary": "Word、Subword（BPE）、Character tokenization",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-word2vec",
+        "title": "Word2Vec 训练",
+        "summary": "CBOW vs Skip-gram、负采样",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-glove",
+        "title": "GloVe 全局向量",
+        "summary": "全局词共现、加权最小二乘",
+        "hasExercise": true
+      },
+      {
         "id": "nlp-attention",
         "title": "注意力机制",
-        "summary": "Self-Attention、Multi-Head Attention",
+        "summary": "Self-Attention、缩放点积注意力",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-multihead-attention",
+        "title": "多头注意力",
+        "summary": "并行注意力头、拼接与线性变换",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-masked-attention",
+        "title": "掩码注意力",
+        "summary": "因果掩码、填充掩码、防止未来信息泄露",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-positional-encoding",
+        "title": "位置编码",
+        "summary": "正弦位置编码、学习式位置编码、旋转位置编码",
         "hasExercise": true
       },
       {
         "id": "nlp-transformer",
         "title": "Transformer 架构",
-        "summary": "编码器-解码器、位置编码、多头注意力",
+        "summary": "编码器-解码器、多头注意力、前馈网络、层归一化",
+        "hasExercise": true
+      },
+      {
+        "id": "nlp-bert-gpt",
+        "title": "BERT 与 GPT",
+        "summary": "编码器-only vs 解码器-only、预训练目标对比",
         "hasExercise": true
       }
     ]
@@ -512,13 +554,61 @@ export const AI_CHAPTER_INDEX = [
       {
         "id": "cv-image-classification",
         "title": "图像分类",
-        "summary": "经典网络架构：LeNet、ResNet、VGG",
+        "summary": "经典 CNN 架构：LeNet、AlexNet、VGG、ResNet、EfficientNet",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-cnn-evolution",
+        "title": "CNN 架构演进",
+        "summary": "从 LeNet 到 EfficientNet：深度、残差、复合缩放的进化之路",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-image-augmentation",
+        "title": "图像数据增强",
+        "summary": "翻转、旋转、颜色抖动、随机裁剪、MixUp 等增强策略",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-transfer-learning",
+        "title": "迁移学习",
+        "summary": "预训练 + 微调：将大数据集学到的知识迁移到小数据集",
         "hasExercise": true
       },
       {
         "id": "cv-object-detection",
         "title": "目标检测",
-        "summary": "YOLO、R-CNN、锚框机制",
+        "summary": "两阶段 vs 单阶段：从 R-CNN 到 YOLO 的演进",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-iou",
+        "title": "IoU 与 mAP",
+        "summary": "交并比计算、阈值设定、平均精度均值",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-nms",
+        "title": "NMS 非极大值抑制",
+        "summary": "贪婪 NMS、Soft-NMS、DIoU-NMS 的原理与对比",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-anchor-box",
+        "title": "锚框机制",
+        "summary": "生成、匹配与多尺度检测的锚框策略",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-yolo",
+        "title": "YOLO 目标检测",
+        "summary": "单阶段检测：网格预测、损失函数、架构演进",
+        "hasExercise": true
+      },
+      {
+        "id": "cv-segmentation",
+        "title": "图像分割",
+        "summary": "语义分割与实例分割：U-Net、Mask R-CNN",
         "hasExercise": true
       }
     ]
@@ -528,15 +618,63 @@ export const AI_CHAPTER_INDEX = [
     "title": "强化学习",
     "lessons": [
       {
+        "id": "rl-mdp",
+        "title": "马尔可夫决策过程 (MDP)",
+        "summary": "状态、动作、奖励、转移概率、折扣因子",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-bellman",
+        "title": "贝尔曼方程",
+        "summary": "值函数、最优性、动态规划基础",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-value-iteration",
+        "title": "值迭代",
+        "summary": "同步/异步更新、收敛性证明",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-policy-iteration",
+        "title": "策略迭代",
+        "summary": "策略评估 + 策略改进，两阶段交替",
+        "hasExercise": true
+      },
+      {
         "id": "rl-qlearning",
         "title": "Q-Learning",
         "summary": "Q 表、贝尔曼方程、ε-greedy 策略",
         "hasExercise": true
       },
       {
+        "id": "rl-sarsa",
+        "title": "SARSA",
+        "summary": "同策略 TD 学习，与 Q-Learning 对比",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-experience-replay",
+        "title": "经验回放",
+        "summary": "回放缓冲区、随机采样、打破样本相关性",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-dqn",
+        "title": "深度 Q 网络 (DQN)",
+        "summary": "神经网络近似 Q 函数、目标网络、Double DQN",
+        "hasExercise": true
+      },
+      {
         "id": "rl-policy-gradient",
         "title": "策略梯度",
-        "summary": "REINFORCE 算法、Actor-Critic",
+        "summary": "REINFORCE 算法、基线、方差缩减",
+        "hasExercise": true
+      },
+      {
+        "id": "rl-actor-critic",
+        "title": "Actor-Critic",
+        "summary": "优势函数、A2C、PPO 算法",
         "hasExercise": true
       }
     ]
@@ -546,15 +684,57 @@ export const AI_CHAPTER_INDEX = [
     "title": "大语言模型",
     "lessons": [
       {
+        "id": "llm-tokenization",
+        "title": "Tokenization 分词",
+        "summary": "BPE、WordPiece、SentencePiece、词表构建",
+        "hasExercise": true
+      },
+      {
         "id": "llm-pretraining",
         "title": "预训练与微调",
         "summary": "语言模型预训练、SFT、RLHF",
         "hasExercise": true
       },
       {
+        "id": "llm-mlm",
+        "title": "掩码语言模型 (MLM)",
+        "summary": "BERT 预训练目标、15% 掩码策略",
+        "hasExercise": true
+      },
+      {
+        "id": "llm-clm",
+        "title": "因果语言模型 (CLM)",
+        "summary": "GPT 预训练目标、自回归生成、Teacher Forcing",
+        "hasExercise": true
+      },
+      {
+        "id": "llm-sft",
+        "title": "监督微调 (SFT)",
+        "summary": "指令数据、损失掩码、超参数",
+        "hasExercise": true
+      },
+      {
+        "id": "llm-rlhf",
+        "title": "RLHF 与 PPO",
+        "summary": "奖励模型训练、PPO 对齐、DPO 替代",
+        "hasExercise": true
+      },
+      {
         "id": "llm-rag",
         "title": "RAG 检索增强生成",
         "summary": "向量数据库、语义检索、上下文注入",
+        "hasExercise": true
+      },
+      {
+        "id": "llm-tool-calling",
+        "title": "工具调用与 Function Calling",
+        "summary": "Schema 定义、规划、执行循环、ReAct",
+        "hasExercise": true
+      },
+      {
+        "id": "llm-chain-of-thought",
+        "title": "思维链 (CoT)",
+        "summary": "Prompting 技术、自一致性、Tree-of-Thought",
         "hasExercise": true
       },
       {

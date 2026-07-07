@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const key = (courseId) => `algoviz-course-${courseId}`
 
@@ -17,6 +17,17 @@ function save(courseId, set) {
 
 export function useCourseProgress(courseId, totalLessons = 0) {
   const [completed, setCompleted] = useState(() => load(courseId))
+
+  // Cross-tab sync: listen for localStorage changes from other tabs
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === key(courseId)) {
+        setCompleted(load(courseId))
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [courseId])
 
   const markComplete = useCallback((lessonId) => {
     setCompleted(prev => {

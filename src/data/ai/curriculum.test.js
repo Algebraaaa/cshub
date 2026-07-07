@@ -70,6 +70,32 @@ test('课节别名指向真实课节', () => {
   }
 })
 
+test('NLP/CV/RL/LLM 补齐课节存在且内容完整（2026-07 课程补全）', () => {
+  const REQUIRED = [
+    // NLP：词嵌入训练、多头注意力、掩码机制、Transformer
+    'nlp-word-embedding', 'nlp-glove', 'nlp-multihead-attention',
+    'nlp-masked-attention', 'nlp-positional-encoding', 'nlp-transformer', 'nlp-bert-gpt',
+    // CV：CNN 演进、IoU、NMS、锚框
+    'cv-cnn-evolution', 'cv-iou', 'cv-nms', 'cv-anchor-box', 'cv-yolo',
+    // RL：Q 学习、经验回放、策略梯度、Actor-Critic、DQN
+    'rl-mdp', 'rl-bellman', 'rl-qlearning', 'rl-experience-replay',
+    'rl-policy-gradient', 'rl-actor-critic', 'rl-dqn',
+    // LLM：预训练、MLM、RAG、工具调用、思维链
+    'llm-pretraining', 'llm-mlm', 'llm-rag', 'llm-tool-calling', 'llm-chain-of-thought',
+  ]
+  for (const id of REQUIRED) {
+    const lesson = AI_LESSON_MAP[id]
+    expect(lesson, `缺少课节 ${id}`).toBeTruthy()
+    expect(typeof lesson.theory, `${id} 缺理论内容`).toBe('string')
+    expect(lesson.theory.length, `${id} 理论内容过短`).toBeGreaterThan(200)
+    expect(typeof lesson.code?.python, `${id} 缺 python 代码`).toBe('string')
+    expect(typeof lesson.pseudocode, `${id} 缺伪代码`).toBe('string')
+    expect(lesson.bigO, `${id} 缺复杂度分析`).toBeTruthy()
+    expect(Array.isArray(lesson.compare) && lesson.compare.length > 0, `${id} 缺知识点对比`).toBe(true)
+    expect(Array.isArray(lesson.quiz) && lesson.quiz.length > 0, `${id} 缺随堂测验`).toBe(true)
+  }
+})
+
 // ── 索引一致性(防生成产物与章节数据漂移)────────────────────
 test('curriculumIndex 与实际章节数据逐项一致', () => {
   expect(AI_CHAPTER_INDEX.map(c => c.id)).toEqual(AI_CURRICULUM.chapters.map(c => c.id))
