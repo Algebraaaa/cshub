@@ -349,7 +349,7 @@ BERT 类模型的预训练目标：随机掩码部分 token，让模型根据上
 
 ### 掩码策略
 
-$$\\tilde{x}_i = \\begin{cases} [\\text{MASK}] & \\text{80% 概率} \\\\ x_{\\text{random}} & \\text{10% 概率} \\\\ x_i & \\text{10% 概率} \\end{cases}$$
+$$\\tilde{x}_i = \\begin{cases} [\\text{MASK}] & \\text{80\\% 概率} \\\\ x_{\\text{random}} & \\text{10\\% 概率} \\\\ x_i & \\text{10\\% 概率} \\end{cases}$$
 
 ### 损失函数
 
@@ -655,7 +655,13 @@ end procedure`,
 
 ### 数据格式
 
-$$\\text{Input: } \\underbrace{\\text{### Instruction}\\n\\{\\text{instruction}\\}\\n\\n\\text{### Response}\\n}_{\\text{prompt}} \\underbrace{\\{\\text{response}\\}}_{\\text{learn}}$$
+指令微调样本由 prompt 段（指令模板 + 用户指令）和 response 段（期望回答）拼接而成：
+
+    ### Instruction
+    {instruction}
+
+    ### Response
+    {response}    ← 只有这一段参与损失计算
 
 ### 损失掩码
 

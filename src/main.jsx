@@ -1,6 +1,6 @@
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
-import 'katex/dist/katex.min.css'
+// katex.css 改由 index.css 以 @import layer(base) 引入，保证可被 components 层覆盖
 import './index.css'
 import App from './App.jsx'
 import { initMonitoring } from './lib/monitoring.js'
