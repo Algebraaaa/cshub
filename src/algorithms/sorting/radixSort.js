@@ -7,8 +7,16 @@ export function radixSort(arr) {
   const n = a.length
   if (n === 0) return [{ arr: [], buckets: null, phase: 'done', description: '数组为空' }]
 
+  // 负数处理：LSD 基数排序只能对非负整数按位分桶。含负数时整体平移 offset
+  // 使全部非负（平移是单调的，不改变相对顺序），分桶用平移值、显示仍用原值。
+  // offset=0（输入本就非负，含所有预设）时行为与旧版逐字节一致。
+  const minVal = Math.min(...a)
+  const offset = minVal < 0 ? -minVal : 0
+  const shifted = (v) => v + offset
+
   const maxVal = Math.max(...a)
-  const maxDigits = maxVal === 0 ? 1 : Math.floor(Math.log10(maxVal)) + 1
+  const maxShifted = maxVal + offset
+  const maxDigits = maxShifted <= 0 ? 1 : Math.floor(Math.log10(maxShifted)) + 1
 
   steps.push({
     arr: [...a],
@@ -27,8 +35,8 @@ export function radixSort(arr) {
     // Show distribution phase
     const buckets = Array.from({ length: 10 }, () => [])
     for (const v of a) {
-      const bucket = Math.floor(v / exp) % 10
-      buckets[bucket].push(v)
+      const bucket = Math.floor(shifted(v) / exp) % 10  // 按平移值分桶，避免负索引
+      buckets[bucket].push(v)                            // 桶内仍存原值
     }
 
     steps.push({
