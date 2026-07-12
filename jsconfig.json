@@ -1,0 +1,23 @@
+{
+  "// 说明": "类型安全迁移第 1 步：让编辑器(VS Code)理解本项目，提供跨文件跳转、",
+  "// 说明2": "自动补全、以及基于 JSDoc 的类型提示。checkJs 暂设 false —— 直接开会在",
+  "// 说明3": "全无类型标注的代码上爆出大量噪声。下一步：给 data/ 等纯逻辑模块逐步补",
+  "// 说明4": "JSDoc 类型，再把 checkJs 打开、接入 CI。终点是迁移到 TypeScript。",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
