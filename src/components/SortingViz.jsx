@@ -60,10 +60,11 @@ export default function SortingViz({ stepData, maxVal, speedMs = 1000 }) {
     return { color: 'var(--bar-default)', lift: false, glow: null }
   }
 
-  // 指针行:比较/交换位置画 ▲(交换优先——红色比黄色信息量大)
+  // 指针行:按状态返回 {色, 形}。形状是给红绿色盲的非颜色线索——
+  // 交换⇄ 与 比较◇ 即使在灰度下也能区分(交换优先,红色信息量大)。
   const pointerAt = (i) =>
-    swapped.includes(i) ? 'var(--red)'
-    : comparing.includes(i) ? 'var(--yellow)'
+    swapped.includes(i) ? { color: 'var(--red)', glyph: '⇄' }
+    : comparing.includes(i) ? { color: 'var(--yellow)', glyph: '◇' }
     : null
 
   const slotPct = 100 / n
@@ -128,17 +129,18 @@ export default function SortingViz({ stepData, maxVal, speedMs = 1000 }) {
               lineHeight: 1.1,
             }}>
               <span style={{
-                fontSize: 9,
-                color: p || 'transparent',
-                textShadow: p ? `0 0 6px ${p}` : 'none',
+                fontSize: 11,
+                color: p ? p.color : 'transparent',
+                textShadow: p ? `0 0 6px ${p.color}` : 'none',
                 transition: 'color 0.15s',
-              }} aria-hidden>▲</span>
+                fontWeight: 800, lineHeight: 1,
+              }} aria-hidden>{p ? p.glyph : '▲'}</span>
               <span style={{
                 fontSize: 9.5,
                 fontFamily: 'var(--font-mono)',
                 color: sorted.includes(i) ? 'var(--green)' : 'var(--text-tertiary)',
                 opacity: 0.85,
-              }}>{i}</span>
+              }}>{sorted.includes(i) ? `✓${i}` : i}</span>
             </div>
           )
         })}

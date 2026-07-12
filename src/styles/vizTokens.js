@@ -98,10 +98,11 @@ export const BUCKET_COLORS = [
  * Legend 预设 —— 直接传给 <Legend items={...} /> 即可。
  * 自定义时请优先复用其中部分项再追加。
  */
+// symbol 是给红绿色盲的非颜色线索：比较◇ / 交换⇄ / 完成✓
 export const SORTING_LEGEND = [
-  { color: VIZ_COLORS.compare, label: '比较中' },
-  { color: VIZ_COLORS.swap,    label: '交换' },
-  { color: VIZ_COLORS.sorted,  label: '已排序' },
+  { color: VIZ_COLORS.compare, label: '比较中', symbol: '◇' },
+  { color: VIZ_COLORS.swap,    label: '交换',   symbol: '⇄' },
+  { color: VIZ_COLORS.sorted,  label: '已排序', symbol: '✓' },
 ]
 
 export const GRAPH_LEGEND = [

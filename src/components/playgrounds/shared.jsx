@@ -119,11 +119,22 @@ export function TextInput({ value, onChange, placeholder, onSubmit, submitLabel 
 }
 
 export function Legend({ items }) {
+  // 无障碍：item 可带 symbol（非颜色通道）。红绿色盲无法区分红/绿状态时，
+  // 符号(◇比较 / ⇄交换 / ✓完成 等)提供冗余线索。不传 symbol 则退回纯色点，
+  // 完全向后兼容。
   return (
     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', padding: '8px 14px' }}>
-      {items.map(({ color, label }) => (
+      {items.map(({ color, label, symbol }) => (
         <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-secondary)' }}>
-          <span style={{ width: 9, height: 9, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0, boxShadow: `0 0 6px ${color}` }} />
+          {symbol ? (
+            <span aria-hidden style={{
+              width: 13, textAlign: 'center', flexShrink: 0,
+              fontSize: 12, fontWeight: 800, lineHeight: 1,
+              color, textShadow: `0 0 6px ${color}`,
+            }}>{symbol}</span>
+          ) : (
+            <span style={{ width: 9, height: 9, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0, boxShadow: `0 0 6px ${color}` }} />
+          )}
           {label}
         </span>
       ))}
