@@ -87,11 +87,16 @@ export function mergeProgress(local, remote) {
   const quizScores = { ...remote.quizScores }
   for (const [slug, l] of Object.entries(local.quizScores)) {
     const r = quizScores[slug]
-    if (!r || (l.lastAt || 0) > (r.lastAt || 0) || (l.correct || 0) > (r.correct || 0)) {
+    // 本地在任一维度（时间 / 正确数 / 尝试数）更新时合并；各字段取最大值，
+    // 避免旧逻辑漏掉"仅 attempted 增加"的场景导致尝试次数统计回退。
+    if (!r
+      || (l.lastAt || 0) > (r.lastAt || 0)
+      || (l.correct || 0) > (r.correct || 0)
+      || (l.attempted || 0) > (r.attempted || 0)) {
       quizScores[slug] = {
         attempted: Math.max(r?.attempted || 0, l.attempted || 0),
         correct: Math.max(r?.correct || 0, l.correct || 0),
-        total: l.total || r?.total || 0,
+        total: Math.max(r?.total || 0, l.total || 0),
         lastAt: Math.max(r?.lastAt || 0, l.lastAt || 0),
       }
     }
@@ -144,6 +149,18 @@ export function createSyncService({
     // 串行化：上一轮还在网络中就排队等它完成再跑
     flushing = (flushing || Promise.resolve()).then(flush).finally(() => { flushing = null })
     return flushing
+  }
+
+  // 立即冲刷 pending 队列（页面卸载 / 登出等场景），跳过防抖等待。
+  // 与 scheduleFlush 保持同一前置条件：初始合并完成前不上推（本地副本不丢，下次登录会合并）。
+  async function flushNow() {
+    if (flushTimer) {
+      clearTimeout(flushTimer)
+      flushTimer = null
+    }
+    if (!remote.enabled || !getUserId() || !initSynced) return
+    if (pendingProgress.size === 0 && pendingQuiz.size === 0) return
+    await runFlush()   // 经串行化入口，避免与 in-flight flush 并发
   }
 
   async function flush() {
@@ -295,6 +312,9 @@ export function createSyncService({
     isCloudEnabled() {
       return remote.enabled && !!getUserId()
     },
+
+    /** 立即同步所有 pending 变更（页面卸载时由 ProgressContext 调用，best-effort） */
+    flushNow,
 
     // 测试钩子
     _internals: {

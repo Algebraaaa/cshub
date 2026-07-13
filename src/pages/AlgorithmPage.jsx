@@ -108,7 +108,10 @@ function AlgorithmPageContent({ algo, loadError }) {
   const pageTitle = getDisplayName(algo)
   const [searchParams] = useSearchParams()
   const pathId = searchParams.get('path')
-  const pathNav = pathId ? getPathNavigation(pathId, algo.slug) : null
+  const pathNav = useMemo(
+    () => pathId ? getPathNavigation(pathId, algo.slug) : null,
+    [pathId, algo.slug]
+  )
   const { ping } = useAchievements()
 
   useEffect(() => {

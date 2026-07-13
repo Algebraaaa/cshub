@@ -269,3 +269,41 @@ test('resetSyncFlag: after reset, enqueue does NOT push until syncWithRemote run
   await new Promise(r => setTimeout(r, 30))
   expect(remote._calls().pushProg.length).toBe(0)
 })
+
+test('mergeProgress: local with only more attempts (same correct/lastAt) still merges attempted', () => {
+  const local = {
+    favorites: new Set(),
+    completed: new Set(),
+    quizScores: { q1: { attempted: 5, correct: 2, total: 3, lastAt: 100 } },
+  }
+  const remote = {
+    favorites: new Set(),
+    completed: new Set(),
+    quizScores: { q1: { attempted: 2, correct: 2, total: 3, lastAt: 100 } },
+  }
+  const merged = mergeProgress(local, remote)
+  expect(merged.quizScores.q1.attempted).toBe(5)
+  expect(merged.quizScores.q1.correct).toBe(2)
+})
+
+test('flushNow: pushes pending immediately without waiting for debounce', async () => {
+  const local = stubLocal()
+  const remote = stubRemote({ enabled: true, fixture: { favorites: new Set(), completed: new Set(), quizScores: {} } })
+  const sync = createSyncService({ local, remote, getUserId: () => 'u1', debounceMs: 10000 })
+  await sync.syncWithRemote()
+  sync.enqueueProgress('a', { favorited: true, completed: false })
+  sync.enqueueQuiz('a', { attempted: 1, correct: 1, total: 1, lastAt: 1 })
+  expect(remote._calls().pushProg.length).toBe(0)
+  await sync.flushNow()
+  expect(remote._calls().pushProg.map(c => c.slug)).toEqual(['a'])
+  expect(remote._calls().pushQuiz.map(c => c.slug)).toEqual(['a'])
+})
+
+test('flushNow: before initial sync does NOT push (pre-init queue stays buffered)', async () => {
+  const local = stubLocal()
+  const remote = stubRemote({ enabled: true, fixture: { favorites: new Set(), completed: new Set(), quizScores: {} } })
+  const sync = createSyncService({ local, remote, getUserId: () => 'u1', debounceMs: 10000 })
+  sync.enqueueProgress('early', { favorited: true, completed: false })
+  await sync.flushNow()
+  expect(remote._calls().pushProg.length).toBe(0)
+})

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState, useCallback, memo } from 'react'
+import ErrorBoundary from '../ErrorBoundary'
 import { Prose } from './Section'
 import CodeBlock from './CodeBlock'
 import ComplexityCards from './ComplexityCards'
@@ -157,9 +158,13 @@ const AlgorithmTabs = memo(function AlgorithmTabs({ algo }) {
 
         {active === 'notes' && (
           <Panel id="notes" title={null}>
-            <Suspense fallback={<div className="text-sm text-[var(--text-tertiary)]">正在加载笔记...</div>}>
-              <Notes slug={algo.slug} />
-            </Suspense>
+            <ErrorBoundary fallback={
+              <div className="text-sm text-fg-muted">笔记模块加载失败，请刷新页面重试。</div>
+            }>
+              <Suspense fallback={<div className="text-sm text-fg-faint">正在加载笔记...</div>}>
+                <Notes slug={algo.slug} />
+              </Suspense>
+            </ErrorBoundary>
           </Panel>
         )}
       </div>

@@ -109,6 +109,16 @@ export function ProgressProvider({ children }) {
     return () => { cancelled = true }
   }, [userId, store])
 
+  // 页面隐藏 / 卸载时立即冲刷防抖队列，避免刚产生的进度变更丢在 pending 里。
+  // pagehide 在移动端比 beforeunload 更可靠；flush 是 best-effort，失败也不影响
+  // 本地副本（下次登录 syncWithRemote 会整体合并推回）。
+  useEffect(() => {
+    if (!userId) return
+    const onPageHide = () => { sync.flushNow() }
+    window.addEventListener('pagehide', onPageHide)
+    return () => window.removeEventListener('pagehide', onPageHide)
+  }, [userId])
+
   // 登录态下订阅 realtime
   useEffect(() => {
     if (!userId) return
