@@ -87,7 +87,7 @@ src/
 - 徽章云端持久化
 - AI 助手 Edge Function 路径
 
-详见 `supabase/README.md` 和 `supabase/functions/ai-chat/README.md`。
+详见 `supabase/README.md` 与表结构 `supabase/schema.sql`。
 
 ## 🌐 路由
 
