@@ -16,9 +16,9 @@
 
 /**
  * 解析步骤声明的代码高亮行。
- * @param {object} step  算法/playground 的单个 step
+ * @param {Record<string, any>} step  算法/playground 的单个 step
  * @param {string} lang  'cpp' | 'python' | 'java' | 'pseudo'
- * @param {object} opts  explicitOnly: 只认按语言显式声明的行号，
+ * @param {{ explicitOnly?: boolean }} [opts]  explicitOnly: 只认按语言显式声明的行号，
  *                       忽略 codeLine/line/pseudoLine 泛化字段
  * @returns {number|null}
  */

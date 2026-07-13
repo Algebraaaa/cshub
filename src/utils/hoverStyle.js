@@ -27,8 +27,8 @@
 /**
  * 生成 onMouseEnter / onMouseLeave 事件处理器对象。
  *
- * @param {CSSProperties} hover  — 鼠标进入时叠加的样式
- * @param {CSSProperties} [base] — 鼠标离开时恢复的样式
+ * @param {Record<string, string|number>} hover  - 鼠标进入时叠加的样式
+ * @param {Record<string, string|number>} [base] - 鼠标离开时恢复的样式
  *   若省略，则将 hover 中每个 key 对应的属性重置为 ''（让 CSS 变量或继承样式接管）。
  * @returns {{ onMouseEnter: function, onMouseLeave: function }}
  */
@@ -41,12 +41,12 @@ export function hoverHandlers(hover, base) {
 }
 
 /**
- * 条件版本 — 当 disabled 为 true 时不附加任何处理器。
+ * 条件版本 - 当 disabled 为 true 时不附加任何处理器。
  * 常见场景：active 状态下不响应 hover。
  *
- * @param {boolean}      disabled — 为 true 时返回空对象
- * @param {CSSProperties} hover
- * @param {CSSProperties} [base]
+ * @param {boolean}      disabled - 为 true 时返回空对象
+ * @param {Record<string, string|number>} hover
+ * @param {Record<string, string|number>} [base]
  */
 export function hoverHandlersIf(disabled, hover, base) {
   if (disabled) return {}

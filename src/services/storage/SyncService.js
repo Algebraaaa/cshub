@@ -103,6 +103,16 @@ export function mergeProgress(local, remote) {
 const MAX_RETRY = 10           // 单条目重试上限（防对着永久性错误无限打）
 const MAX_BACKOFF_MS = 30_000  // 退避上限
 
+/**
+ * local/remote 由调用方注入（生产用 ./LocalStore、./RemoteStore，测试用 stub）。
+ * 类型上标为可选是因为形参有 `= {}` 默认值；缺失时由函数体首行的 throw 兜底。
+ * @param {{
+ *   local?: Record<string, any>,
+ *   remote?: Record<string, any>,
+ *   getUserId?: () => (string|null),
+ *   debounceMs?: number,
+ * }} [deps]
+ */
 export function createSyncService({
   local,
   remote,

@@ -31,8 +31,9 @@ export async function getSupabase() {
 
 if (!hasSupabase && typeof window !== 'undefined') {
   // 仅在浏览器侧打印一次轻提示，方便开发联调
-  if (!window.__cshub_supabase_warned) {
-    window.__cshub_supabase_warned = true
+  const w = /** @type {any} */ (window)  // 挂一个一次性标志，非标准 window 属性
+  if (!w.__cshub_supabase_warned) {
+    w.__cshub_supabase_warned = true
     console.info(
       '[CS Hub] Supabase 未配置（VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 未设置）。\n' +
       '当前以单机模式运行，进度仅保存在 localStorage。'

@@ -1,0 +1,29 @@
+{
+  "//": "渐进式类型检查（自检维度 10）。仅对已补 JSDoc、经得起 checkJs 的纯逻辑",
+  "//2": "模块开强制检查，由 `npm run typecheck` 跑、并接入 CI。include 列表只增不减：",
+  "//3": "新写/整理好类型的模块加进来，让被强制检查的表面积逐步覆盖全项目。",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": [],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": [
+    "src/vite-env.d.ts",
+    "src/utils/safeHtml.js",
+    "src/utils/stepProtocol.js",
+    "src/utils/hoverStyle.js",
+    "src/services/storage/SyncService.js",
+    "src/services/storage/LocalStore.js",
+    "src/services/storage/RemoteStore.js",
+    "src/lib/monitoring.js"
+  ]
+}
