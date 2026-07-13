@@ -71,6 +71,7 @@ export default function SvgCanvas({
   minW = 400,
   minH = 200,
   style,
+  ariaLabel,   // 传入则整块 SVG 变为 role="img" + aria-label，供屏幕阅读器朗读当前状态
   children,
 }) {
   const computed = nodes != null ? computeViewBox(nodes, { pad, minW, minH }) : null
@@ -80,6 +81,8 @@ export default function SvgCanvas({
     <svg
       width="100%"
       viewBox={resolvedViewBox}
+      role={ariaLabel ? 'img' : undefined}
+      aria-label={ariaLabel}
       style={{
         background: 'var(--surface)',
         borderRadius: 12,

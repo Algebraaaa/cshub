@@ -40,7 +40,9 @@ export function DEFAULT_NODE_STYLE(_node, isHighlighted) {
   }
 }
 
-/** 红黑树节点样式策略（不依赖高亮状态，红黑色仅由 node.color 决定） */
+/** 红黑树节点样式策略（不依赖高亮状态，红黑色仅由 node.color 决定）。
+ *  badge：R/B 字母角标——红黑是纯颜色语义，红绿色盲难辨红 vs 深灰，
+ *  用字母提供非颜色通道。 */
 // eslint-disable-next-line no-unused-vars
 export function RB_NODE_STYLE(node, _isHighlighted) {
   const isRed = node.color === 'R'
@@ -48,6 +50,7 @@ export function RB_NODE_STYLE(node, _isHighlighted) {
     fill: isRed ? '#ef4444' : '#1f2937',
     stroke: isRed ? '#fca5a5' : '#6b7280',
     strokeWidth: 2,
+    badge: isRed ? 'R' : 'B',
   }
 }
 
@@ -75,11 +78,12 @@ export default function SvgTreeViz({
   pulseRadius = 26,
   emptyLabel = '空树',
   svgStyle,
+  ariaLabel,
 }) {
   // 空树 fallback
   if (!stepData || !stepData.nodes?.length) {
     return (
-      <SvgCanvas minH={300} style={svgStyle}>
+      <SvgCanvas minH={300} style={svgStyle} ariaLabel={ariaLabel || emptyLabel}>
         <text
           x="50%" y="50%"
           textAnchor="middle"
@@ -98,9 +102,11 @@ export default function SvgTreeViz({
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]))
 
   const easing = `cubic-bezier(0.4, 0, 0.2, 1)`
+  const resolvedAria = ariaLabel
+    || `树可视化，共 ${nodes.length} 个节点` + (highlight != null ? `，高亮节点 ${highlight}` : '')
 
   return (
-    <SvgCanvas nodes={nodes} pad={pad} minH={minH} style={svgStyle}>
+    <SvgCanvas nodes={nodes} pad={pad} minH={minH} style={svgStyle} ariaLabel={resolvedAria}>
       {({ offsetX, offsetY }) => (
         <>
           {/* ── 边 ── */}
@@ -175,6 +181,16 @@ export default function SvgTreeViz({
                 >
                   {n.value}
                 </text>
+
+                {/* 非颜色角标（如红黑树 R/B）：右上角小圆 + 字母 */}
+                {ns.badge && (
+                  <g transform={`translate(${nodeRadius * 0.72}, ${-nodeRadius * 0.72})`}>
+                    <circle r={7} fill="var(--surface)" stroke={ns.stroke} strokeWidth={1} />
+                    <text textAnchor="middle" y={3} fill="var(--text-primary)" fontSize={9} fontWeight="bold">
+                      {ns.badge}
+                    </text>
+                  </g>
+                )}
               </g>
             )
           })}
