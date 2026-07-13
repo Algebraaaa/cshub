@@ -17,7 +17,8 @@ npm run dev        # http://localhost:5173，无需 Supabase 即可运行
 | `npm test` | Vitest 全量单测 |
 | `npm run typecheck` | 类型检查（渐进式，见下方「类型」） |
 | `npm run build` | 生产构建 |
-| `npm run check` | 一次性跑 lint + test + build |
+| `npm run check` | 一次性跑 lint + typecheck + test + build |
+| `npm run test:e2e` | Playwright 端到端（首次需 `npx playwright install chromium`） |
 
 **CI（`.github/workflows/ci.yml`）会在每次 push / PR 上跑同样的检查，红了不合并。**
 所以本地先绿再推——这是 AI 辅助开发最重要的安全网。

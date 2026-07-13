@@ -33,3 +33,23 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # E2E 单列一个 job：需要下载浏览器，比 lint/test/build 慢，隔离开不拖慢主检查。
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E
+        run: npm run test:e2e
