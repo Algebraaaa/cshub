@@ -141,8 +141,7 @@ export default function BPlusTreePlayground({ algoFn }) {
       </VizCard>
 
       <StepController total={steps.length}
-        step={ctrl.step} playing={ctrl.playing} speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
+        ctrl={ctrl}
         description={current.description} />
     </div>
   )

@@ -63,15 +63,7 @@ export default function ElevatorPlayground({ algoFn }) {
       <div style={{ marginTop: 16 }}>
         <StepController 
           total={steps.length} 
-          step={ctrl.step} 
-          playing={ctrl.playing}
-          speed={ctrl.speed} 
-          setSpeed={ctrl.setSpeed}
-          play={ctrl.play} 
-          stop={ctrl.stop} 
-          prev={ctrl.prev} 
-          goNext={ctrl.goNext} 
-          reset={ctrl.reset} seek={ctrl.seek}
+          ctrl={ctrl}
           description={currentStepData ? `当前楼层: ${currentStepData.currentHead} ${currentStepData.targetTrack != null ? '-> 目标: ' + currentStepData.targetTrack : ''}` : '等待运行'} 
         />
       </div>

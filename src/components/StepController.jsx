@@ -61,11 +61,8 @@ export function useStepController(steps) {
   return { step, playing, speed, setSpeed, play, stop, prev, goNext, reset, seek }
 }
 
-export default function StepController({
-  total, step, playing, speed, setSpeed,
-  play, stop, prev, goNext, reset, seek, description,
-  customInput,
-}) {
+export default function StepController({ total, ctrl, description, customInput }) {
+  const { step, playing, speed, setSpeed, play, stop, prev, goNext, reset, seek } = ctrl
   const scrubberRef = useRef(null)
   const isDragging = useRef(false)
   // 拖拽期间挂在 window 上的监听器的卸载函数；组件若在拖拽中途 unmount，
