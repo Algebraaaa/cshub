@@ -92,6 +92,10 @@ export default function PlaygroundShell({
     ? extraToolbar({ state, setState, ctrl })
     : extraToolbar
 
+  const renderedToolbarRight = typeof toolbarRight === 'function'
+    ? toolbarRight({ state, ctrl, current })
+    : toolbarRight
+
   if (!current) {
     return (
       <div className="rounded-glass-md border border-border-soft bg-surface p-4 text-sm text-fg-faint">
@@ -102,7 +106,7 @@ export default function PlaygroundShell({
 
   return (
     <div>
-      {(presets.length > 0 || renderedExtraToolbar || toolbarRight) && (
+      {(presets.length > 0 || renderedExtraToolbar || renderedToolbarRight) && (
         <Toolbar>
           {presets.map(p => (
             <ToolbarBtn key={p.id} active={p.id === presetId} onClick={() => selectPreset(p)}>
@@ -124,7 +128,7 @@ export default function PlaygroundShell({
           )}
           {/* 桌面端用 spacer 把 toolbarRight 推到最右；手机端 toolbarRight 跟着换行靠左对齐 */}
           {!isPhone && <div style={{ flex: 1 }} />}
-          {toolbarRight}
+          {renderedToolbarRight}
         </Toolbar>
       )}
 
