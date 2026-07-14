@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Legend } from './shared'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#ef4444', '#84cc16']
 
@@ -13,21 +12,18 @@ const LEGEND = [
 ]
 
 export default function CPUSchedulePlayground({ algoFn }) {
-  const steps = useMemo(() => algoFn(), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+  const computeSteps = useCallback(() => algoFn(), [algoFn])
 
   return (
-    <div>
-      <VizCard borderRadius={10} padding={20} minHeight={380} noInner>
-        <CPUViz step={current} />
-      </VizCard>
-
-      <Legend items={LEGEND} />
-
-      <StepController total={steps.length} ctrl={ctrl}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      legend={LEGEND}
+      renderViz={({ current }) => (
+        <VizCard borderRadius={10} padding={20} minHeight={380} noInner>
+          <CPUViz step={current} />
+        </VizCard>
+      )}
+    />
   )
 }
 

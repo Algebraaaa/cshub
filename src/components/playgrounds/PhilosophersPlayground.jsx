@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Legend } from './shared'
 
 const STATE_COLOR = {
   thinking: '#94a3b8',
@@ -30,21 +29,18 @@ const LEGEND = [
 ]
 
 export default function PhilosophersPlayground({ algoFn }) {
-  const steps = useMemo(() => algoFn(), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+  const computeSteps = useCallback(() => algoFn(), [algoFn])
 
   return (
-    <div>
-      <VizCard borderRadius={10} padding="24px 20px" minHeight={460} noInner overflowX="hidden">
-        <PhilosophersViz step={current} />
-      </VizCard>
-
-      <Legend items={LEGEND} />
-
-      <StepController total={steps.length} ctrl={ctrl}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      legend={LEGEND}
+      renderViz={({ current }) => (
+        <VizCard borderRadius={10} padding="24px 20px" minHeight={460} noInner overflowX="hidden">
+          <PhilosophersViz step={current} />
+        </VizCard>
+      )}
+    />
   )
 }
 
