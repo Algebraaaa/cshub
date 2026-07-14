@@ -127,7 +127,7 @@ export default function PlaygroundShell({
         </Toolbar>
       )}
 
-      {renderViz({ current, currentStep: ctrl.step, total: steps.length, presetId, state, ctrl })}
+      {renderViz({ current, steps, currentStep: ctrl.step, total: steps.length, presetId, state, ctrl })}
 
       {legend && <Legend items={legend} />}
 
