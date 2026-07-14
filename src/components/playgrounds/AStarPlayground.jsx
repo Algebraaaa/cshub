@@ -1,6 +1,4 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar, ToolbarBtn } from './shared'
+import PlaygroundShell from './PlaygroundShell'
 
 const CELL = 38
 const PAD = 12
@@ -72,99 +70,90 @@ function cellBorder(r, c, data) {
   return 'var(--border)'
 }
 
+const PRESET_LIST = Object.entries(PRESET_GRIDS).map(([id, p]) => ({ id, label: p.label, grid: p.grid, start: p.start, end: p.end }))
+
 export default function AStarPlayground({ algoFn }) {
-  const [preset, setPreset] = useState('maze1')
-  const { grid, start, end } = PRESET_GRIDS[preset]
-  const steps = useMemo(() => algoFn(grid, start, end), [algoFn, grid, start, end])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-
-  if (!current) return null
-
-  const rows = grid.length, cols = grid[0].length
-  const svgW = PAD * 2 + cols * CELL
-  const svgH = PAD * 2 + rows * CELL
-
   return (
-    <div>
-      <Toolbar>
-        {Object.entries(PRESET_GRIDS).map(([key, p]) => (
-          <ToolbarBtn key={key} active={preset === key} onClick={() => { setPreset(key); ctrl.reset() }}>
-            {p.label}
-          </ToolbarBtn>
-        ))}
-        <div style={{ flex: 1 }} />
+    <PlaygroundShell
+      presets={PRESET_LIST}
+      computeSteps={({ grid, start, end }) => algoFn(grid, start, end)}
+      toolbarRight={({ current }) => (
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          Open: {current.open.length} &nbsp; Closed: {current.closed.length}
+          Open: {current?.open.length} &nbsp; Closed: {current?.closed.length}
         </span>
-      </Toolbar>
+      )}
+      renderViz={({ current, presetId }) => {
+        const { grid } = PRESET_GRIDS[presetId]
+        const rows = grid.length, cols = grid[0].length
+        const svgW = PAD * 2 + cols * CELL
+        const svgH = PAD * 2 + rows * CELL
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: PAD }}>
-          <svg width={svgW} height={svgH} style={{ display: 'block' }}>
-            {Array.from({ length: rows }, (_, r) =>
-              Array.from({ length: cols }, (_, c) => {
-                const x = PAD + c * CELL, y = PAD + r * CELL
-                const bg = cellColor(r, c, current)
-                const bd = cellBorder(r, c, current)
-                const gv = current.g[r][c]
-                const fv = current.f[r][c]
-                const isWall = grid[r][c] === 1
-                const [sr, sc] = current.start, [er, ec] = current.end
-                const isStart = r === sr && c === sc, isEnd = r === er && c === ec
+        return (
+          <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: PAD }}>
+              <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+                {Array.from({ length: rows }, (_, r) =>
+                  Array.from({ length: cols }, (_, c) => {
+                    const x = PAD + c * CELL, y = PAD + r * CELL
+                    const bg = cellColor(r, c, current)
+                    const bd = cellBorder(r, c, current)
+                    const gv = current.g[r][c]
+                    const fv = current.f[r][c]
+                    const isWall = grid[r][c] === 1
+                    const [sr, sc] = current.start, [er, ec] = current.end
+                    const isStart = r === sr && c === sc, isEnd = r === er && c === ec
 
-                return (
-                  <g key={`${r}-${c}`}>
-                    <rect x={x} y={y} width={CELL - 1} height={CELL - 1}
-                      rx={3} fill={bg} stroke={bd} strokeWidth={bd !== 'var(--border)' ? 2 : 1} />
-                    {isStart && <text x={x + CELL/2} y={y + CELL/2} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={11} fontWeight={700}>S</text>}
-                    {isEnd && <text x={x + CELL/2} y={y + CELL/2} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={11} fontWeight={700}>E</text>}
-                    {!isWall && !isStart && !isEnd && gv !== Infinity && (
-                      <>
-                        <text x={x + 3} y={y + 10} fill="var(--text-tertiary)" fontSize={8}>g={gv}</text>
-                        <text x={x + 3} y={y + CELL - 3} fill="var(--text-tertiary)" fontSize={8}>f={fv}</text>
-                      </>
-                    )}
-                  </g>
-                )
-              })
-            )}
-          </svg>
-        </div>
-
-        <div style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 6 }}>图例</div>
-            {[
-              { color: '#10b981', label: '起点 S' },
-              { color: '#ef4444', label: '终点 E' },
-              { color: '#f59e0b', label: '当前节点' },
-              { color: 'rgba(139,92,246,0.2)', label: 'Open 集' },
-              { color: 'rgba(59,130,246,0.3)', label: 'Closed 集' },
-              { color: '#8b5cf6', label: '最短路径' },
-              { color: 'var(--surface-3)', label: '障碍物' },
-            ].map(({ color, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 2, background: color, display: 'inline-block', border: '1px solid var(--border)', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-          {current.current && (
-            <div style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-mono)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 4 }}>当前节点</div>
-              <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>({current.current.r}, {current.current.c})</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                g={current.g[current.current.r][current.current.c]} &nbsp;
-                f={current.f[current.current.r][current.current.c]}
-              </div>
+                    return (
+                      <g key={`${r}-${c}`}>
+                        <rect x={x} y={y} width={CELL - 1} height={CELL - 1}
+                          rx={3} fill={bg} stroke={bd} strokeWidth={bd !== 'var(--border)' ? 2 : 1} />
+                        {isStart && <text x={x + CELL/2} y={y + CELL/2} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={11} fontWeight={700}>S</text>}
+                        {isEnd && <text x={x + CELL/2} y={y + CELL/2} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={11} fontWeight={700}>E</text>}
+                        {!isWall && !isStart && !isEnd && gv !== Infinity && (
+                          <>
+                            <text x={x + 3} y={y + 10} fill="var(--text-tertiary)" fontSize={8}>g={gv}</text>
+                            <text x={x + 3} y={y + CELL - 3} fill="var(--text-tertiary)" fontSize={8}>f={fv}</text>
+                          </>
+                        )}
+                      </g>
+                    )
+                  })
+                )}
+              </svg>
             </div>
-          )}
-        </div>
-      </div>
 
-      <StepController total={steps.length} ctrl={ctrl}
-        description={current?.description} />
-    </div>
+            <div style={{ flex: 1, minWidth: 140, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 6 }}>图例</div>
+                {[
+                  { color: '#10b981', label: '起点 S' },
+                  { color: '#ef4444', label: '终点 E' },
+                  { color: '#f59e0b', label: '当前节点' },
+                  { color: 'rgba(139,92,246,0.2)', label: 'Open 集' },
+                  { color: 'rgba(59,130,246,0.3)', label: 'Closed 集' },
+                  { color: '#8b5cf6', label: '最短路径' },
+                  { color: 'var(--surface-3)', label: '障碍物' },
+                ].map(({ color, label }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <span style={{ width: 12, height: 12, borderRadius: 2, background: color, display: 'inline-block', border: '1px solid var(--border)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+              {current.current && (
+                <div style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 4 }}>当前节点</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>({current.current.r}, {current.current.c})</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    g={current.g[current.current.r][current.current.c]} &nbsp;
+                    f={current.f[current.current.r][current.current.c]}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }}
+    />
   )
 }
