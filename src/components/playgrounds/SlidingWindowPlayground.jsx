@@ -1,6 +1,5 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Legend } from './shared'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import { EndpointBox, MetricPill, MetricsBar, NetworkPanel, PhaseBadge, SceneTitle, TeachingNote } from './NetworkVizShared'
 
 const STATE_COLOR = {
@@ -29,24 +28,18 @@ const LEGEND = [
 ]
 
 export default function SlidingWindowPlayground({ algoFn }) {
-  const steps = useMemo(() => algoFn(), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+  const computeSteps = useCallback(() => algoFn(), [algoFn])
 
   return (
-    <div>
-      <NetworkPanel minHeight={520}>
-        <SWViz step={current} />
-      </NetworkPanel>
-
-      <Legend items={LEGEND} />
-
-      <StepController
-        total={steps.length}
-        ctrl={ctrl}
-        description={current?.description}
-      />
-    </div>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      legend={LEGEND}
+      renderViz={({ current }) => (
+        <NetworkPanel minHeight={520}>
+          <SWViz step={current} />
+        </NetworkPanel>
+      )}
+    />
   )
 }
 
