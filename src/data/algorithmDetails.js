@@ -22,6 +22,7 @@ const CATEGORY_GROUP = {
   dbQuery: 'db',
   compilerLex: 'compiler',
   compilerSyn: 'compiler',
+  compilerCode: 'compiler',
   itFundamental: 'it',
   itChannel: 'it',
   itMarkov: 'it',
