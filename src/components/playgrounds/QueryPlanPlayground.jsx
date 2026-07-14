@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar, ToolbarBtn } from './shared'
+import { useMemo } from 'react'
+import PlaygroundShell from './PlaygroundShell'
+import { ToolbarBtn } from './shared'
 
 const QUERIES = [
   { id: 'select', label: 'SELECT + Filter' },
@@ -183,11 +183,31 @@ function PlanNode({ node, x, y, nodeW, nodeH, isActive }) {
 }
 
 export default function QueryPlanPlayground({ algoFn }) {
-  const [queryId, setQueryId] = useState('select')
+  return (
+    <PlaygroundShell
+      initialState={{ queryId: 'select' }}
+      derivePayload={state => state.queryId}
+      computeSteps={queryId => algoFn(queryId)}
+      extraToolbar={({ state, setState, ctrl }) => (
+        <>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, marginRight: 4 }}>查询</span>
+          {QUERIES.map(q => (
+            <ToolbarBtn
+              key={q.id}
+              active={state.queryId === q.id}
+              onClick={() => { setState({ queryId: q.id }); ctrl.reset() }}
+            >
+              {q.label}
+            </ToolbarBtn>
+          ))}
+        </>
+      )}
+      renderViz={({ current }) => <QueryPlanViz current={current} />}
+    />
+  )
+}
 
-  const steps = useMemo(() => algoFn(queryId), [algoFn, queryId])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+function QueryPlanViz({ current }) {
   const { nodes = [], edges = [], activeNodeId, tupleFlow = [] } = current || {}
 
   // 计算布局（必须在 early return 前调用，保持 hook 调用顺序稳定）
@@ -205,20 +225,7 @@ export default function QueryPlanPlayground({ algoFn }) {
   const centerX = SVG_W / 2
 
   return (
-    <div>
-      <Toolbar>
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, marginRight: 4 }}>查询</span>
-        {QUERIES.map(q => (
-          <ToolbarBtn
-            key={q.id}
-            active={queryId === q.id}
-            onClick={() => { setQueryId(q.id); ctrl.reset() }}
-          >
-            {q.label}
-          </ToolbarBtn>
-        ))}
-      </Toolbar>
-
+    <>
       {/* SVG 树主区域 */}
       <div style={{
         background: 'var(--surface)',
@@ -364,12 +371,6 @@ export default function QueryPlanPlayground({ algoFn }) {
           ↑N = 已输出行数
         </span>
       </div>
-
-      <StepController
-        total={steps.length}
-        ctrl={ctrl}
-        description={current.description}
-      />
-    </div>
+    </>
   )
 }
