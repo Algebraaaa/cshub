@@ -1,5 +1,4 @@
 import PlaygroundShell from './PlaygroundShell'
-import { ToolbarBtn } from './shared'
 
 const PRESETS = [
   { id: 'arith',  label: 'a=(b+c)*d-2' },
