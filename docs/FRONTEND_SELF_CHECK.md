@@ -109,7 +109,7 @@
 ### 12. 文档 & 协作　🟡
 
 - **合格长什么样**：README 讲清怎么跑；架构/约定有记录且**不过期**；有贡献指南/变更记录（团队协作时）。
-- **当前状态**：🟡。有 README、CLAUDE.md、ARCHITECTURE.md（本轮修过一处文档漂移：把"48 个 playground"更新成实际的 86 个）。缺 CONTRIBUTING / CHANGELOG，但个人项目非必需。**注意**：AI 会读文档并当真，文档过期比没文档更坑。
+- **当前状态**：🟡。有 README、CLAUDE.md、`docs/ARCHITECTURE.md`（本轮修过一处文档漂移：把"48 个 playground"更新成实际的 86 个；另把散落根目录的 `ARCHITECTURE.md` 与三份历史集成报告归拢进 `docs/`，见 `docs/README.md` 索引）。缺 CHANGELOG，但个人项目非必需；CONTRIBUTING 已补齐。**注意**：AI 会读文档并当真，文档过期比没文档更坑。
 - **问 AI 的话术**：
   > "对照代码检查我的文档有没有过期/说谎的地方（数量、路径、已删的功能）？新人照 README 能不能一次跑起来？"
 

@@ -2,6 +2,12 @@
 
 This directory keeps long-form project documentation out of the repository root.
 
+## Architecture & Process
+
+- `ARCHITECTURE.md` - system architecture overview.
+- `OPTIMIZATION_ROADMAP.md` - performance/security optimization roadmap (P0/P1/P2).
+- `FRONTEND_SELF_CHECK.md` - 12-dimension self-check for non-expert vibe-coded frontends.
+
 ## Guides
 
 - `guides/CODE_HIGHLIGHTING_GUIDE.md` - code line highlighting usage and conventions.
@@ -18,6 +24,9 @@ This directory keeps long-form project documentation out of the repository root.
 
 ## Reports
 
+Point-in-time snapshots, not living docs — excluded from the doc-drift guard
+(`src/data/docConsistency.test.js`) by filename pattern.
+
 - `reports/CHANGES_SUMMARY.md`
 - `reports/CODE_CHANGES_LOG.md`
 - `reports/COMPLETION_SUMMARY.md`
@@ -25,3 +34,6 @@ This directory keeps long-form project documentation out of the repository root.
 - `reports/FINAL_IMPLEMENTATION_SUMMARY.md`
 - `reports/SIDEBAR_COMPLETION_SUMMARY.md`
 - `reports/SIDE_BY_SIDE_IMPLEMENTATION.md`
+- `reports/ALGORITHM_INTEGRATION_REPORT.md`
+- `reports/INFORMATION_THEORY_INTEGRATION_REPORT.md`
+- `reports/ML_OPTIMIZATION_INTEGRATION_REPORT.md`
