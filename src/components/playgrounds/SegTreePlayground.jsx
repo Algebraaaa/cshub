@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import { useMemo } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Toolbar, ToolbarBtn, TextInput } from './shared'
+import { ToolbarBtn, TextInput } from './shared'
 
 const PRESETS = {
   small: {
@@ -61,31 +61,57 @@ function getEdges(node, start, end, n) {
 }
 
 export default function SegTreePlayground({ algoFn }) {
-  const [preset, setPreset] = useState('small')
-  const [customArr, setCustomArr] = useState(null)
-  const [inputText, setInputText] = useState('')
-  const { arr: presetArr, ops } = PRESETS[preset]
-  const arr = customArr ?? presetArr
+  return (
+    <PlaygroundShell
+      initialState={{ preset: 'small', customArr: null, inputText: '' }}
+      derivePayload={state => ({
+        arr: state.customArr ?? PRESETS[state.preset].arr,
+        ops: PRESETS[state.preset].ops,
+      })}
+      computeSteps={({ arr, ops }) => algoFn(arr, ops)}
+      extraToolbar={({ state, setState, ctrl }) => (
+        <>
+          {Object.entries(PRESETS).map(([key, p]) => (
+            <ToolbarBtn key={key} active={state.preset === key} onClick={() => { setState(s => ({ ...s, preset: key, customArr: null })); ctrl.reset() }}>
+              {p.label}
+            </ToolbarBtn>
+          ))}
+        </>
+      )}
+      toolbarRight={({ current }) => (
+        current?.result != null
+          ? <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)' }}>结果: {current.result}</span>
+          : null
+      )}
+      deriveCustomInput={({ state, setState, ctrl }) => {
+        function applyCustomArr() {
+          const parsed = state.inputText.split(/[\s,]+/).map(Number).filter(n => !isNaN(n))
+          if (parsed.length >= 2 && parsed.length <= 16) {
+            setState(s => ({ ...s, customArr: parsed }))
+            ctrl.reset()
+          }
+        }
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>自定义数组</span>
+            <TextInput value={state.inputText} onChange={v => setState(s => ({ ...s, inputText: v }))}
+              placeholder="例：2 4 6 8 10 12 14 16"
+              onSubmit={applyCustomArr} submitLabel="应用" />
+            <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>2–16 个整数</span>
+          </div>
+        )
+      }}
+      renderViz={({ current }) => <SegTreeViz current={current} />}
+    />
+  )
+}
 
-  const steps = useMemo(() => algoFn(arr, ops), [algoFn, arr, ops])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-
-  function applyCustomArr() {
-    const parsed = inputText.split(/[\s,]+/).map(Number).filter(n => !isNaN(n))
-    if (parsed.length >= 2 && parsed.length <= 16) {
-      setCustomArr(parsed)
-      ctrl.reset()
-    }
-  }
-
-  const n = arr.length
+function SegTreeViz({ current }) {
+  const n = current.arr.length
   const positions = useMemo(() => treePosFor(n), [n])
   const edges = useMemo(() => getEdges(1, 0, n - 1, n), [n])
 
-  if (!current) return null
-
-  const { tree, highlighted, queryRange, updateIdx, action, result } = current
+  const { tree, highlighted, queryRange, updateIdx, action } = current
   const hiSet = new Set(highlighted)
 
   const maxX = Math.max(...Object.values(positions).map(p => p.x)) + NODE_R + 10
@@ -102,21 +128,7 @@ export default function SegTreePlayground({ algoFn }) {
   }
 
   return (
-    <div>
-      <Toolbar>
-        {Object.entries(PRESETS).map(([key, p]) => (
-          <ToolbarBtn key={key} active={preset === key} onClick={() => { setPreset(key); setCustomArr(null); ctrl.reset() }}>
-            {p.label}
-          </ToolbarBtn>
-        ))}
-        <div style={{ flex: 1 }} />
-        {result !== null && (
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)' }}>
-            结果: {result}
-          </span>
-        )}
-      </Toolbar>
-
+    <>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         {/* Array display */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
@@ -198,20 +210,6 @@ export default function SegTreePlayground({ algoFn }) {
           })}
         </svg>
       </VizCard>
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description}
-        customInput={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>自定义数组</span>
-            <TextInput value={inputText} onChange={setInputText}
-              placeholder="例：2 4 6 8 10 12 14 16"
-              onSubmit={applyCustomArr} submitLabel="应用" />
-            <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>2–16 个整数</span>
-          </div>
-        } />
-    </div>
+    </>
   )
 }

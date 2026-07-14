@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Legend } from './shared'
 
 const STAGE_COLOR = {
   IF:    '#3b82f6',
@@ -22,23 +21,18 @@ const LEGEND = [
 ]
 
 export default function PipelinePlayground({ algoFn }) {
-  const steps = useMemo(() => algoFn(), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+  const computeSteps = useCallback(() => algoFn(), [algoFn])
 
   return (
-    <div>
-      <VizCard borderRadius={10} padding="24px 20px" minHeight={360} noInner>
-        <PipelineViz step={current} />
-      </VizCard>
-
-      <Legend items={LEGEND} />
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      legend={LEGEND}
+      renderViz={({ current }) => (
+        <VizCard borderRadius={10} padding="24px 20px" minHeight={360} noInner>
+          <PipelineViz step={current} />
+        </VizCard>
+      )}
+    />
   )
 }
 

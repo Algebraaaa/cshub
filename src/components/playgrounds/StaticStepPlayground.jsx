@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Legend } from './shared'
 
 export default function StaticStepPlayground({
   algoFn,
@@ -10,28 +9,25 @@ export default function StaticStepPlayground({
   frameStyle,
   renderViz,
 }) {
-  const steps = useMemo(() => algoFn(), [algoFn])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
+  // algoFn 本身不吃 payload(无 preset/initialState 场景);包一层丢弃 Shell 传入的
+  // payload,保持与旧版 useMemo(() => algoFn(), [algoFn]) 完全一致的记忆化语义。
+  const computeSteps = useCallback(() => algoFn(), [algoFn])
 
   return (
-    <div>
-      <VizCard
-        borderRadius={10}
-        padding="24px 20px"
-        minHeight={minHeight}
-        noInner
-        style={frameStyle}
-      >
-        {renderViz({ current, steps, stepIndex: ctrl.step })}
-      </VizCard>
-
-      {legend && <Legend items={legend} />}
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      legend={legend}
+      renderViz={({ current, steps, currentStep }) => (
+        <VizCard
+          borderRadius={10}
+          padding="24px 20px"
+          minHeight={minHeight}
+          noInner
+          style={frameStyle}
+        >
+          {renderViz({ current, steps, stepIndex: currentStep })}
+        </VizCard>
+      )}
+    />
   )
 }

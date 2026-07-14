@@ -1,6 +1,5 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar } from './shared'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 
 const TERMINALS = ['id', '+', '$']
 const GOTO_COLS = ['E', 'T']
@@ -84,31 +83,32 @@ function TableView({ table, highlight }) {
 }
 
 export default function LR0Playground({ algoFn }) {
-  const steps = useMemo(() => {
+  const computeSteps = useCallback(() => {
     try { return algoFn() } catch (e) {
       return [{ phase: 'items', items: [], transitions: [], table: {}, description: `错误：${e.message}` }]
     }
   }, [algoFn])
 
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-  if (!current) return null
-
-  const { phase, items, transitions, table, stack, input, action, highlight } = current
-  const pc = phaseColor(phase)
-
   return (
-    <div>
-      <Toolbar>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      extraToolbar={
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           S'→E &nbsp;|&nbsp; E→E+T &nbsp;|&nbsp; E→T &nbsp;|&nbsp; T→id
         </span>
-        <div style={{ flex: 1 }} />
-        <span style={{ padding: '3px 10px', borderRadius: 20, background: pc + '22', border: `1px solid ${pc}55`, color: pc, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-          {phaseLabel(phase)}
-        </span>
-      </Toolbar>
-
+      }
+      toolbarRight={({ current }) => {
+        const pc = phaseColor(current?.phase)
+        return (
+          <span style={{ padding: '3px 10px', borderRadius: 20, background: pc + '22', border: `1px solid ${pc}55`, color: pc, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+            {phaseLabel(current?.phase)}
+          </span>
+        )
+      }}
+      renderViz={({ current }) => {
+        const { phase, items, transitions, table, stack, input, action, highlight } = current
+        return (
+          <>
       {phase === 'items' && <ItemsView items={items} transitions={transitions} highlight={highlight} />}
 
       {phase === 'table' && (
@@ -166,10 +166,9 @@ export default function LR0Playground({ algoFn }) {
           </div>
         </div>
       )}
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing} speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current.description} />
-    </div>
+          </>
+        )
+      }}
+    />
   )
 }

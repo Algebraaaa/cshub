@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar, ToolbarBtn } from './shared'
+import PlaygroundShell from './PlaygroundShell'
+import { ToolbarBtn } from './shared'
 
 const SCENARIOS = [
   { id: 'snapshot',       label: '快照隔离' },
@@ -35,47 +34,46 @@ function opColor(op) {
 }
 
 export default function MvccPlayground({ algoFn }) {
-  const [scenario, setScenario] = useState('snapshot')
-
-  const steps = useMemo(() => algoFn(scenario), [algoFn, scenario])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-  if (!current) return null
-
-  const { versions, txns, log, activeTxn, highlight, phase } = current
-
-  // 按 rowId 分组版本
-  const rowIds = [...new Set(versions.map(v => v.rowId))]
-
   return (
-    <div>
-      <Toolbar>
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, marginRight: 4 }}>场景</span>
-        {SCENARIOS.map(s => (
-          <ToolbarBtn
-            key={s.id}
-            active={scenario === s.id}
-            onClick={() => { setScenario(s.id); ctrl.reset() }}
-          >
-            {s.label}
-          </ToolbarBtn>
-        ))}
-        <div style={{ flex: 1 }} />
-        {phase && (
-          <span style={{
-            fontSize: 11,
-            color: 'var(--text-tertiary)',
-            fontFamily: 'var(--font-mono)',
-            padding: '3px 8px',
-            borderRadius: 6,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-          }}>
-            {phase}
-          </span>
-        )}
-      </Toolbar>
-
+    <PlaygroundShell
+      initialState={{ scenario: 'snapshot' }}
+      derivePayload={state => state.scenario}
+      computeSteps={scenario => algoFn(scenario)}
+      extraToolbar={({ state, setState, ctrl }) => (
+        <>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, marginRight: 4 }}>场景</span>
+          {SCENARIOS.map(s => (
+            <ToolbarBtn
+              key={s.id}
+              active={state.scenario === s.id}
+              onClick={() => { setState({ scenario: s.id }); ctrl.reset() }}
+            >
+              {s.label}
+            </ToolbarBtn>
+          ))}
+        </>
+      )}
+      toolbarRight={({ current }) => (
+        current?.phase
+          ? <span style={{
+              fontSize: 11,
+              color: 'var(--text-tertiary)',
+              fontFamily: 'var(--font-mono)',
+              padding: '3px 8px',
+              borderRadius: 6,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+            }}>
+              {current.phase}
+            </span>
+          : null
+      )}
+      renderViz={({ current }) => {
+        const { versions, txns, log, activeTxn, highlight } = current
+        // 按 rowId 分组版本
+        const rowIds = [...new Set(versions.map(v => v.rowId))]
+        return (
+          <>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         {/* 左列：版本链 */}
         <div style={{
@@ -287,21 +285,9 @@ export default function MvccPlayground({ algoFn }) {
           ))}
         </ol>
       </div>
-
-      <StepController
-        total={steps.length}
-        step={ctrl.step}
-        playing={ctrl.playing}
-        speed={ctrl.speed}
-        setSpeed={ctrl.setSpeed}
-        play={ctrl.play}
-        stop={ctrl.stop}
-        prev={ctrl.prev}
-        goNext={ctrl.goNext}
-        reset={ctrl.reset}
-        seek={ctrl.seek}
-        description={current.description}
-      />
-    </div>
+          </>
+        )
+      }}
+    />
   )
 }

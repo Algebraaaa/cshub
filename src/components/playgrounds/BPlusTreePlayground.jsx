@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Toolbar, ToolbarBtn } from './shared'
+import { ToolbarBtn } from './shared'
 
 const PRESETS = {
   basic:    { label: '基础插入', m: 4, values: [10, 20, 5, 15, 25, 30, 1, 35, 12] },
@@ -43,108 +42,104 @@ function placeNodes(layout, x, y, out) {
   }
 }
 
+function derivePayload(state) {
+  if (state.customInput.trim()) {
+    const arr = state.customInput.split(/[\s,，]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n)).slice(0, 16)
+    if (arr.length > 0) return { m: PRESETS[state.preset].m, values: arr }
+  }
+  return PRESETS[state.preset]
+}
+
 export default function BPlusTreePlayground({ algoFn }) {
-  const [preset, setPreset] = useState('basic')
-  const [customInput, setCustomInput] = useState('')
-
-  const { m, values } = useMemo(() => {
-    if (customInput.trim()) {
-      const arr = customInput.split(/[\s,，]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n)).slice(0, 16)
-      if (arr.length > 0) return { m: PRESETS[preset].m, values: arr }
-    }
-    return PRESETS[preset]
-  }, [preset, customInput])
-
-  const steps = useMemo(() => algoFn(m, values), [algoFn, m, values])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-  if (!current) return null
-
-  const { tree, focusId, action, key, splitFrom } = current
-  const { width, layout } = tree ? layoutTree(tree) : { width: 400, layout: null }
-  const placed = []
-  if (layout) placeNodes(layout, 20, 20, placed)
-  const svgW = Math.max(width + 40, 480)
-  const svgH = placed.length > 0 ? Math.max(...placed.map(p => p.cy)) + NODE_H + 20 : 200
-
-  const actionColor = {
-    init: '#64748b',
-    descend: '#3b82f6',
-    insert: '#10b981',
-    split: '#ef4444',
-    promote: '#f59e0b',
-    newroot: '#a855f7',
-    skip: '#94a3b8',
-    done: '#22c55e',
-  }[action] || '#a855f7'
-
   return (
-    <div>
-      <Toolbar>
-        {Object.entries(PRESETS).map(([key, p]) => (
-          <ToolbarBtn key={key} active={preset === key && !customInput.trim()}
-            onClick={() => { setPreset(key); setCustomInput(''); ctrl.reset() }}>
-            {p.label}
-          </ToolbarBtn>
-        ))}
-        <div style={{ flex: 1 }} />
-        <input value={customInput} onChange={e => { setCustomInput(e.target.value); ctrl.reset() }}
-          placeholder="自定义数列：10 20 5 15"
-          style={{
-            padding: '5px 10px', fontSize: 12, borderRadius: 6,
-            background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)',
-            width: 220,
-          }} />
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-          m={m} · max keys={m - 1}
-        </span>
-      </Toolbar>
-
-      <VizCard borderRadius={10} padding={0} noInner>
-        <svg width={svgW} height={svgH} style={{ display: 'block' }}>
-          {/* 边 */}
-          {layout && drawEdges(layout, 20, 20).map((edge, i) => (
-            <line key={i} x1={edge.x1} y1={edge.y1 + NODE_H} x2={edge.x2} y2={edge.y2}
-              stroke="var(--border-strong)" strokeWidth="1.5" />
+    <PlaygroundShell
+      initialState={{ preset: 'basic', customInput: '' }}
+      derivePayload={derivePayload}
+      computeSteps={({ m, values }) => algoFn(m, values)}
+      extraToolbar={({ state, setState, ctrl }) => (
+        <>
+          {Object.entries(PRESETS).map(([key, p]) => (
+            <ToolbarBtn key={key} active={state.preset === key && !state.customInput.trim()}
+              onClick={() => { setState(s => ({ ...s, preset: key, customInput: '' })); ctrl.reset() }}>
+              {p.label}
+            </ToolbarBtn>
           ))}
-          {placed.map(({ node, cx, cy }) => {
-            const w = node.keys.length * KEY_W + 12
-            const isFocus = node.id === focusId
-            const isSplit = node.id === splitFrom
-            const stroke = isFocus ? actionColor : isSplit ? '#ef4444' : 'var(--border-strong)'
-            const fill = isFocus ? `${actionColor}22` : isSplit ? '#ef444422' : node.isLeaf ? 'rgba(56,189,248,0.08)' : 'rgba(168,85,247,0.08)'
-            return (
-              <g key={node.id} style={{ transition: 'all 0.3s' }}>
-                <rect x={cx - w / 2} y={cy} width={w} height={NODE_H} rx={6}
-                  fill={fill} stroke={stroke} strokeWidth={isFocus || isSplit ? 2 : 1.5} />
-                {node.keys.map((k, i) => (
-                  <g key={i}>
-                    {i > 0 && (
-                      <line x1={cx - w / 2 + 6 + i * KEY_W} y1={cy + 4} x2={cx - w / 2 + 6 + i * KEY_W} y2={cy + NODE_H - 4}
-                        stroke="var(--border)" strokeWidth="0.8" />
-                    )}
-                    <text x={cx - w / 2 + 6 + i * KEY_W + KEY_W / 2} y={cy + NODE_H / 2 + 4.5}
-                      textAnchor="middle" fontSize="12.5" fontWeight={k === key ? 800 : 600}
-                      fill={k === key ? actionColor : 'var(--text-primary)'}
-                      fontFamily="var(--font-mono)">
-                      {k}
-                    </text>
-                  </g>
-                ))}
-                {node.isLeaf && (
-                  <text x={cx - w / 2 - 4} y={cy + NODE_H / 2 + 3} textAnchor="end" fontSize="9" fill="var(--text-tertiary)" fontWeight={700}>L</text>
-                )}
-              </g>
-            )
-          })}
-        </svg>
-      </VizCard>
+          <input value={state.customInput} onChange={e => { setState(s => ({ ...s, customInput: e.target.value })); ctrl.reset() }}
+            placeholder="自定义数列：10 20 5 15"
+            style={{
+              padding: '5px 10px', fontSize: 12, borderRadius: 6,
+              background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)',
+              width: 220,
+            }} />
+        </>
+      )}
+      toolbarRight={({ state }) => (
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+          m={PRESETS[state.preset].m} · max keys={PRESETS[state.preset].m - 1}
+        </span>
+      )}
+      renderViz={({ current }) => {
+        const { tree, focusId, action, key, splitFrom } = current
+        const { width, layout } = tree ? layoutTree(tree) : { width: 400, layout: null }
+        const placed = []
+        if (layout) placeNodes(layout, 20, 20, placed)
+        const svgW = Math.max(width + 40, 480)
+        const svgH = placed.length > 0 ? Math.max(...placed.map(p => p.cy)) + NODE_H + 20 : 200
 
-      <StepController total={steps.length}
-        step={ctrl.step} playing={ctrl.playing} speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current.description} />
-    </div>
+        const actionColor = {
+          init: '#64748b',
+          descend: '#3b82f6',
+          insert: '#10b981',
+          split: '#ef4444',
+          promote: '#f59e0b',
+          newroot: '#a855f7',
+          skip: '#94a3b8',
+          done: '#22c55e',
+        }[action] || '#a855f7'
+
+        return (
+          <VizCard borderRadius={10} padding={0} noInner>
+            <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+              {/* 边 */}
+              {layout && drawEdges(layout, 20, 20).map((edge, i) => (
+                <line key={i} x1={edge.x1} y1={edge.y1 + NODE_H} x2={edge.x2} y2={edge.y2}
+                  stroke="var(--border-strong)" strokeWidth="1.5" />
+              ))}
+              {placed.map(({ node, cx, cy }) => {
+                const w = node.keys.length * KEY_W + 12
+                const isFocus = node.id === focusId
+                const isSplit = node.id === splitFrom
+                const stroke = isFocus ? actionColor : isSplit ? '#ef4444' : 'var(--border-strong)'
+                const fill = isFocus ? `${actionColor}22` : isSplit ? '#ef444422' : node.isLeaf ? 'rgba(56,189,248,0.08)' : 'rgba(168,85,247,0.08)'
+                return (
+                  <g key={node.id} style={{ transition: 'all 0.3s' }}>
+                    <rect x={cx - w / 2} y={cy} width={w} height={NODE_H} rx={6}
+                      fill={fill} stroke={stroke} strokeWidth={isFocus || isSplit ? 2 : 1.5} />
+                    {node.keys.map((k, i) => (
+                      <g key={i}>
+                        {i > 0 && (
+                          <line x1={cx - w / 2 + 6 + i * KEY_W} y1={cy + 4} x2={cx - w / 2 + 6 + i * KEY_W} y2={cy + NODE_H - 4}
+                            stroke="var(--border)" strokeWidth="0.8" />
+                        )}
+                        <text x={cx - w / 2 + 6 + i * KEY_W + KEY_W / 2} y={cy + NODE_H / 2 + 4.5}
+                          textAnchor="middle" fontSize="12.5" fontWeight={k === key ? 800 : 600}
+                          fill={k === key ? actionColor : 'var(--text-primary)'}
+                          fontFamily="var(--font-mono)">
+                          {k}
+                        </text>
+                      </g>
+                    ))}
+                    {node.isLeaf && (
+                      <text x={cx - w / 2 - 4} y={cy + NODE_H / 2 + 3} textAnchor="end" fontSize="9" fill="var(--text-tertiary)" fontWeight={700}>L</text>
+                    )}
+                  </g>
+                )
+              })}
+            </svg>
+          </VizCard>
+        )
+      }}
+    />
   )
 }
 

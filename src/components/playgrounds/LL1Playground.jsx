@@ -1,6 +1,5 @@
-import { useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
-import { Toolbar } from './shared'
+import { useCallback } from 'react'
+import PlaygroundShell from './PlaygroundShell'
 
 const NON_TERMINALS = ['E', "E'", 'T', "T'", 'F']
 const TERMINALS = ['+', '*', '(', ')', 'id', '$']
@@ -21,31 +20,32 @@ function phaseLabel(p) { return { first: 'FIRST 集计算', follow: 'FOLLOW 集�
 function phaseColor(p) { return { first: '#3b82f6', follow: '#a855f7', table: '#eab308', parse: '#22c55e' }[p] || 'var(--accent)' }
 
 export default function LL1Playground({ algoFn }) {
-  const steps = useMemo(() => {
+  const computeSteps = useCallback(() => {
     try { return algoFn() } catch (e) {
       return [{ phase: 'first', firstSets: {}, followSets: {}, table: {}, description: `错误：${e.message}` }]
     }
   }, [algoFn])
 
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-  if (!current) return null
-
-  const { phase, firstSets, followSets, table, highlightNT, highlightCell, stack, input, action, highlight } = current
-  const pc = phaseColor(phase)
-
   return (
-    <div>
-      <Toolbar>
+    <PlaygroundShell
+      computeSteps={computeSteps}
+      extraToolbar={
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           E→TE' | E'→+TE'|ε | T→FT' | T'→*FT'|ε | F→(E)|id
         </span>
-        <div style={{ flex: 1 }} />
-        <span style={{ padding: '3px 10px', borderRadius: 20, background: pc + '22', border: `1px solid ${pc}55`, color: pc, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-          {phaseLabel(phase)}
-        </span>
-      </Toolbar>
-
+      }
+      toolbarRight={({ current }) => {
+        const pc = phaseColor(current?.phase)
+        return (
+          <span style={{ padding: '3px 10px', borderRadius: 20, background: pc + '22', border: `1px solid ${pc}55`, color: pc, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+            {phaseLabel(current?.phase)}
+          </span>
+        )
+      }}
+      renderViz={({ current }) => {
+        const { phase, firstSets, followSets, table, highlightNT, highlightCell, stack, input, action, highlight } = current
+        return (
+          <>
       {(phase === 'first' || phase === 'follow') && (
         <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 12, marginBottom: 12 }}>
           <div style={cardS}>
@@ -178,10 +178,9 @@ export default function LL1Playground({ algoFn }) {
           </div>
         </div>
       )}
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing} speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current.description} />
-    </div>
+          </>
+        )
+      }}
+    />
   )
 }

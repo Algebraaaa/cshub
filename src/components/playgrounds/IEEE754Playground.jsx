@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react'
-import StepController, { useStepController } from '../StepController'
+import PlaygroundShell from './PlaygroundShell'
 import VizCard from './VizCard'
-import { Toolbar, ToolbarBtn, TextInput, Legend } from './shared'
+import { TextInput } from './shared'
 
 const LEGEND = [
   { color: '#ef4444', label: '符号位 sign (1 bit)' },
@@ -21,50 +20,40 @@ const PRESETS = [
 ]
 
 export default function IEEE754Playground({ algoFn }) {
-  const [value, setValue] = useState(13.625)
-  const [text, setText] = useState('13.625')
-
-  const steps = useMemo(() => algoFn({ value }), [algoFn, value])
-  const ctrl = useStepController(steps)
-  const current = steps[ctrl.step]
-
-  function apply() {
-    const v = text.toLowerCase().trim()
-    const parsed = v === 'inf' || v === '+inf' || v === 'infinity'
-      ? Infinity
-      : v === '-inf' || v === '-infinity'
-        ? -Infinity
-        : v === 'nan'
-          ? NaN
-          : Number(text)
-    setValue(parsed)
-    ctrl.reset()
-  }
-
   return (
-    <div>
-      <Toolbar>
-        {PRESETS.map(p => (
-          <ToolbarBtn key={p.label} onClick={() => { setValue(p.value); setText(String(p.value)); ctrl.reset() }}>
-            {p.label}
-          </ToolbarBtn>
-        ))}
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 12.5, color: 'var(--text-tertiary)' }}>自定义</span>
-        <TextInput value={text} onChange={setText} placeholder="13.625" onSubmit={apply} width={140} />
-      </Toolbar>
-
-      <VizCard borderRadius={10} padding="24px 20px" minHeight={320} noInner>
-        <IEEE754Viz step={current} />
-      </VizCard>
-
-      <Legend items={LEGEND} />
-
-      <StepController total={steps.length} step={ctrl.step} playing={ctrl.playing}
-        speed={ctrl.speed} setSpeed={ctrl.setSpeed}
-        play={ctrl.play} stop={ctrl.stop} prev={ctrl.prev} goNext={ctrl.goNext} reset={ctrl.reset} seek={ctrl.seek}
-        description={current?.description} />
-    </div>
+    <PlaygroundShell
+      initialState={{ value: 13.625, text: '13.625' }}
+      presets={PRESETS.map(p => ({ id: p.label, label: p.label, state: { value: p.value, text: String(p.value) } }))}
+      derivePayload={state => ({ value: state.value })}
+      computeSteps={({ value }) => algoFn({ value })}
+      legend={LEGEND}
+      extraToolbar={({ state, setState, ctrl }) => {
+        function apply() {
+          const v = state.text.toLowerCase().trim()
+          const parsed = v === 'inf' || v === '+inf' || v === 'infinity'
+            ? Infinity
+            : v === '-inf' || v === '-infinity'
+              ? -Infinity
+              : v === 'nan'
+                ? NaN
+                : Number(state.text)
+          setState(s => ({ ...s, value: parsed }))
+          ctrl.reset()
+        }
+        return (
+          <>
+            <span style={{ fontSize: 12.5, color: 'var(--text-tertiary)' }}>自定义</span>
+            <TextInput value={state.text} onChange={v => setState(s => ({ ...s, text: v }))}
+              placeholder="13.625" onSubmit={apply} width={140} />
+          </>
+        )
+      }}
+      renderViz={({ current }) => (
+        <VizCard borderRadius={10} padding="24px 20px" minHeight={320} noInner>
+          <IEEE754Viz step={current} />
+        </VizCard>
+      )}
+    />
   )
 }
 
