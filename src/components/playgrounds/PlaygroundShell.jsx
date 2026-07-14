@@ -46,6 +46,7 @@ export default function PlaygroundShell({
   legend,
   children,
   deriveDescription,
+  deriveCustomInput,
 }) {
   const stateful = initialState !== undefined
   const [state, setState] = useState(initialState)
@@ -140,7 +141,8 @@ export default function PlaygroundShell({
 
       <StepController total={steps.length}
         ctrl={ctrl}
-        description={deriveDescription ? deriveDescription({ current, state, ctrl }) : current.description} />
+        description={deriveDescription ? deriveDescription({ current, state, ctrl }) : current.description}
+        customInput={deriveCustomInput ? deriveCustomInput({ current, state, setState, ctrl }) : undefined} />
     </div>
   )
 }
