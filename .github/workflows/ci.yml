@@ -57,7 +57,7 @@ jobs:
           cache: npm
 
       - name: Align npm version
-        run: npm install -g npm@11
+        run: npm install -g npm@11.6.2
 
       - name: Install
         run: npm ci
