@@ -45,6 +45,7 @@ export default function PlaygroundShell({
   extraToolbar,
   legend,
   children,
+  deriveDescription,
 }) {
   const stateful = initialState !== undefined
   const [state, setState] = useState(initialState)
@@ -135,7 +136,7 @@ export default function PlaygroundShell({
 
       <StepController total={steps.length}
         ctrl={ctrl}
-        description={current.description} />
+        description={deriveDescription ? deriveDescription({ current, state, ctrl }) : current.description} />
     </div>
   )
 }
