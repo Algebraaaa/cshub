@@ -19,6 +19,17 @@ jobs:
           node-version: 22
           cache: npm
 
+      # 不同 npm 版本——甚至 11.x 内部不同小版本——对 optionalDependencies
+      # 树里 wasm32-wasi 可选原生绑定(@rolldown/binding-wasm32-wasi 等，
+      # linux-x64/win32 环境下从不会被实际安装)的物理布局(hoist/嵌套路径)
+      # 算法不同，导致同一份 lockfile 在生成它的 npm 版本下自洽，换一个
+      # 版本跑 `npm ci` 会报 "Missing ... from lock file"。已用本地精确
+      # npm 11.6.2 生成 lockfile 并交叉验证：npm 10 / npm 11(其他小版本)
+      # 复现失败，唯有同一精确版本通过——因此固定到与本地完全一致的版本，
+      # 而非宽泛的 npm@11(仍会拿到不同小版本、同样报错)。
+      - name: Align npm version
+        run: npm install -g npm@11.6.2
+
       - name: Install
         run: npm ci
 
@@ -44,6 +55,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - name: Align npm version
+        run: npm install -g npm@11
 
       - name: Install
         run: npm ci

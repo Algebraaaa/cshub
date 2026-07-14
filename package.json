@@ -50,5 +50,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "@emnapi/core": "1.11.1",
+    "@emnapi/runtime": "1.11.1"
   }
 }
