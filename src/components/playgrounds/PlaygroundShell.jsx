@@ -3,6 +3,7 @@ import StepController, { useStepController } from '../StepController'
 import { Toolbar, ToolbarBtn, Legend } from './shared'
 import { useIsPhone } from '../../hooks/useMediaQuery'
 import { useAIPlaygroundTelemetry } from '../ai-playgrounds/AIPlaygroundTelemetryContext'
+import LiquidSelection from '../glass/LiquidSelection'
 
 // ─────────────────────────────────────────────────────────────
 // PlaygroundShell · 模板方法（Template Method）
@@ -109,11 +110,23 @@ export default function PlaygroundShell({
     <div>
       {(presets.length > 0 || renderedExtraToolbar || renderedToolbarRight) && (
         <Toolbar>
-          {presets.map(p => (
-            <ToolbarBtn key={p.id} active={p.id === presetId} onClick={() => selectPreset(p)}>
-              {p.label}
-            </ToolbarBtn>
-          ))}
+          {presets.length > 0 && (
+            <div className="playground-preset-track relative isolate flex max-w-full items-center gap-1.5 overflow-x-auto py-0.5" style={{ scrollbarWidth: 'none', '--liquid-tint': 'var(--accent)' }}>
+              <LiquidSelection
+                value={presetId}
+                radius={12}
+                onSelect={id => {
+                  const preset = presets.find(p => p.id === id)
+                  if (preset) selectPreset(preset)
+                }}
+              />
+              {presets.map(p => (
+                <ToolbarBtn key={p.id} liquidValue={p.id} active={p.id === presetId} onClick={() => selectPreset(p)}>
+                  {p.label}
+                </ToolbarBtn>
+              ))}
+            </div>
+          )}
           {renderedExtraToolbar && (
             <div style={{
               display: 'flex',

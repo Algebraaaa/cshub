@@ -174,7 +174,6 @@ function ComparePanel({ algo, side }) {
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         <Tag>{CATEGORIES[algo.category]?.name || algo.category}</Tag>
-        <Tag>{algo.difficulty}</Tag>
         {algo.stable !== undefined && <Tag>{algo.stable ? '稳定' : '不稳定'}</Tag>}
         {algo.inPlace !== undefined && <Tag>{algo.inPlace ? '原地' : '非原地'}</Tag>}
       </div>

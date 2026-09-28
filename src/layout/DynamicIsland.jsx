@@ -172,6 +172,12 @@ function pickIslandTheme(pathname, tintRgb) {
   return base
 }
 
+// Keep the selection lens aligned with the page's existing island palette.
+export function getNavigationTint(pathname) {
+  const tint = pickTint(pathname)
+  return pickIslandTheme(pathname, hexToRgb(tint)).vars['--topbar-active'] || tint
+}
+
 export default function DynamicIsland({ children }) {
   const { pathname } = useLocation()
   const autoHidden = useTopBarVisibility()

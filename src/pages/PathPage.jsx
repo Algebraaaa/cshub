@@ -115,7 +115,7 @@ export default function PathPage() {
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{algo.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{algo.nameEn} · {algo.difficulty}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{algo.nameEn}</div>
                 </div>
                 <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
                   {algo.timeComplexity?.average || ''}

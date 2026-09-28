@@ -1,23 +1,22 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useViewport } from '../hooks/useMediaQuery'
 import { usePreloadHandlers } from '../hooks/useRoutePreload'
-import DynamicIsland, { IslandDivider } from './DynamicIsland'
+import DynamicIsland, { IslandDivider, getNavigationTint } from './DynamicIsland'
 import { NAV_ITEMS } from './navItems'
+import LiquidSelection, { LiquidGlassSurface } from '../components/glass/LiquidSelection'
 
 const SearchPalette = lazy(() => import('../components/SearchPalette'))
-const NAV_INDICATOR_WIDTH = 42
 
 export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpen = false }) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const viewport = useViewport()
   const isPhone = viewport === 'phone'
   const [searchOpen, setSearchOpen] = useState(false)
-  const navRef = useRef(null)
   const activeNavId = NAV_ITEMS.find(item => item.match(pathname))?.id
-  const [navIndicator, setNavIndicator] = useState({ left: 0, ready: false })
 
   useEffect(() => {
     const onKey = (e) => {
@@ -33,50 +32,6 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-
-  useLayoutEffect(() => {
-    const nav = navRef.current
-    if (!nav || !activeNavId) {
-      setNavIndicator(prev => ({ ...prev, ready: false }))
-      return undefined
-    }
-
-    let frame = 0
-    let resizeObserver = null
-
-    const updateIndicator = () => {
-      const activeLink = nav.querySelector(`[data-nav-id="${activeNavId}"]`)
-      if (!activeLink) return
-
-      const navRect = nav.getBoundingClientRect()
-      const linkRect = activeLink.getBoundingClientRect()
-      // Math.round 必要：translate3d 拿到小数 px（如 294.75）会触发亚像素抗锯齿，
-      // 3px 高的渐变条 + 12px 模糊投影在分像素位置上会把颜色不均地分到上下两行像素，
-      // 视觉上呈现为"线条歪斜"。整数位移可消除此错觉。
-      const rawLeft = linkRect.left - navRect.left + (linkRect.width - NAV_INDICATOR_WIDTH) / 2
-      setNavIndicator({
-        left: Math.round(rawLeft),
-        ready: true,
-      })
-    }
-
-    updateIndicator()
-    frame = window.requestAnimationFrame(updateIndicator)
-
-    if ('ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(updateIndicator)
-      resizeObserver.observe(nav)
-      const activeLink = nav.querySelector(`[data-nav-id="${activeNavId}"]`)
-      if (activeLink) resizeObserver.observe(activeLink)
-    }
-    window.addEventListener('resize', updateIndicator)
-
-    return () => {
-      window.cancelAnimationFrame(frame)
-      resizeObserver?.disconnect()
-      window.removeEventListener('resize', updateIndicator)
-    }
-  }, [activeNavId])
 
   return (
     <>
@@ -120,33 +75,17 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
         )}
 
         {/* iPad Dock 中央：主导航 */}
-        <nav ref={navRef} className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flex: '1 1 auto', flexWrap: 'nowrap', whiteSpace: 'nowrap', minWidth: 0 }}>
+        <nav className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flex: '1 1 auto', flexWrap: 'nowrap', whiteSpace: 'nowrap', minWidth: 0, '--liquid-tint': getNavigationTint(pathname) }}>
+          <LiquidSelection
+            value={activeNavId}
+            onSelect={id => {
+              const item = NAV_ITEMS.find(entry => entry.id === id)
+              if (item) navigate(item.to)
+            }}
+          />
           {NAV_ITEMS.map(item => (
             <NavLink key={item.id} id={item.id} to={item.to} active={item.id === activeNavId} icon={item.icon}>{item.label}</NavLink>
           ))}
-          <span
-            aria-hidden
-            style={{
-              position: 'absolute',
-              left: 0,
-              bottom: -4,
-              width: NAV_INDICATOR_WIDTH,
-              height: 3,
-              borderRadius: 3,
-              background: 'var(--topbar-active, linear-gradient(90deg, #a855f7, #ec4899))',
-              boxShadow: 'var(--topbar-active-shadow, 0 0 10px rgba(168,85,247,0.55))',
-              opacity: navIndicator.ready ? 1 : 0,
-              transform: `translate3d(${navIndicator.left}px, 0, 0)`,
-              transition: [
-                'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
-                'opacity 0.18s ease',
-                'background 0.28s ease',
-                'box-shadow 0.28s ease',
-              ].join(', '),
-              willChange: 'transform, width',
-              pointerEvents: 'none',
-            }}
-          />
         </nav>
 
         {/* Dock 右段：搜索 / 主题 / 用户 / GitHub */}
@@ -315,22 +254,23 @@ function ThemeToggle() {
 
   return (
     <button
+      type="button"
+      className="liquid-theme-toggle"
       onClick={toggle}
       title={isDark ? '切换浅色' : '切换深色'}
+      aria-label={isDark ? '切换浅色' : '切换深色'}
       style={{
         ...glassBtnStyle,
         position: 'relative',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'var(--glass-bg-mid)'
-        e.currentTarget.style.color = 'var(--text-primary)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'var(--glass-bg)'
-        e.currentTarget.style.color = 'var(--text-secondary)'
+        isolation: 'isolate',
+        background: 'transparent',
+        border: 0,
+        boxShadow: 'none',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
       }}
     >
+      <LiquidGlassSurface radius={10} />
       {/* inset:0 让绝对定位 span 填满按钮容器，里面的 flex 居中才有可居中的盒子；
           否则 span 塌缩到左上角，居中失效（图标会偏到按钮左上角）。 */}
       <span style={{
@@ -341,6 +281,7 @@ function ThemeToggle() {
         transform: isDark ? 'translateY(0)' : 'translateY(-34px)',
         opacity: isDark ? 1 : 0,
         pointerEvents: 'none',
+        zIndex: 1,
       }}>
         <SunIcon />
       </span>
@@ -352,6 +293,7 @@ function ThemeToggle() {
         transform: !isDark ? 'translateY(0)' : 'translateY(34px)',
         opacity: !isDark ? 1 : 0,
         pointerEvents: 'none',
+        zIndex: 1,
       }}>
         <MoonIcon />
       </span>
@@ -366,7 +308,9 @@ function NavLink({ id, to, active, icon, children }) {
   return (
     <Link
       to={to}
+      draggable={false}
       data-nav-id={id}
+      data-liquid-value={id}
       data-active={active ? 'true' : 'false'}
       title={typeof children === 'string' ? children : undefined}
       style={{
@@ -391,7 +335,7 @@ function NavLink({ id, to, active, icon, children }) {
       onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-secondary)' }}
     >
       {icon && <span style={{ fontSize: 13.5, lineHeight: 1, flexShrink: 0 }} aria-hidden>{icon}</span>}
-      <span className="topbar-nav-label" style={{ whiteSpace: 'nowrap' }}>{children}</span>
+      <span className="topbar-nav-label" data-glass-label style={{ whiteSpace: 'nowrap' }}>{children}</span>
     </Link>
   )
 }

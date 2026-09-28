@@ -1,0 +1,220 @@
+/* Background surface -> moving glass lens -> crisp interactive content. */
+:root {
+  --liquid-panel: linear-gradient(145deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 3%) 56%, rgb(110 126 177 / 7%));
+  --liquid-lens-fill: linear-gradient(145deg, rgb(255 255 255 / 14%), rgb(175 195 245 / 6%) 55%, rgb(255 255 255 / 9%));
+  --liquid-lens-line: rgb(255 255 255 / 10%);
+  --liquid-lens-shadow: inset 0 1px 0 rgb(255 255 255 / 12%), 0 2px 8px rgb(0 0 0 / 13%);
+}
+
+[data-theme="light"] {
+  --liquid-panel: linear-gradient(145deg, rgb(255 255 255 / 86%), rgb(238 242 255 / 68%) 56%, rgb(255 255 255 / 78%));
+  --liquid-lens-fill: linear-gradient(145deg, rgb(255 255 255 / 48%), rgb(217 232 255 / 26%) 55%, rgb(255 255 255 / 42%));
+  --liquid-lens-line: rgb(87 111 155 / 12%);
+  --liquid-lens-shadow: inset 0 1px 0 rgb(255 255 255 / 28%), 0 2px 8px rgb(42 87 145 / 10%);
+}
+
+.liquid-panel {
+  background-image: var(--liquid-panel);
+}
+
+.liquid-lens {
+  opacity: 0;
+  transform-origin: 0 0;
+  border: 1px solid color-mix(in srgb, var(--liquid-tint, var(--accent)) 22%, var(--liquid-lens-line));
+  background:
+    radial-gradient(ellipse at 25% 15%, color-mix(in srgb, var(--liquid-tint, var(--accent)) 12%, transparent), transparent 74%),
+    var(--liquid-lens-fill);
+  box-shadow: var(--liquid-lens-shadow);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+
+.liquid-optic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.liquid-optic > :is(div, span) {
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+  transition: none !important;
+}
+
+.liquid-optic > .bg-black,
+.liquid-optic > span:not(.liquid-optic-edge, .liquid-optic-reflection) {
+  display: none;
+}
+
+.liquid-optic-engine {
+  isolation: auto;
+  line-height: 0;
+  border-radius: inherit;
+  opacity: 0.65;
+}
+
+/* The SVG displacement layer can render as a dark slab over pale surfaces.
+   Keep its light-theme contribution at the bevel, leaving the face translucent. */
+[data-theme="light"] .liquid-optic-engine {
+  opacity: 0.22;
+  -webkit-mask-image: radial-gradient(ellipse farthest-side, transparent 54%, #000 100%);
+  mask-image: radial-gradient(ellipse farthest-side, transparent 54%, #000 100%);
+}
+
+[data-theme="light"] .liquid-optic-engine > .glass {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.liquid-optic-engine > svg {
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+}
+
+.liquid-optic-engine > .glass {
+  display: flex !important;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  transition: none !important;
+  box-shadow: none !important;
+}
+
+.liquid-optic .glass__warp {
+  background: transparent;
+  border-radius: inherit;
+  -webkit-backdrop-filter: blur(3px) saturate(130%) !important;
+  backdrop-filter: blur(3px) saturate(130%) !important;
+}
+
+.liquid-optic-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-backdrop-filter: blur(10px) saturate(130%);
+  backdrop-filter: blur(10px) saturate(130%);
+  -webkit-mask-image: radial-gradient(ellipse farthest-side, transparent 60%, #0009 84%, #000 100%);
+  mask-image: radial-gradient(ellipse farthest-side, transparent 60%, #0009 84%, #000 100%);
+}
+
+.liquid-optic-reflection {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 85% 65% at var(--lens-light-x, 30%) var(--lens-light-y, 15%), rgb(255 255 255 / 8%), transparent 68%),
+    radial-gradient(ellipse 70% 40% at 70% 85%, rgb(255 255 255 / 4%), transparent 78%);
+}
+
+.topbar-nav > a,
+.algorithm-liquid-tabs > button,
+.mobile-bottom-nav > a,
+.playground-preset-track > button,
+.sidebar-liquid-list > li {
+  position: relative;
+  z-index: 1;
+}
+
+.topbar-nav > a[data-active="true"] {
+  color: var(--text-primary);
+}
+
+.topbar-nav[data-liquid-dragging],
+.algorithm-liquid-tabs[data-liquid-dragging],
+.mobile-bottom-nav[data-liquid-dragging],
+.playground-preset-track[data-liquid-dragging],
+.sidebar-liquid-list[data-liquid-dragging],
+:is(.topbar-nav, .algorithm-liquid-tabs, .mobile-bottom-nav, .playground-preset-track, .sidebar-liquid-list)[data-liquid-dragging] > [data-liquid-value] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+:is(.topbar-nav, .algorithm-liquid-tabs, .mobile-bottom-nav, .playground-preset-track)[data-liquid-axis='horizontal'] > [data-liquid-value] {
+  touch-action: pan-y;
+}
+
+:is(.topbar-nav, .algorithm-liquid-tabs, .mobile-bottom-nav, .playground-preset-track, .sidebar-liquid-list) [data-glass-label] {
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-lens[data-liquid-dragging] {
+  box-shadow: var(--liquid-lens-shadow), 0 3px 10px rgb(0 0 0 / 7%);
+}
+
+.liquid-theme-surface {
+  opacity: 1;
+  transform-origin: center;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.liquid-theme-toggle:hover .liquid-theme-surface {
+  transform: scale(1.06);
+}
+
+.liquid-theme-toggle:active .liquid-theme-surface {
+  transform: scale(0.94, 1.1);
+}
+
+.liquid-theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+/* Keep the existing page palette; make its shared surfaces optically lighter. */
+:is(.glass, .glass-strong, .glass-card, .glass-card-sm, .glass-panel, .liquid-panel) {
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
+  border-color: color-mix(in srgb, var(--glass-border) 78%, transparent);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+:is(.glass, .glass-strong, .glass-card, .glass-card-sm, .glass-panel, .liquid-panel) {
+  background-image: linear-gradient(155deg, rgb(255 255 255 / 8%), transparent 42%, rgb(140 165 220 / 4%));
+}
+
+[data-theme="light"] :is(.glass, .glass-strong, .glass-card, .glass-card-sm, .glass-panel, .liquid-panel) {
+  background-image: linear-gradient(155deg, rgb(255 255 255 / 36%), transparent 44%, rgb(117 150 216 / 5%));
+}
+
+.mobile-bottom-nav {
+  --mobile-nav-bg: rgb(18 20 38 / 36%);
+  isolation: isolate;
+}
+
+[data-theme="light"] .mobile-bottom-nav {
+  --mobile-nav-bg: rgb(240 243 253 / 44%);
+}
+
+.mobile-bottom-nav > a[aria-current='page'],
+.mobile-bottom-nav > a[aria-current='page'] [data-glass-label] {
+  color: var(--liquid-tint, var(--accent)) !important;
+}
+
+:is(.topbar-nav, .algorithm-liquid-tabs, .mobile-bottom-nav, .playground-preset-track, .sidebar-liquid-list)[data-liquid-dragging] > [data-liquid-value]:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce),
+  (prefers-reduced-transparency: reduce),
+  (prefers-contrast: more) {
+  .liquid-lens {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  :is(.glass, .glass-strong, .glass-card, .glass-card-sm, .glass-panel, .liquid-panel) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

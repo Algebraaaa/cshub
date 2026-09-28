@@ -25,11 +25,13 @@ export function Toolbar({ children }) {
   )
 }
 
-export function ToolbarBtn({ children, onClick, active }) {
+export function ToolbarBtn({ children, onClick, active, liquidValue }) {
   const isPhone = useIsPhone()
   return (
     <button
       onClick={onClick}
+      data-liquid-value={liquidValue}
+      className={liquidValue ? 'playground-liquid-option relative z-[1] shrink-0' : undefined}
       style={{
         // 手机端拉高至 36 满足触摸目标 (>=32)，桌面保持 28
         minHeight: isPhone ? 36 : undefined,
@@ -37,25 +39,25 @@ export function ToolbarBtn({ children, onClick, active }) {
         borderRadius: 'var(--r-sm)',
         fontSize: 12.5,
         fontWeight: 600,
-        background: active ? 'var(--accent-soft)' : 'var(--glass-bg-mid)',
-        backdropFilter: 'var(--glass-blur)',
-        WebkitBackdropFilter: 'var(--glass-blur)',
-        border: `1px solid ${active ? 'var(--accent-border)' : 'var(--glass-border)'}`,
-        boxShadow: active ? 'var(--glass-shine), 0 0 12px var(--accent-soft)' : 'var(--glass-shine)',
+        background: liquidValue ? 'transparent' : active ? 'var(--accent-soft)' : 'var(--glass-bg-mid)',
+        backdropFilter: liquidValue ? 'none' : 'var(--glass-blur)',
+        WebkitBackdropFilter: liquidValue ? 'none' : 'var(--glass-blur)',
+        border: liquidValue ? '1px solid transparent' : `1px solid ${active ? 'var(--accent-border)' : 'var(--glass-border)'}`,
+        boxShadow: liquidValue ? 'none' : active ? 'var(--glass-shine), 0 0 12px var(--accent-soft)' : 'var(--glass-shine)',
         color: active ? 'var(--accent-light)' : 'var(--text-secondary)',
         transition: 'all 0.15s',
         letterSpacing: '-0.01em',
         WebkitTapHighlightColor: 'transparent',
       }}
-      {...hoverHandlersIf(active, {
+      {...(liquidValue ? {} : hoverHandlersIf(active, {
         background: 'var(--glass-bg-strong)',
         color: 'var(--text-primary)',
       }, {
         background: 'var(--glass-bg-mid)',
         color: 'var(--text-secondary)',
-      })}
+      }))}
     >
-      {children}
+      {liquidValue ? <span data-glass-label>{children}</span> : children}
     </button>
   )
 }

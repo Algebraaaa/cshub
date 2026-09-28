@@ -12,9 +12,6 @@ const TEXT = {
   unstable: '\u4e0d\u7a33\u5b9a',
   inPlace: '\u539f\u5730',
   notInPlace: '\u975e\u539f\u5730',
-  basic: '\u57fa\u7840',
-  medium: '\u4e2d\u7b49',
-  advanced: '\u8fdb\u9636',
   defaultDescription: '\u901a\u8fc7\u53ef\u89c6\u5316\u3001\u4f2a\u4ee3\u7801\u548c\u590d\u6742\u5ea6\u5206\u6790\u7406\u89e3\u8be5\u7b97\u6cd5\u3002',
 }
 
@@ -26,17 +23,6 @@ const CATEGORY_MARK = {
   co: 'CO', cpuScheduling: 'CPU', synchronization: 'SYNC',
   memoryManagement: 'MEM', dbIndex: 'IDX', dbTxn: 'TXN', dbQuery: 'QRY',
   compilerLex: 'LEX', compilerSyn: 'SYN', compilerCode: 'ASM',
-}
-
-function normalizeDifficulty(value) {
-  const raw = String(value || '').toLowerCase()
-  if (raw.includes('advanced') || raw.includes('\u8fdb') || raw.includes('\u6d89') || raw.includes('\u6c49')) {
-    return { label: TEXT.advanced, color: 'var(--red)' }
-  }
-  if (raw.includes('medium') || raw.includes('\u4e2d') || raw.includes('\u5747') || raw.includes('\u74e7')) {
-    return { label: TEXT.medium, color: 'var(--yellow)' }
-  }
-  return { label: TEXT.basic, color: 'var(--green)' }
 }
 
 // memo：algo 对象在加载后引用稳定，主题切换不应重渲染此组件
@@ -53,7 +39,6 @@ const AlgorithmHeader = memo(function AlgorithmHeader({ algo }) {
     color: cat?.color || '#8b5cf6',
     mark: CATEGORY_MARK[algo.category] || algo.category.slice(0, 4).toUpperCase(),
   }
-  const difficulty = normalizeDifficulty(algo.difficulty)
   // 标题取自算法元数据（SSOT）：name > nameEn > slug
   const title = algo.name || algo.nameEn || algo.slug
   const subtitle = algo.nameEn || algo.slug
@@ -107,7 +92,6 @@ const AlgorithmHeader = memo(function AlgorithmHeader({ algo }) {
             marginBottom: 14,
           }}>
             <Tag color={meta.color}>{meta.label}</Tag>
-            <Tag color={difficulty.color}>{difficulty.label}</Tag>
             {algo.stable !== undefined && (
               <Tag>{algo.stable ? TEXT.stable : TEXT.unstable}</Tag>
             )}

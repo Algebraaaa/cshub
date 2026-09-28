@@ -1,11 +1,12 @@
 import { memo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getAlgorithmsByCategory } from '../data/algorithmMeta'
 import { preloadAlgorithmDetail } from '../data/algorithmDetails'
 import { useProgress } from '../contexts/ProgressContext'
 import { SUBJECT_LIST, getCategoriesBySubject } from '../data/subjects'
 import { preloadPlayground } from '../components/learning/playgroundRegistry'
 import { preloadRoute } from '../hooks/useRoutePreload'
+import LiquidSelection from '../components/glass/LiquidSelection'
 
 function preloadAlgorithm(algo) {
   // 从 /compare 页 hover 时 AlgorithmPage chunk 可能还没加载,一并预热
@@ -16,6 +17,7 @@ function preloadAlgorithm(algo) {
 
 export default function Sidebar({ mobileOpen = false, onClose }) {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const { isFavorite, isCompleted } = useProgress()
   const [collapsedSubjects, setCollapsedSubjects] = useState(() => new Set())
 
@@ -136,7 +138,17 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
                 </span>
               </div>
 
-              <ul style={{ listStyle: 'none', padding: 0, margin: '2px 0 0' }}>
+              <ul className="sidebar-liquid-list relative isolate" style={{ listStyle: 'none', padding: 0, margin: '2px 0 0', '--liquid-tint': subject.color }}>
+                {algos.some(a => a.slug === slug) && (
+                  <LiquidSelection
+                    value={slug}
+                    radius={10}
+                    onSelect={id => {
+                      navigate(`/algo/${id}`)
+                      onClose?.()
+                    }}
+                  />
+                )}
                 {algos.map(a => (
                   <SidebarAlgoItem
                     key={a.slug}
@@ -161,32 +173,29 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
 
 const SidebarAlgoItem = memo(function SidebarAlgoItem({ algo, isActive, isFav, isDone, onClose }) {
   return (
-    <li>
+    <li data-liquid-value={algo.slug} data-liquid-active={isActive ? '' : undefined} className="relative z-[1]" style={{ touchAction: isActive ? 'none' : 'pan-y' }}>
       <Link
         to={`/algo/${algo.slug}`}
+        draggable={false}
         onClick={onClose}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '6px 10px 6px 28px',
           fontSize: 12.5,
           color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-          background: isActive ? 'var(--accent-soft)' : 'transparent',
+          background: 'transparent',
           borderRadius: 'var(--r-sm)',
-          borderLeft: `2px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+          borderLeft: '2px solid transparent',
           marginLeft: 4,
           fontWeight: isActive ? 600 : 400,
           transition: 'all 0.15s',
         }}
         onMouseEnter={e => {
           preloadAlgorithm(algo)
-          if (!isActive) {
-            e.currentTarget.style.background = 'var(--glass-bg-mid)'
-            e.currentTarget.style.color = 'var(--text-primary)'
-          }
+          if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'
         }}
         onMouseLeave={e => {
           if (!isActive) {
-            e.currentTarget.style.background = 'transparent'
             e.currentTarget.style.color = 'var(--text-secondary)'
           }
         }}
@@ -195,9 +204,8 @@ const SidebarAlgoItem = memo(function SidebarAlgoItem({ algo, isActive, isFav, i
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0, overflow: 'hidden' }}>
           {isDone && <DoneDot />}
           {isFav && <FavDot />}
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{algo.name}</span>
+          <span data-glass-label style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{algo.name}</span>
         </span>
-        <DiffBadge level={algo.difficulty} />
       </Link>
     </li>
   )
@@ -269,22 +277,5 @@ function FavDot() {
       style={{ flexShrink: 0 }}>
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
-  )
-}
-
-function DiffBadge({ level }) {
-  const colorMap = {
-    '基础': { bg: 'var(--green-soft)',  fg: 'var(--green)' },
-    '中等': { bg: 'var(--yellow-soft)', fg: 'var(--yellow)' },
-    '进阶': { bg: 'var(--red-soft)',    fg: 'var(--red)' },
-  }
-  const c = colorMap[level] || colorMap['基础']
-  return (
-    <span style={{
-      fontSize: 9, padding: '1px 5px', borderRadius: 4,
-      background: c.bg, color: c.fg,
-      fontWeight: 700, letterSpacing: '0.02em',
-      whiteSpace: 'nowrap', flexShrink: 0,
-    }}>{level}</span>
   )
 }

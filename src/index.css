@@ -130,10 +130,12 @@
   .glass-card {
     @apply rounded-2xl border border-glass-border bg-surface-mid p-5 backdrop-blur-2xl
            shadow-[0_12px_40px_rgba(0,0,0,0.10),inset_0_1px_1px_rgba(255,255,255,0.16)];
+    background-image: var(--liquid-panel);
   }
 
   .glass-card-sm {
     @apply rounded-xl border border-glass-border bg-surface px-4 py-3 backdrop-blur-xl;
+    background-image: var(--liquid-panel);
   }
 
   .toolbar-btn {
@@ -2875,9 +2877,9 @@
   --bg-primary: var(--bg);
   --bg-secondary: var(--bg-elev);
 
-  --surface:   rgba(255, 255, 255, 0.62);
-  --surface-2: rgba(255, 255, 255, 0.80);
-  --surface-3: rgba(255, 255, 255, 0.95);
+  --surface:   rgba(255, 255, 255, 0.48);
+  --surface-2: rgba(255, 255, 255, 0.64);
+  --surface-3: rgba(255, 255, 255, 0.80);
   --surface-low: var(--surface);
   --surface-high: var(--surface-3);
 
@@ -2928,11 +2930,11 @@
   --island-highlight-bottom: rgba(255, 255, 255, 0.06);
   --island-shadow-outer: 0 8px 20px rgba(60, 50, 120, 0.08), 0 2px 6px rgba(60, 50, 120, 0.04);
 
-  --glass-bg:            rgba(255, 255, 255, 0.55);
-  --glass-bg-mid:        rgba(255, 255, 255, 0.72);
-  --glass-bg-strong:     rgba(255, 255, 255, 0.88);
-  --glass-border:        rgba(255, 255, 255, 0.85);
-  --glass-border-strong: rgba(255, 255, 255, 1);
+  --glass-bg:            rgba(255, 255, 255, 0.40);
+  --glass-bg-mid:        rgba(255, 255, 255, 0.54);
+  --glass-bg-strong:     rgba(255, 255, 255, 0.72);
+  --glass-border:        rgba(255, 255, 255, 0.52);
+  --glass-border-strong: rgba(255, 255, 255, 0.72);
   --glass-shine:         inset 0 1px 0 rgba(255, 255, 255, 0.95);
   --glass-shadow:        0 4px 20px rgba(80, 60, 180, 0.07),
                          0 1px 0 rgba(255, 255, 255, 0.9) inset;

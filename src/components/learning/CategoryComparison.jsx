@@ -14,7 +14,6 @@ const HEADERS = [
   '\u5e73\u5747',
   '\u6700\u574f',
   '\u7a7a\u95f4',
-  '\u96be\u5ea6',
   '\u7a33\u5b9a',
 ]
 
@@ -62,24 +61,6 @@ const ALGORITHM_TITLES = {
   astar: 'A* \u641c\u7d22',
   hashtable: '\u54c8\u5e0c\u8868',
   segtree: '\u7ebf\u6bb5\u6811',
-}
-
-const DIFFICULTY_LABELS = {
-  basic: '\u57fa\u7840',
-  medium: '\u4e2d\u7b49',
-  advanced: '\u8fdb\u9636',
-  '\u57fa\u7840': '\u57fa\u7840',
-  '\u4e2d\u7b49': '\u4e2d\u7b49',
-  '\u8fdb\u9636': '\u8fdb\u9636',
-}
-
-const DIFFICULTY_COLORS = {
-  basic: { bg: 'var(--green-soft)', fg: 'var(--green)' },
-  medium: { bg: 'var(--yellow-soft)', fg: 'var(--yellow)' },
-  advanced: { bg: 'var(--red-soft)', fg: 'var(--red)' },
-  '\u57fa\u7840': { bg: 'var(--green-soft)', fg: 'var(--green)' },
-  '\u4e2d\u7b49': { bg: 'var(--yellow-soft)', fg: 'var(--yellow)' },
-  '\u8fdb\u9636': { bg: 'var(--red-soft)', fg: 'var(--red)' },
 }
 
 export default function CategoryComparison({ algo, themeColor = '#8b5cf6' }) {
@@ -163,9 +144,6 @@ export default function CategoryComparison({ algo, themeColor = '#8b5cf6' }) {
                   </td>
                 ))}
                 <td style={{ padding: '9px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
-                  <DiffBadge level={a.difficulty} />
-                </td>
-                <td style={{ padding: '9px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
                   {a.stable === true
                     ? <span style={{ color: 'var(--green)', fontSize: 11, fontWeight: 600 }}>{'\u662f'}</span>
                     : a.stable === false
@@ -189,20 +167,4 @@ function complexityColor(val) {
   if (/n\^?2|n²|V\^?2|n\*m|nm/.test(val)) return 'var(--yellow)'
   if (/n!|2\^n|V\^?3|V³/.test(val)) return 'var(--red)'
   return 'var(--text-secondary)'
-}
-
-function DiffBadge({ level }) {
-  const c = DIFFICULTY_COLORS[level] || DIFFICULTY_COLORS.basic
-  return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 6px',
-      borderRadius: 3,
-      background: c.bg,
-      color: c.fg,
-      fontSize: 10,
-      fontWeight: 600,
-      fontFamily: 'var(--font-sans)',
-    }}>{DIFFICULTY_LABELS[level] || level}</span>
-  )
 }

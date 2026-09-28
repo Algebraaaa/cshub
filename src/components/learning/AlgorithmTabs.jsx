@@ -7,6 +7,7 @@ import ComplexityAnalysis from './ComplexityAnalysis'
 import CategoryComparison from './CategoryComparison'
 import Quiz from './Quiz'
 import { QUIZZES } from '../../data/quizzes'
+import LiquidSelection from '../glass/LiquidSelection'
 
 const Notes = lazy(() => import('./Notes'))
 
@@ -66,18 +67,20 @@ const AlgorithmTabs = memo(function AlgorithmTabs({ algo }) {
           手机端：top-2（避开 TopBar 72px 高度需要的偏移由 page-container padding-top 提供）+ 紧凑 padding
           桌面/iPad：top-14 + 圆角卡片包裹 */}
       <div role="tablist" aria-label="算法详情"
-        className="sticky top-2 sm:top-14 z-10 -mx-4 mb-4 flex flex-nowrap items-center gap-1 overflow-x-auto px-3 py-2
+        className="algorithm-liquid-tabs relative isolate sticky top-2 sm:top-14 z-10 -mx-4 mb-4 flex flex-nowrap items-center gap-1 overflow-x-auto px-3 py-2
                    border-b border-[var(--glass-border)]
                    bg-[var(--header-bg)]
                    backdrop-blur-xl
                    sm:flex-wrap sm:mx-0 sm:rounded-xl sm:border sm:border-[var(--glass-border-strong)] sm:bg-[var(--glass-bg-mid)] sm:px-2 sm:py-1.5"
         style={{ scrollbarWidth: 'thin' }}
       >
+        <LiquidSelection value={active} onSelect={select} radius={10} />
         {TAB_DEFS.map(t => {
           if (t.id === 'quiz' && !hasQuiz) return null
           const isActive = active === t.id
           return (
             <button key={t.id}
+              data-liquid-value={t.id}
               role="tab"
               aria-selected={isActive}
               aria-controls={`panel-${t.id}`}
@@ -88,13 +91,13 @@ const AlgorithmTabs = memo(function AlgorithmTabs({ algo }) {
                 'group inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold transition-all duration-150 outline-none whitespace-nowrap flex-shrink-0',
                 'sm:px-3 sm:text-sm',
                 isActive
-                  ? 'bg-[var(--accent-soft)] text-[var(--accent-light)] shadow-[inset_0_0_0_1px_var(--accent-border)]'
+                  ? 'text-[var(--accent-light)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg-strong)] hover:text-[var(--text-primary)]',
                 'focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg)]',
               ].join(' ')}
             >
               <span className="text-[15px] leading-none">{t.icon}</span>
-              <span>{t.label}</span>
+              <span data-glass-label>{t.label}</span>
               <span className="hidden text-[10px] font-mono uppercase tracking-wider text-[var(--text-tertiary)] sm:inline">
                 {t.short}
               </span>
@@ -104,7 +107,7 @@ const AlgorithmTabs = memo(function AlgorithmTabs({ algo }) {
       </div>
 
       {/* Panels */}
-      <div className="rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-mid)] p-5 backdrop-blur-2xl
+      <div className="liquid-panel rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-mid)] p-5 backdrop-blur-2xl
                       shadow-[0_12px_40px_rgba(0,0,0,0.10),inset_0_1px_1px_rgba(255,255,255,0.16)]">
         {active === 'intuition' && (
           <Panel id="intuition" title="算法原理">
