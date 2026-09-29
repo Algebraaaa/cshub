@@ -1,159 +1,77 @@
-# 代码行高亮同步指南
+# 代码行高亮同步
 
-## 概述
+动画播放时，右侧代码块自动高亮当前步骤对应的代码行。合并自原
+`CODE_HIGHLIGHTING_GUIDE.md`、`QUICK_START.md`、`QUICK_REFERENCE.md`。
 
-从本次更新开始，系统支持以下改进：
+## 用户视角
 
-1. **伪代码不再自动同步**：伪代码保持静态显示，不会在动画执行时闪烁和抢占焦点
-2. **C++/Python代码支持动画同步**：可以通过在步骤数据中添加代码行号来实现代码与动画的同步高亮
+在支持并排显示的算法页（如冒泡排序、插入排序、选择排序）：
 
-## 问题修复说明
+- 左侧动画，右侧代码，代码块 sticky 跟随滚动
+- 点击播放，代码行随步骤自动高亮；拖动进度条同样实时跟随
+- 点击 C++ / Python 标签切换语言，高亮行号相应变化
+- 窄屏自动竖排，也可点按钮手动切换布局
 
-### 之前的问题
-- 伪代码会逐行执行并自动滚动到视图
-- 当伪代码行变化时，焦点转移到伪代码区域，遮挡了动画
+**伪代码保持静态、不高亮**，这是刻意设计：早期版本伪代码逐行 `scrollIntoView()`
+会抢占焦点、遮挡动画。由 `CodeBlock` 的 `noAutoScroll` 参数控制。
 
-### 解决方案
-- **伪代码**：现在保持静态，允许用户查看完整的伪代码逻辑而不被打扰
-- **C++/Python代码**：新增对代码行号同步的支持
+图、树、字符串类算法不显示并排代码 —— 可视化本身需要更大空间。
 
-## 如何在算法中添加代码行高亮
+## 为算法添加行号映射
 
-### 步骤 1：映射C++代码行号
+**当前推荐写法**是 step builder 的 `.line()`：
 
-首先，在你的算法实现文件顶部添加C++代码行号的映射注释：
+```js
+.line({ cpp: 11, py: 9, pseudo: 9 })
+```
 
-```javascript
+参考 `src/algorithms/sorting/bubbleSort.js` 的实际用法。行号一律 **1-indexed**，
+对应代码块中的实际行。
+
+习惯做法是在算法文件顶部写一段映射注释，便于代码变动时同步维护：
+
+```js
 // C++ code line mapping (1-indexed):
-// Line 2: for (int i = 0; i < n - 1; i++)
-// Line 3:     bool swapped = false;
-// Line 4:     for (int j = 0; j < n - i - 1; j++)
-// Line 5:         if (arr[j] > arr[j + 1])
-// Line 6:             swap(arr[j], arr[j + 1]);
-// Line 7:             swapped = true;
-// Line 10:     if (!swapped) break;
+// Line 3: for (int i = 0; i < n - 1; i++)
+// Line 4: bool swapped = false;
 ```
 
-### 步骤 2：在步骤对象中添加 `cppLine` 和 `pythonLine`
+## 行号解析顺序
 
-修改步骤对象，添加代码行号：
+统一由 `src/utils/stepProtocol.js` 的 `getStepCodeLine(step, lang)` 处理，
+按以下优先级回退：
 
-```javascript
-steps.push({
-  array: [...arr],
-  comparing: [j, j + 1],
-  swapped: [],
-  sorted: [...sortedIndices],
-  pseudoLine: 6,           // 伪代码第6行（原有，现在不使用）
-  cppLine: 5,              // C++代码第5行
-  pythonLine: 5,           // Python代码第5行
-  description: `比较 arr[${j}]=${arr[j]} 与 arr[${j+1}]=${arr[j+1]}`,
-})
-```
+1. `step.cppLine` / `step.pythonLine` / `step.javaLine`（显式，legacy）
+2. `step.codeLines[lang]`
+3. `step.codeLine`
+4. `step.line`
+5. `step.pseudoLine`
 
-### 步骤 3：使用 `codeLines` 对象（可选）
+传 `{ explicitOnly: true }` 可只取前两级。
 
-如果需要支持多种语言或动态映射，可以使用 `codeLines` 对象：
+> 旧文档教的 `steps.push({ cppLine: 6, pythonLine: 6 })` 因第 1 级回退仍然有效，
+> 但仓库内已无算法这样写，新代码请用 `.line()`。
 
-```javascript
-steps.push({
-  array: [...arr],
-  comparing: [j, j + 1],
-  swapped: [],
-  sorted: [...sortedIndices],
-  pseudoLine: 6,
-  codeLines: {
-    cpp: 5,
-    python: 5,
-    // 可以添加其他语言
-  },
-  description: `比较 arr[${j}]=${arr[j]} 与 arr[${j+1}]=${arr[j+1]}`,
-})
-```
+若步骤没有任何显式行号，`src/components/learning/codeLineInference.js` 会依据步骤
+描述文本做启发式推断（比较、交换、初始化等关键词匹配代码 token），因此未标注行号
+的算法通常也能得到近似高亮。
 
-## 代码行号查找方式
+## 排查
 
-对于标准代码块，按照以下规则计数（1-indexed）：
+**代码行不高亮** —— 确认步骤是否带行号、行号是否 1-indexed 且对应实际行、
+控制台有无报错。完全没有显式行号时走的是启发式推断，不保证精确。
 
-### C++ 示例
-```cpp
-void bubbleSort(vector<int>& arr) {           // 1
-    int n = arr.size();                       // 2
-    for (int i = 0; i < n - 1; i++) {        // 3
-        bool swapped = false;                 // 4
-        for (int j = 0; j < n - i - 1; j++) { // 5
-            if (arr[j] > arr[j + 1]) {       // 6
-                swap(arr[j], arr[j + 1]);    // 7
-                swapped = true;              // 8
-            }
-        }
-        if (!swapped) break;                 // 9
-    }
-}
-```
+**没有显示并排代码** —— 检查该可视化类型是否在 `src/pages/AlgorithmPage.jsx`
+的 `VIZ_WITH_CODE` 集合中，以及算法是否有 `code` 字段；再确认窗口宽度是否达到
+阈值（见 `docs/guides/SIDEBAR_GUIDE.md`）。
 
-### Python 示例
-```python
-def bubble_sort(arr):                    # 1
-    n = len(arr)                        # 2
-    for i in range(n - 1):              # 3
-        swapped = False                 # 4
-        for j in range(n - i - 1):      # 5
-            if arr[j] > arr[j + 1]:     # 6
-                arr[j], arr[j + 1] = arr[j + 1], arr[j]  # 7
-                swapped = True          # 8
-        if not swapped:                 # 9
-            break                       # 10
-    return arr
-```
+**代码改了行号就错了** —— 行号是硬编码的，修改 C++/Python 代码后需同步更新
+`.line()` 的值。目前没有自动校验工具。
 
-## 使用场景
+## 相关文件
 
-### 完整同步（推荐）
-- 算法步骤既有伪代码行号，也有C++/Python行号
-- 用户可以同时看到伪代码逻辑和具体实现
-- 伪代码保持静态，C++/Python代码与动画同步
-
-### 仅伪代码行号（当前实现）
-- 如果步骤对象中没有 `cppLine` 或 `pythonLine` 字段
-- C++/Python代码不会自动高亮，但仍可静态查看
-- 伪代码也保持静态显示
-
-### 逐步迁移
-- 可以逐个算法添加 `cppLine` 和 `pythonLine` 支持
-- 不添加的算法继续正常工作，无需修改
-
-## 代码修改位置
-
-### 关键文件
-- `src/components/learning/CodeBlock.jsx` - 添加了 `noAutoScroll` 参数
-- `src/pages/AlgorithmPage.jsx` - 修改了 `PseudocodeBlock` 和 `CodeTabs`
-- `src/contexts/StepContext.jsx` - 无需修改，仍然传递步骤数据
-
-### 扩展建议
-如果要为所有算法添加代码行号支持，建议：
-
-1. 创建一个映射文件定义每个算法的代码行号
-2. 或者直接在步骤对象中内联 `cppLine`/`pythonLine`
-3. 定期更新C++/Python代码时同步更新行号
-
-## 测试建议
-
-1. 打开任何算法页面，验证伪代码保持静态
-2. 点击播放按钮执行动画
-3. 动画应该正常显示，不被代码框抢占焦点
-4. 切换到C++/Python标签，如果算法支持行号映射，应该看到代码行高亮
-
-## 常见问题
-
-**Q: 我的算法还没有 cppLine/pythonLine，会出错吗？**
-
-A: 不会。系统向后兼容，没有这些字段的算法继续正常工作，只是C++/Python代码不会高亮。
-
-**Q: 如何判断是否需要添加代码行号？**
-
-A: 查看步骤对象，如果只有 `pseudoLine`，可以考虑添加 `cppLine` 和 `pythonLine` 来提升学习体验。
-
-**Q: 代码行号改变了怎么办？**
-
-A: 当C++/Python代码更新后，需要重新映射行号。建议保持代码简洁，减少不必要的改动。
+- `src/components/learning/CodeBlock.jsx` — 渲染与高亮，`noAutoScroll` 参数
+- `src/components/learning/InteractiveVisualization.jsx` — 并排布局与语言切换
+- `src/components/learning/codeLineInference.js` — 启发式行号推断
+- `src/utils/stepProtocol.js` — `getStepCodeLine()` 解析
+- `docs/examples/EXAMPLE_CODE_LINES.js` — 参考示例（使用 legacy 写法）

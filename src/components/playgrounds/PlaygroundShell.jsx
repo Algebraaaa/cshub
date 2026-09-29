@@ -59,9 +59,11 @@ export default function PlaygroundShell({
   const stateRef = useRef(state)
   stateRef.current = state
 
-  const payload = stateful
+  // The controller re-renders on every playback tick. Many derivePayload
+  // callbacks return a new object, so cache that object until the input changes.
+  const payload = useMemo(() => stateful
     ? (derivePayload ? derivePayload(state) : state)
-    : activePreset
+    : activePreset, [stateful, derivePayload, state, activePreset])
 
   // 没有 preset / initialState 时 payload 为 null——computeSteps 可忽略入参直接返回固定步骤。
   const steps = useMemo(() => computeSteps(payload), [computeSteps, payload])

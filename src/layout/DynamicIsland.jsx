@@ -107,6 +107,11 @@ function pickIslandTheme(pathname, tintRgb) {
         '--accent-border': 'rgba(215, 181, 109, 0.42)',
         '--topbar-active': '#8fcf8a',
         '--topbar-active-shadow': '0 0 12px rgba(143, 207, 138, 0.38)',
+        ...(pathname.startsWith('/finance') && {
+          '--liquid-lens-fill': 'linear-gradient(145deg, rgb(174 226 177 / 30%), rgb(67 148 100 / 24%) 55%, rgb(157 216 164 / 27%))',
+          '--liquid-lens-line': 'rgb(165 219 164 / 30%)',
+          '--liquid-lens-shadow': 'inset 0 1px 0 rgb(223 246 218 / 25%), 0 2px 8px rgb(5 26 14 / 18%)',
+        }),
         '--topbar-github-bg': 'rgba(247, 239, 216, 0.12)',
         '--topbar-github-border': 'rgba(215, 181, 109, 0.32)',
         '--topbar-github-fg': '#f7efd8',
@@ -145,6 +150,9 @@ function pickIslandTheme(pathname, tintRgb) {
         '--accent-border': 'rgba(184, 154, 84, 0.42)',
         '--topbar-active': '#b89a54',
         '--topbar-active-shadow': '0 0 12px rgba(184, 154, 84, 0.44)',
+        '--liquid-lens-fill': 'linear-gradient(145deg, rgb(236 212 165 / 29%), rgb(166 131 72 / 23%) 55%, rgb(220 190 134 / 26%))',
+        '--liquid-lens-line': 'rgb(222 194 138 / 28%)',
+        '--liquid-lens-shadow': 'inset 0 1px 0 rgb(247 230 197 / 22%), 0 2px 8px rgb(36 26 13 / 18%)',
         '--topbar-github-bg': 'rgba(242, 238, 226, 0.08)',
         '--topbar-github-border': 'rgba(184, 154, 84, 0.32)',
         '--topbar-github-fg': '#f2eee2',
@@ -172,10 +180,16 @@ function pickIslandTheme(pathname, tintRgb) {
   return base
 }
 
-// Keep the selection lens aligned with the page's existing island palette.
-export function getNavigationTint(pathname) {
+// Share the route's glass material with the desktop island and mobile dock.
+export function getNavigationGlassStyle(pathname) {
   const tint = pickTint(pathname)
-  return pickIslandTheme(pathname, hexToRgb(tint)).vars['--topbar-active'] || tint
+  const vars = pickIslandTheme(pathname, hexToRgb(tint)).vars
+  return {
+    '--liquid-tint': vars['--topbar-active'] || tint,
+    '--liquid-lens-fill': vars['--liquid-lens-fill'],
+    '--liquid-lens-line': vars['--liquid-lens-line'],
+    '--liquid-lens-shadow': vars['--liquid-lens-shadow'],
+  }
 }
 
 export default function DynamicIsland({ children }) {

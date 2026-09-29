@@ -9,7 +9,7 @@
  */
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
-import { getNavigationTint } from './DynamicIsland'
+import { getNavigationGlassStyle } from './DynamicIsland'
 import LiquidSelection from '../components/glass/LiquidSelection'
 
 export default function MobileBottomNav() {
@@ -38,7 +38,7 @@ export default function MobileBottomNav() {
         WebkitBackdropFilter: 'blur(28px) saturate(180%)',
         borderTop: '1px solid var(--glass-border)',
         boxShadow: '0 -4px 24px rgba(0,0,0,0.10)',
-        '--liquid-tint': getNavigationTint(pathname),
+        ...getNavigationGlassStyle(pathname),
       }}
     >
       <LiquidSelection

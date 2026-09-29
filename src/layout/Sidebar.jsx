@@ -217,40 +217,15 @@ function SidebarAmbient() {
       position: 'absolute',
       inset: 0,
       pointerEvents: 'none',
-      opacity: 0.34,
-    }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: [
-          'linear-gradient(rgba(168,85,247,0.08) 1px, transparent 1px)',
-          'linear-gradient(90deg, rgba(56,189,248,0.06) 1px, transparent 1px)',
-        ].join(', '),
-        backgroundSize: '42px 42px',
-        maskImage: 'linear-gradient(to bottom, transparent 0, black 70px, black 88%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, black 70px, black 88%, transparent 100%)',
-      }} />
-      <div style={{
-        position: 'absolute',
-        left: -72,
-        top: 120,
-        width: 220,
-        height: 360,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(168,85,247,0.28), transparent 68%)',
-        filter: 'blur(22px)',
-      }} />
-      <div style={{
-        position: 'absolute',
-        right: -96,
-        top: 450,
-        width: 240,
-        height: 340,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(56,189,248,0.22), transparent 70%)',
-        filter: 'blur(24px)',
-      }} />
-    </div>
+      opacity: 0.22,
+      backgroundImage: [
+        'linear-gradient(rgba(110,120,145,0.08) 1px, transparent 1px)',
+        'linear-gradient(90deg, rgba(110,120,145,0.08) 1px, transparent 1px)',
+      ].join(', '),
+      backgroundSize: '42px 42px',
+      maskImage: 'linear-gradient(to bottom, transparent 0, black 70px, black 88%, transparent 100%)',
+      WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, black 70px, black 88%, transparent 100%)',
+    }} />
   )
 }
 

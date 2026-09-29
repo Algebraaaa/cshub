@@ -9,27 +9,36 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 
-// 收集要扫描的 Markdown：根目录 + docs/ 递归
+// 只守护「活文档」（会被当成当前真相来读的）。历史一次性报告是时间快照，
+// 记录的是当时的路径，不该强求永久有效，排除之。
+// 例：docs/reports/ML_OPTIMIZATION_INTEGRATION_REPORT.md 引用的
+// AIConceptPlayground.jsx 已于 2026-06 被逐概念 Playground 取代，属正常过期。
+const SNAPSHOT_DIRS = new Set(['archive', 'reports'])
+const IS_SNAPSHOT = (name) => /REPORT|CHANGELOG/i.test(name)
+
+// 收集要扫描的 Markdown：根目录 + docs/ 递归（含 guides/ 等子目录，
+// 但整体跳过快照目录）。
+// 注意：本函数只应以 docs/ 为起点调用，根目录由 ROOT_MD 单独处理——
+// 否则会递归进 src/ 扫到代码注释里的路径。
 function collectMarkdown(dir, acc = []) {
   for (const name of readdirSync(dir)) {
     if (name === 'node_modules' || name === 'dist' || name.startsWith('.git')) continue
+    if (SNAPSHOT_DIRS.has(name)) continue
     const full = path.join(dir, name)
     const st = statSync(full)
     if (st.isDirectory()) {
-      // 只递归 docs/ 与根；避免扫进 src 里的注释
-      if (full === path.join(ROOT, 'docs')) collectMarkdown(full, acc)
+      collectMarkdown(full, acc)
     } else if (name.endsWith('.md')) {
+      // docs/ 内按目录判定快照即可；docs/CHANGELOG.md 这类虽名为 CHANGELOG，
+      // 却引用当前源码路径、会被当成真相读，必须守护。
       acc.push(full)
     }
   }
   return acc
 }
 
-// 只守护「活文档」（会被当成当前真相来读的）。历史一次性报告是时间快照，
-// 记录的是当时的路径，不该强求永久有效，排除之。
-const IS_ARCHIVE = (name) => /REPORT|CHANGELOG/i.test(name)
 const ROOT_MD = readdirSync(ROOT)
-  .filter(f => f.endsWith('.md') && !IS_ARCHIVE(f))
+  .filter(f => f.endsWith('.md') && !IS_SNAPSHOT(f))
   .map(f => path.join(ROOT, f))
 const DOC_FILES = [...new Set([...ROOT_MD, ...collectMarkdown(path.join(ROOT, 'docs'))])]
 

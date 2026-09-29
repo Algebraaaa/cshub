@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { playString, playChord } from '../audio/guitarEngine'
-import { chordShapeToNotes } from '../lib/guitarMath'
+import { chordShapeToNotes, fretToNote } from '../lib/guitarMath'
 
 export function useGuitarAudio() {
   const strumChord = useCallback(async (shape) => {
@@ -10,7 +10,6 @@ export function useGuitarAudio() {
   }, [])
 
   const pluckString = useCallback(async (stringIndex, fret = 0) => {
-    const { fretToNote } = await import('../lib/guitarMath')
     const note = fretToNote(stringIndex, fret)
     await playString(note)
   }, [])

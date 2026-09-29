@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import LiquidGlass from 'liquid-glass-react'
+import { createTextRefraction } from './textRefraction'
 import './liquidGlass.css'
 
 const PREFERENCE = '(prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce), (prefers-contrast: more)'
@@ -119,10 +120,26 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
     let drag = null
     let suppressClick = false
     let lastFrameTime = 0
+    let textFrame = 0
+    let textRefraction = null
     const options = () => [...track.querySelectorAll(':scope > [data-liquid-value]')]
     const visualRect = () => rectWithinTrack(lens, track)
+    const measuredItems = () => options().map(option => ({ option, rect: rectWithinTrack(option, track) }))
+    const stopTextRefraction = () => {
+      cancelAnimationFrame(textFrame)
+      textFrame = 0
+      textRefraction?.dispose()
+      textRefraction = null
+    }
+    const followTextAnimation = () => {
+      textFrame = 0
+      textRefraction?.update(visualRect(), valueRef.current)
+      if (animation?.playState === 'running') textFrame = requestAnimationFrame(followTextAnimation)
+      else stopTextRefraction()
+    }
 
     const moveTo = (next, animate, from = previous) => {
+      stopTextRefraction()
       animation?.cancel()
       animation = null
       lens.style.width = `${next.width}px`
@@ -135,6 +152,8 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
         { transform: `translate3d(${from.x}px, ${from.y}px, 0) scale(${from.width / next.width}, ${from.height / next.height})` },
         { transform: `translate3d(${next.x}px, ${next.y}px, 0) scale(1)` },
       ], { duration: 360, easing: 'cubic-bezier(.19, .85, .24, 1)' })
+      textRefraction = createTextRefraction(measuredItems(), next, radius, track.dataset.liquidAxis)
+      if (textRefraction) textFrame = requestAnimationFrame(followTextAnimation)
     }
 
     const place = (animate) => {
@@ -154,7 +173,10 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
 
     const queuePlace = () => {
       cancelAnimationFrame(resizeFrame)
-      resizeFrame = requestAnimationFrame(() => place(false))
+      resizeFrame = requestAnimationFrame(() => {
+        textRefraction?.remeasure(measuredItems())
+        place(false)
+      })
     }
     const observer = new ResizeObserver(queuePlace)
     observer.observe(track)
@@ -221,6 +243,10 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
       lens.style.transform = axis === 'horizontal'
         ? `translate3d(${d.spring}px, ${nearest.rect.y}px, 0) scale(${mainScale}, ${crossScale})`
         : `translate3d(${nearest.rect.x}px, ${d.spring}px, 0) scale(${crossScale}, ${mainScale})`
+      textRefraction?.update(axis === 'horizontal'
+        ? { x: d.spring, y: nearest.rect.y, width: d.start.width * mainScale, height: d.start.height * crossScale }
+        : { x: nearest.rect.x, y: d.spring, width: d.start.width * crossScale, height: d.start.height * mainScale },
+      valueRef.current)
 
       // The rim light follows the pointer; interactive labels stay in the content layer.
       const offset = (local - centerOf(nearest)) / Math.max(extent / 2, 1)
@@ -260,10 +286,12 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
         drag.moved = true
         animation?.cancel()
         animation = null
+        stopTextRefraction()
         track.setPointerCapture(event.pointerId)
         track.dataset.liquidDragging = ''
         lens.dataset.liquidDragging = ''
         lastFrameTime = performance.now()
+        textRefraction = createTextRefraction(measuredItems(), drag.start, radius, drag.axis)
       }
       if (!frame) frame = requestAnimationFrame(paint)
     }
@@ -319,6 +347,7 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
     track.addEventListener('click', captureClick, true)
     return () => {
       animation?.cancel()
+      stopTextRefraction()
       cancelAnimationFrame(frame)
       cancelAnimationFrame(resizeFrame)
       observer.disconnect()
@@ -333,7 +362,7 @@ export default function LiquidSelection({ value, onSelect, radius = 999 }) {
       track.removeEventListener('lostpointercapture', pointerCancel)
       track.removeEventListener('click', captureClick, true)
     }
-  }, [])
+  }, [radius])
 
   return (
     <div

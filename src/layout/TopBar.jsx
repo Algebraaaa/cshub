@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useViewport } from '../hooks/useMediaQuery'
 import { usePreloadHandlers } from '../hooks/useRoutePreload'
-import DynamicIsland, { IslandDivider, getNavigationTint } from './DynamicIsland'
+import DynamicIsland, { IslandDivider, getNavigationGlassStyle } from './DynamicIsland'
 import { NAV_ITEMS } from './navItems'
 import LiquidSelection, { LiquidGlassSurface } from '../components/glass/LiquidSelection'
 
@@ -75,7 +75,7 @@ export default function TopBar({ showMenuButton = false, onMenuClick, sidebarOpe
         )}
 
         {/* iPad Dock 中央：主导航 */}
-        <nav className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flex: '1 1 auto', flexWrap: 'nowrap', whiteSpace: 'nowrap', minWidth: 0, '--liquid-tint': getNavigationTint(pathname) }}>
+        <nav className="topbar-nav" style={{ position: 'relative', display: 'flex', gap: 2, flex: '1 1 auto', flexWrap: 'nowrap', whiteSpace: 'nowrap', minWidth: 0, ...getNavigationGlassStyle(pathname) }}>
           <LiquidSelection
             value={activeNavId}
             onSelect={id => {

@@ -7,7 +7,7 @@
 //      **实际滑过彼此**——学习者能追踪"同一个元素的旅程",
 //      而不是看两根柱子原地互变高度
 //   2. 活跃元素上浮抬起(比较=黄、交换=红),视线自然锁定动作点
-//   3. 底部索引行 + 比较/交换位置的 ▲ 指针(CLRS 板书风格),
+//   3. 底部索引行 + 比较位置的 ◇ 指针,
 //      强化"位置 vs 元素"的区分
 //   4. 动画时长跟随播放速度自适应:慢速细品,快速不拖沓
 //   5. 百分比布局,任意数组长度自适应宽度
@@ -60,11 +60,9 @@ export default function SortingViz({ stepData, maxVal, speedMs = 1000 }) {
     return { color: 'var(--bar-default)', lift: false, glow: null }
   }
 
-  // 指针行:按状态返回 {色, 形}。形状是给红绿色盲的非颜色线索——
-  // 交换⇄ 与 比较◇ 即使在灰度下也能区分(交换优先,红色信息量大)。
+  // 交换已由红色柱子和位置移动表达；短暂的红色指针会闪烁，指针行只提示比较。
   const pointerAt = (i) =>
-    swapped.includes(i) ? { color: 'var(--red)', glyph: '⇄' }
-    : comparing.includes(i) ? { color: 'var(--yellow)', glyph: '◇' }
+    comparing.includes(i) && !swapped.includes(i) ? { color: 'var(--yellow)', glyph: '◇' }
     : null
 
   const slotPct = 100 / n
@@ -116,7 +114,7 @@ export default function SortingViz({ stepData, maxVal, speedMs = 1000 }) {
         })}
       </div>
 
-      {/* 指针行 + 索引行:▲ 指向正在比较/交换的位置(CLRS 板书风格) */}
+      {/* 比较指针 + 索引行；空位保留高度，避免步骤切换时索引跳动 */}
       <div style={{ position: 'relative', height: 30, marginTop: 2 }}>
         {array.map((_, i) => {
           const p = pointerAt(i)
@@ -129,12 +127,11 @@ export default function SortingViz({ stepData, maxVal, speedMs = 1000 }) {
               lineHeight: 1.1,
             }}>
               <span style={{
-                fontSize: 11,
+                display: 'block', height: 11, fontSize: 11,
                 color: p ? p.color : 'transparent',
                 textShadow: p ? `0 0 6px ${p.color}` : 'none',
-                transition: 'color 0.15s',
                 fontWeight: 800, lineHeight: 1,
-              }} aria-hidden>{p ? p.glyph : '▲'}</span>
+              }} aria-hidden>{p?.glyph}</span>
               <span style={{
                 fontSize: 9.5,
                 fontFamily: 'var(--font-mono)',
