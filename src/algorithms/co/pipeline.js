@@ -44,7 +44,7 @@ function buildHazardSchedule(instructions) {
   // Instruction 2: depends on $t1 (from inst 1, computed in EX), forward EX→EX
   // Instruction 3: independent
   const n = instructions.length
-  const totalCycles = 11
+  const totalCycles = 9
   const schedule = Array.from({ length: n }, () => new Array(totalCycles).fill(null))
   // Inst 0: IF ID EX MEM WB at cycles 0,1,2,3,4
   schedule[0][0] = 'IF'; schedule[0][1] = 'ID'; schedule[0][2] = 'EX'; schedule[0][3] = 'MEM'; schedule[0][4] = 'WB'

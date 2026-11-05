@@ -92,7 +92,10 @@ export function slidingWindow({ totalFrames = 8, windowSize = 4, lossSet = [2, 5
       })
     }
 
-    if (senderBase < totalFrames && frames[senderBase].state !== 'acked') {
+    // 只有真的存在“已发送但未确认”的在途帧（senderNext > senderBase）才等超时；
+    // 若窗口刚滑到新区域、新突发还没发（senderNext === senderBase），直接回到
+    // 外层发送循环——否则会在无丢包时插入假超时步骤（回归测试：无丢包零超时）。
+    if (senderBase < totalFrames && frames[senderBase].state !== 'acked' && senderNext > senderBase) {
       snap({
         inFlight: [],
         message: { from: 'timer', to: 'sender', label: `timeout ${senderBase}`, timeout: true },

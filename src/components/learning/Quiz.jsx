@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useProgressActions } from '../../contexts/ProgressContext'
 import { saveWrongForSlug } from '../profile/WrongAnswers'
+import { recordAlgoQuiz } from '../../services/storage/mistakeStore'
 
 export default function Quiz({ questions, slug }) {
   // 只写不读:useProgressActions 引用稳定,收藏/完成等进度变化不再重渲染本组件
@@ -17,7 +18,11 @@ export default function Quiz({ questions, slug }) {
     const wrongIndices = questions
       .map((q, i) => (answers[i] !== q.answer ? i : -1))
       .filter(i => i !== -1)
-    saveWrongForSlug(slug, wrongIndices)
+    if (wrongIndices.length === 0) {
+      saveWrongForSlug(slug, [])
+    } else {
+      recordAlgoQuiz(slug, { correct, total: questions.length, wrongIndices })
+    }
   }, [allDone, slug, questions, answers, recordQuiz])
 
   if (!questions || questions.length === 0) return null

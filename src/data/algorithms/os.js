@@ -378,9 +378,9 @@ def lru(pages, capacity):
     viz: 'elevator',
     timeComplexity: { best: 'O(n log n)', average: 'O(n log n)', worst: 'O(n log n)' },
     spaceComplexity: 'O(n)',
-    description: '像电梯一样，磁头单向移动，直到碰到尽头才会折返。',
-    intuition: '想象电梯的运行规则：电梯总是先向一个方向运行，直到该方向的顶端或者底端，停下后再反向运行。SCAN算法就是把磁头当成了电梯。由于需要对请求进行排序，并分半处理，避免了 SSTF 的饥饿现象，表现比较均匀。',
-    pseudocode: `procedure SCAN(requests, initialHead, maxTrack, direction):
+    description: '磁头单向移动后折返：可选择磁盘边界（SCAN）或最后一个请求（LOOK/教材口径）。',
+    intuition: '磁头沿当前方向处理请求，然后折返。SCAN 走到磁盘边界；LOOK 在该方向最后一个请求处折返。汤小丹《计算机操作系统》第四版的例题采用后者。磁道数量为 200 时，编号为 0–199。',
+    pseudocode: `procedure SCAN(requests, initialHead, trackCount, direction, variant):
     sort(requests)
     left ← elements in requests < initialHead
     right ← elements in requests ≥ initialHead
@@ -388,17 +388,17 @@ def lru(pages, capacity):
     if direction == 'up':
         for target in right: visit(target)
         if left is not empty:
-            visit(maxTrack)
+            if variant == SCAN: visit(trackCount - 1)
             for target in reverse(left): visit(target)
     else:
         for target in reverse(left): visit(target)
         if right is not empty:
-            visit(0)
+            if variant == SCAN: visit(0)
             for target in right: visit(target)
     
     return totalSeek`,
     code: {
-      cpp: `int scan(vector<int>& requests, int initialHead, int maxTrack, string direction) {
+      cpp: `int scan(vector<int>& requests, int initialHead, int trackCount, string direction, bool look = false) {
     vector<int> left, right;
     for (int r : requests) {
         if (r < initialHead) left.push_back(r);
@@ -413,13 +413,13 @@ def lru(pages, capacity):
     if (direction == "up") {
         for (int r : right) seq.push_back(r);
         if (!left.empty()) {
-            seq.push_back(maxTrack);
+            if (!look && (seq.empty() || seq.back() != trackCount - 1)) seq.push_back(trackCount - 1);
             for (int i = left.size()-1; i >= 0; i--) seq.push_back(left[i]);
         }
     } else {
         for (int i = left.size()-1; i >= 0; i--) seq.push_back(left[i]);
         if (!right.empty()) {
-            seq.push_back(0);
+            if (!look && (seq.empty() || seq.back() != 0)) seq.push_back(0);
             for (int r : right) seq.push_back(r);
         }
     }
@@ -430,7 +430,7 @@ def lru(pages, capacity):
     }
     return totalSeek;
 }`,
-      python: `def scan(requests, initial_head, max_track, direction='up'):
+      python: `def scan(requests, initial_head, track_count, direction='up', variant='scan'):
     left = sorted([r for r in requests if r < initial_head])
     right = sorted([r for r in requests if r >= initial_head])
     
@@ -438,12 +438,12 @@ def lru(pages, capacity):
     if direction == 'up':
         seq.extend(right)
         if left:
-            seq.append(max_track)
+            if variant != 'look' and (not seq or seq[-1] != track_count - 1): seq.append(track_count - 1)
             seq.extend(reversed(left))
     else:
         seq.extend(reversed(left))
         if right:
-            seq.append(0)
+            if variant != 'look' and (not seq or seq[-1] != 0): seq.append(0)
             seq.extend(right)
             
     total_seek = 0
@@ -763,19 +763,27 @@ def round_robin(procs, quantum):
     vector<int> work = avail;
     seq.clear();
 
-    while (true) {
-        int found = -1;
-        for (int i = 0; i < n; i++) {
+    // 与站内生成器一致：一轮内扫描不回退，本轮找到候选就继续向后扫，
+    // 一轮结束再从头开始（教材的安全性算法是“存在可执行序列”即可，
+    // 序列不唯一，这里固定遍历次序以保证示例与动画完全一致）。
+    int foundCount = 0, i = 0;
+    while (foundCount < n) {
+        bool progressed = false;
+        for (; i < n; i++) {
             if (finish[i]) continue;
             bool canRun = true;
             for (int j = 0; j < m; j++)
                 if (need[i][j] > work[j]) { canRun = false; break; }
-            if (canRun) { found = i; break; }
+            if (canRun) {
+                for (int j = 0; j < m; j++) work[j] += alloc[i][j];
+                finish[i] = true;
+                seq.push_back(i);
+                foundCount++;
+                progressed = true;
+            }
         }
-        if (found < 0) break;
-        for (int j = 0; j < m; j++) work[j] += alloc[found][j];
-        finish[found] = true;
-        seq.push_back(found);
+        if (!progressed) break;
+        i = 0;
     }
     return seq.size() == n;
 }`,
@@ -787,19 +795,26 @@ def round_robin(procs, quantum):
     finish = [False] * n
     seq = []
 
-    while True:
-        found = -1
-        for i in range(n):
-            if finish[i]: continue
+    # 与站内生成器一致：一轮内顺序向后扫描、不回退，一轮结束再从头开始。
+    found_count = 0
+    i = 0
+    while found_count < n:
+        progressed = False
+        while i < n:
+            if finish[i]:
+                i += 1
+                continue
             if all(need[i][j] <= work[j] for j in range(m)):
-                found = i
-                break
-        if found < 0:
+                for j in range(m):
+                    work[j] += allocation[i][j]
+                finish[i] = True
+                seq.append(i)
+                found_count += 1
+                progressed = True
+            i += 1
+        if not progressed:
             break
-        for j in range(m):
-            work[j] += allocation[found][j]
-        finish[found] = True
-        seq.append(found)
+        i = 0
 
     return all(finish), seq`,
     },

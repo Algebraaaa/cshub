@@ -76,7 +76,7 @@ export function cpuSchedule({ algo = 'fcfs', processList = DEFAULTS } = {}) {
   }
 
   const totalBurst = procs.reduce((sum, p) => sum + p.burst, 0)
-  const maxTime = totalBurst + procs[0].arrival + 50  // safety cap
+  const maxTime = totalBurst + Math.max(0, ...procs.map(p => p.arrival))
 
   while (t <= maxTime && procs.some(p => p.remaining > 0)) {
     if (algo === 'srtn') {

@@ -171,10 +171,35 @@ export default function PersonalGrowthPage() {
       {/* ── 内容区 ── */}
       <main className="gp-main">
 
+        {/* 00 IELTS */}
+        <section className="gp-section" id="chapter-ielts">
+          <div className="gp-section-header">
+            <span className="gp-tag">01 / IELTS</span>
+            <div>
+              <h2 className="gp-section-title">雅思复盘与刻意练习</h2>
+              <p className="gp-section-desc">做完真题之后才是提分的开始：确定性判对错、逐题讲解为什么错、按错因积累弱点画像，写作口语拆成小步反复练。</p>
+            </div>
+          </div>
+          <div className="gp-cards">
+            <Link
+              className="gp-card gp-card-clickable"
+              to="/ielts"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div className="gp-card-icon">🎓</div>
+              <h3 className="gp-card-title">
+                雅思复盘系统
+                <span className="gp-card-click-tip">进入系统</span>
+              </h3>
+              <p className="gp-card-desc">阅读/听力复盘、错题库与弱点画像、写作与口语分步训练、词块库。模型用你自己的 API key，没有 key 也能用判题和模拟反馈。</p>
+            </Link>
+          </div>
+        </section>
+
         {/* 01 Music */}
         <section className="gp-section" id="chapter-music">
           <div className="gp-section-header">
-            <span className="gp-tag">01 / MUSIC</span>
+            <span className="gp-tag">02 / MUSIC</span>
             <div>
               <h2 className="gp-section-title">学一门乐器：情绪的出口</h2>
               <p className="gp-section-desc">学习一门乐器不需要成为大师，重要的是在指尖流淌出旋律的那一刻，你能感受到与自己的深度对话。</p>
@@ -202,7 +227,7 @@ export default function PersonalGrowthPage() {
         {/* 02 Games */}
         <section className="gp-section" id="chapter-games">
           <div className="gp-section-header">
-            <span className="gp-tag gp-tag-teal">02 / GAMES</span>
+            <span className="gp-tag gp-tag-teal">03 / GAMES</span>
             <div>
               <h2 className="gp-section-title">玩几个 3A 大作：体验第九艺术</h2>
               <p className="gp-section-desc">优秀的 3A 大作是结合了视觉艺术、音乐、叙事和交互设计的综合艺术品，能带给你长久的回味和震撼。</p>

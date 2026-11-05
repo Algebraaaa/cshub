@@ -1,22 +1,32 @@
 import { Link } from 'react-router-dom'
 import { ALGORITHMS } from '../../data/algorithmMeta'
-import { storageGet, storageSet } from '../../hooks/useLocalStorage'
+import {
+  getMistakeState,
+  recordAlgoQuiz,
+  deleteAlgoMistake,
+  LEGACY_WRONG_KEY,
+} from '../../services/storage/mistakeStore'
 import { hoverHandlers } from '../../utils/hoverStyle'
 
-export const WRONG_Q_KEY = 'algoviz-wrong-questions'
+// 迁移后改走统一错题存储（cshub-mistakes-v1）；常量仅保留作文档/兼容引用。
+export const WRONG_Q_KEY = LEGACY_WRONG_KEY
 
 export function loadWrongQuestions() {
-  return storageGet(WRONG_Q_KEY, {})
+  const { algo } = getMistakeState()
+  /** @type {Record<string, number[]>} */
+  const map = {}
+  for (const [slug, rec] of Object.entries(algo)) {
+    if (Array.isArray(rec.wrongIndices)) map[slug] = rec.wrongIndices
+  }
+  return map
 }
 
 export function saveWrongForSlug(slug, wrongIndices) {
-  const current = loadWrongQuestions()
   if (wrongIndices.length === 0) {
-    delete current[slug]
+    deleteAlgoMistake(slug)
   } else {
-    current[slug] = wrongIndices
+    recordAlgoQuiz(slug, { wrongIndices })
   }
-  storageSet(WRONG_Q_KEY, current)
 }
 
 export default function WrongAnswers({ quizScores }) {

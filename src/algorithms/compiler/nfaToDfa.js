@@ -2,7 +2,7 @@
 // 输入：regex 字符串。先用 Thompson 构造得到 NFA，再做子集构造。
 // 输出步骤：{ nfa, dfa, focusClosure, focusDfaState, action, description }
 
-import { regexToFinalNfa } from './regexToNfa'
+import { regexToFinalNfa } from './regexToNfa.js'
 
 function epsilonClosure(nfa, stateIds) {
   // BFS 沿 ε 边扩展
@@ -91,8 +91,10 @@ export function nfaToDfa(regex) {
       const next = epsilonClosure(nfa, mov)
       const key = setKey(next)
       let targetIdx = keyToIdx.get(key)
+      let isNew = false
       if (targetIdx === undefined) {
         targetIdx = dfaStates.length
+        isNew = true
         const accepting = next.includes(nfa.accept)
         dfaStates.push({ id: `D${targetIdx}`, closure: next, accepting })
         keyToIdx.set(key, targetIdx)
@@ -106,7 +108,8 @@ export function nfaToDfa(regex) {
       dfaEdges.push(edge)
       snap(next, `D${targetIdx}`, 'edge',
         `添加 DFA 转移：${dId} --${symbol}--> D${targetIdx}。`, dfaEdges.length - 1)
-      if (targetIdx === dfaStates.length - 1) queue.push(`D${targetIdx}`)
+      // 只有“新建”的状态才入队；自环指向已存在的末尾状态时不能重复入队（否则死循环）
+      if (isNew) queue.push(`D${targetIdx}`)
     }
   }
 

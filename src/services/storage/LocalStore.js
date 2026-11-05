@@ -110,3 +110,40 @@ export function subscribeCrossTab(handler) {
   window.addEventListener('storage', onStorage)
   return () => window.removeEventListener('storage', onStorage)
 }
+
+// ─────────────────────────────────────────────────────────────
+// 通用 JSON KV（新模块接入存储层的统一入口）
+// 复用上面的容错与写失败可见化逻辑；不与四个进度 KV 耦合。
+// ─────────────────────────────────────────────────────────────
+
+/** 读取任意 JSON 键，缺失/损坏时返回 fallback。 */
+export function readJSON(key, fallback = null) {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw === null) return fallback
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+
+/** 写入任意 JSON 键，返回是否成功。 */
+export function writeJSON(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch (err) {
+    onWriteFailure(err)
+    return false
+  }
+}
+
+/** 删除任意键。 */
+export function removeKey(key) {
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    /* ignore */
+  }
+}

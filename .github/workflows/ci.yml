@@ -42,6 +42,17 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Check IELTS harness and templates
+        run: |
+          npm run ielts:export-harness
+          npm run ielts:check-harness
+          npm run ielts:check-templates
+
+      - name: Check standalone course examples
+        run: |
+          npm run course:check-transaction
+          npm run course:check-query-plan
+
       - name: Build
         run: npm run build
 

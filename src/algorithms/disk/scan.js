@@ -1,4 +1,6 @@
-export function scan(requests, initialHead, maxTrack = 200, direction = 'up') {
+// trackCount is the number of tracks: a 200-track disk has tracks 0..199.
+// The optional LOOK variant turns at the last request instead of the edge.
+export function scan(requests, initialHead, trackCount = 200, direction = 'up', variant = 'scan') {
   const states = [];
   let currentHead = initialHead;
   let totalSeek = 0;
@@ -15,13 +17,13 @@ export function scan(requests, initialHead, maxTrack = 200, direction = 'up') {
   if (direction === 'up') {
     sequence.push(...right);
     if (left.length > 0) {
-      sequence.push(maxTrack);
+      if (variant !== 'look' && sequence.at(-1) !== trackCount - 1) sequence.push(trackCount - 1);
       sequence.push(...left.reverse());
     }
   } else {
     sequence.push(...left.reverse());
     if (right.length > 0) {
-      sequence.push(0);
+      if (variant !== 'look' && sequence.at(-1) !== 0) sequence.push(0);
       sequence.push(...right);
     }
   }

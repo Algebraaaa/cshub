@@ -16,19 +16,28 @@ function cloneTxns(txns) {
   return txns.map(t => ({ ...t, snapshot: t.snapshot ? [...t.snapshot] : [] }))
 }
 
-// MVCC 可见性规则：
-// 对于读者 reader（事务对象），版本 v 可见 iff:
-//   xmin 已提交 且 xmin 不在 reader.snapshot 里
-//   xmax 是 null 或 xmax 未提交 或 xmax 在 reader.snapshot 里
+// MVCC 可见性规则（PostgreSQL 快照隔离口径，唐世渭/萨师煊《数据库系统概论》
+// 多版本并发控制一节同类规则；xid 严格递增）：
+// 对读者 reader（含 id 与开启时活跃事务列表 snapshot），版本 v 可见 iff：
+//   1) 自己的写入对自己可见；否则创建者必须已提交、xmin < reader.id
+//      （先于读者开始）且不在读者快照的活跃列表里；
+//   2) 满足上面后，若 xmax 为空 → 可见；
+//      xmax 是读者自己（自己更新/删除了该版本）→ 不可见；
+//      删除事务未提交 / 在读者快照里 / xmax > reader.id（删除晚于读者开始）→ 仍可见。
 function isVisible(v, reader, txns) {
   const xminTxn = txns.find(t => t.id === v.xmin)
-  if (!xminTxn || xminTxn.status !== 'committed') return false
-  if (reader.snapshot.includes(v.xmin)) return false
+  if (!xminTxn) return false
+  const ownWrite = v.xmin === reader.id
+  const xminOk = ownWrite
+    || (xminTxn.status === 'committed' && v.xmin < reader.id && !reader.snapshot.includes(v.xmin))
+  if (!xminOk) return false
 
-  if (v.xmax === null) return true
+  if (v.xmax === null || v.xmax === undefined) return true
+  if (v.xmax === reader.id) return false
   const xmaxTxn = txns.find(t => t.id === v.xmax)
   if (!xmaxTxn || xmaxTxn.status !== 'committed') return true
   if (reader.snapshot.includes(v.xmax)) return true
+  if (v.xmax > reader.id) return true
   return false
 }
 
@@ -101,10 +110,9 @@ export function mvccDemo(scenario) {
     // T1 再次读 A（快照隔离：仍看旧版本）
     log.push({ txn: 'T1', op: 'READ A（再次）', rowId: 'A', oldVal: null, newVal: null, desc: 'T1 再次读 A' })
     push('1', 'T1 再次读 A（快照隔离）',
-      'T1 再次读 A：新版本 xmin=2，但 2 不在 T1 的 snapshot 里……等等，2 未在 T1 开启时活跃（snapshot=[]），'
-      + '且 2 已提交。然而旧版本 xmax=2 已提交且不在 T1 快照（snapshot=[]）中，因此旧版本不可见。'
-      + '→ T1 看到新版本 A=150？不对——T1 在 T2 开始之前就开启，T1 的 snapshot=[] 意味着 T1 开启时无活跃事务，'
-      + '而 T2(xid=2)>T1(xid=1)，T1 按快照隔离应只看 xmin<=1 且已提交的版本。→ T1 只看旧版本 A=100。', ['A'])
+      'T1 再次读 A：新版本 xmin=2 虽已提交，但 T2(xid=2) 晚于 T1(xid=1) 开始，对 T1 的快照不可见；'
+      + '旧版本虽被 T2 更新（xmax=2），但删除发生在 T1 的快照之后，旧版本对 T1 仍然可见。'
+      + '→ T1 两次读到的都是 A=100（可重复读）。', ['A'])
 
     // T1 读 B（正常）
     log.push({ txn: 'T1', op: 'READ B', rowId: 'B', oldVal: null, newVal: null, desc: 'T1 读取行 B' })

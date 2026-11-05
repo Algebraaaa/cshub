@@ -14,7 +14,14 @@
     "preview": "vite preview",
     "generate:ai-index": "node scripts/generateAiCurriculumIndex.mjs",
     "typecheck": "tsc -p tsconfig.typecheck.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ielts:export-harness": "node scripts/ielts/export-harness.mjs",
+    "ielts:check-harness": "node scripts/ielts/check-harness.mjs",
+    "course:extract-snippets": "node scripts/course-audit/extract-snippets.mjs",
+    "course:run-snippets": "node scripts/course-audit/extract-snippets.mjs && node scripts/course-audit/run-snippets.mjs",
+    "course:check-transaction": "node scripts/course-audit/check-transaction.mjs",
+    "course:check-query-plan": "node scripts/course-audit/check-query-plan.mjs",
+    "ielts:check-templates": "node scripts/ielts/check-templates.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
