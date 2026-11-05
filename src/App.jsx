@@ -25,6 +25,15 @@ const ToolboxPage = lazy(ROUTE_LOADERS['/toolbox'])
 const ProjectsGuidePage = lazy(ROUTE_LOADERS['/projects'])
 const SetupGuidePage = lazy(ROUTE_LOADERS['/setup'])
 const PersonalGrowthPage = lazy(ROUTE_LOADERS['/growth'])
+const IeltsPage = lazy(ROUTE_LOADERS['/ielts'])
+const IeltsSetsPage = lazy(ROUTE_LOADERS['/ielts/sets'])
+const IeltsReadingPage = lazy(ROUTE_LOADERS['/ielts/reading'])
+const IeltsListeningPage = lazy(ROUTE_LOADERS['/ielts/listening'])
+const IeltsMistakesPage = lazy(ROUTE_LOADERS['/ielts/mistakes'])
+const IeltsWritingPage = lazy(ROUTE_LOADERS['/ielts/writing'])
+const IeltsSpeakingPage = lazy(ROUTE_LOADERS['/ielts/speaking'])
+const IeltsVocabPage = lazy(ROUTE_LOADERS['/ielts/vocab'])
+const IeltsSettingsPage = lazy(ROUTE_LOADERS['/ielts/settings'])
 const HealthPage = lazy(ROUTE_LOADERS['/health'])
 const BookNotesPage = lazy(ROUTE_LOADERS['/books'])
 const PianoPage = lazy(ROUTE_LOADERS['/piano'])
@@ -50,6 +59,7 @@ const ROUTE_TITLES = {
   '/logic': '逻辑学',
   '/finance': '理财',
   '/growth': '个人成长',
+  '/ielts': '雅思',
   '/ai-course': 'AI 专业课',
   '/path': '学习路径',
   '/profile': '个人主页',
@@ -97,6 +107,15 @@ function AppRoutes() {
             <Route path="/projects" element={<ProjectsGuidePage />} />
             <Route path="/setup" element={<SetupGuidePage />} />
             <Route path="/growth" element={<PersonalGrowthPage />} />
+            <Route path="/ielts" element={<IeltsPage />} />
+            <Route path="/ielts/sets" element={<IeltsSetsPage />} />
+            <Route path="/ielts/reading" element={<IeltsReadingPage />} />
+            <Route path="/ielts/listening" element={<IeltsListeningPage />} />
+            <Route path="/ielts/mistakes" element={<IeltsMistakesPage />} />
+            <Route path="/ielts/writing" element={<IeltsWritingPage />} />
+            <Route path="/ielts/speaking" element={<IeltsSpeakingPage />} />
+            <Route path="/ielts/vocab" element={<IeltsVocabPage />} />
+            <Route path="/ielts/settings" element={<IeltsSettingsPage />} />
             <Route path="/health" element={<HealthPage />} />
             <Route path="/books/:slug" element={<BookNotesPage />} />
             <Route path="/piano" element={<PianoPage />} />

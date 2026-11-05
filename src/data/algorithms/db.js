@@ -129,33 +129,40 @@ function COMMIT(txn):
         committed[row] = txn.drafts[row]          // 持久化
     release all locks`,
     code: {
-      cpp: `// 教学伪代码：实际由 DBMS 内核实现（如 InnoDB ReadView）
-class Transaction {
-    map<int, int> drafts;
-    long start_ts;
-public:
-    int read(int row, IsoLevel lvl) {
-        switch (lvl) {
-            case RU: return physical[row];          // 含 draft
-            case RC: return committed[row];
-            case RR: return snapshot_at(start_ts, row);
-            case S:  lock_shared(row); return committed[row];
-        }
+      cpp: `#include <iostream>
+#include <map>
+using namespace std;
+
+// 教学快照模型；可串行化的真实实现还需要锁或其他并发控制。
+enum class Isolation { RU, RC, RR, Serializable };
+struct Transaction {
+    map<int, int> physical, committed, snapshot;
+    int read(int row, Isolation level) const {
+        if (level == Isolation::RU) return physical.at(row);
+        if (level == Isolation::RC) return committed.at(row);
+        return snapshot.at(row);
     }
-};`,
-      python: `# psycopg2 设置隔离级别
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_SERIALIZABLE
+};
 
-conn = psycopg2.connect(...)
-conn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+int main() {
+    // 对应演示：T1 将 100 改为 40 但尚未提交，T2 读取。
+    Transaction t{{{1, 40}}, {{1, 100}}, {{1, 100}}};
+    for (auto level : {Isolation::RU, Isolation::RC, Isolation::RR, Isolation::Serializable})
+        cout << t.read(1, level) << '\n';
+}`,
+      python: `# 教学快照模型；可串行化的真实实现还需要并发控制。
+physical = {1: 40}       # T1 尚未提交的写入
+committed = {1: 100}
+snapshot = committed.copy()
 
-# 之后所有事务都是 Serializable
-with conn.cursor() as cur:
-    cur.execute("BEGIN")
-    cur.execute("UPDATE account SET balance = balance - 100 WHERE id = 1")
-    cur.execute("UPDATE account SET balance = balance + 100 WHERE id = 2")
-    cur.execute("COMMIT")`,
+def read(row, level):
+    if level == 'RU': return physical[row]
+    if level == 'RC': return committed[row]
+    if level in ('RR', 'Serializable'): return snapshot[row]
+    raise ValueError(level)
+
+for level in ('RU', 'RC', 'RR', 'Serializable'):
+    print(read(1, level))`,
     },
     applications: [
       '所有支持事务的 RDBMS（MySQL、PostgreSQL、SQL Server、Oracle）',
@@ -391,39 +398,91 @@ class Aggregate(child, groupBy, agg) implements Iterator:
     open(): compute groups from child
     next(): return next group result`,
     code: {
-      cpp: `// 简化版 Volcano 模型
-struct Tuple { map<string, Value> cols; };
-struct Iterator { virtual Tuple* next() = 0; };
+      cpp: `#include <functional>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+using namespace std;
 
+// Volcano 风格：算子通过 next 按需返回一行。
+struct Row { int userId; int amount; };
+struct Iterator {
+    virtual ~Iterator() = default;
+    virtual bool next(Row& row) = 0;
+};
+struct SeqScan : Iterator {
+    vector<Row> rows; size_t pos = 0;
+    explicit SeqScan(vector<Row> input) : rows(std::move(input)) {}
+    bool next(Row& row) override {
+        if (pos == rows.size()) return false;
+        row = rows[pos++]; return true;
+    }
+};
 struct Filter : Iterator {
-    Iterator* child; function<bool(Tuple&)> pred;
-    Tuple* next() override {
-        while (auto t = child->next())
-            if (pred(*t)) return t;
-        return nullptr;
+    Iterator& child; function<bool(const Row&)> predicate;
+    Filter(Iterator& input, function<bool(const Row&)> pred) : child(input), predicate(pred) {}
+    bool next(Row& row) override {
+        while (child.next(row)) if (predicate(row)) return true;
+        return false;
     }
 };
 struct HashJoin : Iterator {
-    unordered_map<Value, vector<Tuple>> ht;
-    void open() { while (auto t = build->next()) ht[t->cols[key]].push_back(*t); }
-    Tuple* next() override { /* probe */ }
-};`,
-      python: `# Volcano 迭代器模型
+    vector<Row> result; size_t pos = 0;
+    HashJoin(Iterator& users, Iterator& orders) {
+        unordered_multimap<int, Row> buckets;
+        Row row;
+        while (users.next(row)) buckets.emplace(row.userId, row);
+        while (orders.next(row)) {
+            auto [first, last] = buckets.equal_range(row.userId);
+            for (auto it = first; it != last; ++it) result.push_back(row);
+        }
+    }
+    bool next(Row& row) override {
+        if (pos == result.size()) return false;
+        row = result[pos++]; return true;
+    }
+};
+int main() {
+    vector<Row> orders{{1,150},{1,80},{2,200},{4,150}};
+    vector<Row> users{{1,0},{1,0},{2,0},{3,0}};
+    SeqScan scan(orders); Filter filter(scan, [](const Row& r) { return r.amount > 100; });
+    Row row; int count = 0; while (filter.next(row)) ++count;
+    cout << count << '\n';
+    SeqScan build(users), probe(orders); HashJoin join(build, probe);
+    count = 0; while (join.next(row)) ++count;
+    cout << count << '\n';
+}`,
+      python: `# Volcano 风格：算子通过 next 按需返回一行。
 class SeqScan:
-    def __init__(self, table): self.rows = iter(table)
+    def __init__(self, rows): self.rows = iter(rows)
     def next(self): return next(self.rows, None)
 
 class Filter:
-    def __init__(self, child, pred): self.child, self.pred = child, pred
+    def __init__(self, child, predicate): self.child, self.predicate = child, predicate
     def next(self):
-        while (t := self.child.next()) is not None:
-            if self.pred(t): return t
+        while (row := self.child.next()) is not None:
+            if self.predicate(row): return row
+        return None
 
 class HashJoin:
-    def __init__(self, build, probe, key): ...
-    def open(self):
-        self.ht = {}
-        while (t := self.build.next()): self.ht.setdefault(t[self.key],[]).append(t)`,
+    def __init__(self, build, probe):
+        buckets, result = {}, []
+        while (row := build.next()) is not None:
+            buckets.setdefault(row['user_id'], []).append(row)
+        while (row := probe.next()) is not None:
+            result.extend((user, row) for user in buckets.get(row['user_id'], []))
+        self.rows = iter(result)
+    def next(self): return next(self.rows, None)
+
+def count(iterator):
+    total = 0
+    while iterator.next() is not None: total += 1
+    return total
+
+orders = [{'user_id': i, 'amount': a} for i, a in [(1,150),(1,80),(2,200),(4,150)]]
+users = [{'user_id': i} for i in (1,1,2,3)]
+print(count(Filter(SeqScan(orders), lambda row: row['amount'] > 100)))
+print(count(HashJoin(SeqScan(users), SeqScan(orders))))`,
     },
     applications: [
       'MySQL EXPLAIN / PostgreSQL EXPLAIN ANALYZE 输出的执行计划树',

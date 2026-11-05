@@ -24,6 +24,15 @@
     "src/services/storage/SyncService.js",
     "src/services/storage/LocalStore.js",
     "src/services/storage/RemoteStore.js",
-    "src/lib/monitoring.js"
+    "src/lib/monitoring.js",
+    "src/features/ielts/core/errorCodes.js",
+    "src/features/ielts/core/format.js",
+    "src/features/ielts/core/judge.js",
+    "src/features/ielts/core/bands.js",
+    "src/features/ielts/core/evidence.js",
+    "src/features/ielts/core/ladder.js",
+    "src/features/ielts/core/reasons.js",
+    "src/features/ielts/core/parseInput.js",
+    "src/features/ielts/core/index.js"
   ]
 }

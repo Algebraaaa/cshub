@@ -33,3 +33,5 @@ _artifact_reviews/
 /playwright-report/
 /blob-report/
 /.playwright/
+dist-harness/
+scripts/course-audit/.work/

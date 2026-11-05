@@ -61,20 +61,20 @@ void tcp_state_transition(TCPState& s, Event e) {
         // ...
     }
 }`,
-      python: `# Python 客户端的 TCP socket 简单示例
-import socket
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# 底层进行三次握手
-sock.connect(('example.com', 80))
-# 状态机：CLOSED → SYN_SENT → ESTABLISHED
-
-sock.sendall(b'GET / HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n')
-data = sock.recv(4096)
-
-# 底层进行四次挥手
-sock.close()
-# 状态机：ESTABLISHED → FIN_WAIT_1 → FIN_WAIT_2 → TIME_WAIT → CLOSED`,
+      python: `# TCP 客户端与服务端状态演示；不发起网络连接
+client, server = 'CLOSED', 'LISTEN'          # 初始
+client = 'SYN_SENT'                          # 客户端发送 SYN
+server = 'SYN_RCVD'                          # 服务端回复 SYN+ACK
+client = 'ESTABLISHED'                       # 客户端发送 ACK
+server = 'ESTABLISHED'                       # 服务端收到 ACK
+print('数据传输', client, server)              # 数据传输
+client = 'FIN_WAIT_1'                        # 客户端发送 FIN
+client, server = 'FIN_WAIT_2', 'CLOSE_WAIT'  # 服务端回复 ACK
+server = 'LAST_ACK'                          # 服务端发送 FIN
+client = 'TIME_WAIT'                         # 客户端回复 ACK
+server = 'CLOSED'                            # 服务端关闭
+client = 'CLOSED'                            # 2MSL 后客户端关闭
+print(client, server)`,
     },
     applications: [
       'TCP 连接管理的内核实现（Linux tcp_input.c）',

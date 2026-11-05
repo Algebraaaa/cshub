@@ -1,5 +1,6 @@
 {
+  "//": "SPA 回退：显式排除 /api —— /api/ielts/llm 等 Serverless Functions 必须在文件系统阶段命中，不能被改写成首页。此外 Vercel 的 rewrites 本身也在静态文件与函数之后才生效。",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

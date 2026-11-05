@@ -9,15 +9,16 @@ function parseRequests(str) {
 export default function ElevatorPlayground({ algoFn }) {
   return (
     <PlaygroundShell
-      initialState={{ requestsStr: '5, 18, 3, 12, 14, 21, 6, 8', initialHead: 10, maxTrack: 21 }}
+      initialState={{ requestsStr: '5, 18, 3, 12, 14, 21, 6, 8', initialHead: 10, maxTrack: 21, variant: 'scan' }}
       derivePayload={state => ({
         reqs: parseRequests(state.requestsStr),
         initialHead: state.initialHead,
         maxTrack: state.maxTrack,
+        variant: state.variant,
       })}
       // 传递 maxTrack 以及根据需要传递 direction 给 SCAN 算法
-      computeSteps={({ reqs, initialHead, maxTrack }) => (
-        reqs.length === 0 ? [] : algoFn(reqs, initialHead, maxTrack, 'up')
+      computeSteps={({ reqs, initialHead, maxTrack, variant }) => (
+        reqs.length === 0 ? [] : algoFn(reqs, initialHead, maxTrack + 1, 'up', variant)
       )}
       extraToolbar={({ state, setState }) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -29,6 +30,12 @@ export default function ElevatorPlayground({ algoFn }) {
               style={{ flex: 1, padding: '6px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-primary)' }}
             />
           </div>
+          <label>折返方式：
+            <select value={state.variant} onChange={e => setState(s => ({ ...s, variant: e.target.value }))}>
+              <option value="scan">到边界折返（SCAN）</option>
+              <option value="look">到最后请求折返（LOOK / 教材口径）</option>
+            </select>
+          </label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', width: 80 }}>初始楼层:</span>
             <input
